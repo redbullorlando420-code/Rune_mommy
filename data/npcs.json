@@ -1,5 +1,252 @@
 {
-  "maera": { "id": "maera", "name": "Maera", "title": "Hearth Tutor", "kind": "tutor", "greet": "The Hollow remembers names. Yours will do." },
-  "voss": { "id": "voss", "name": "Voss", "title": "Keeper of Coin", "kind": "shop", "greet": "Coin, vault, or both." },
-  "nima": { "id": "nima", "name": "Nima", "title": "Dock Watcher", "kind": "flavor", "greet": "West water never freezes." }
+  "maera": {
+    "id": "maera",
+    "name": "Maera",
+    "title": "Hearth Tutor",
+    "kind": "tutor",
+    "color": "#c77dff",
+    "greet": "The Hollow remembers names. Yours will do. Sit. The fire has opinions.",
+    "lines": [
+      "Welcome to Emberfen Hollow. This dusk does not end. The First Fire is the only clock we trust.",
+      "Left-click the ground to walk. The path finds itself. If it doesn't, the water ate a tile. Don't follow it.",
+      "East: emberwood and moonbloom. Click a tree or a pale flower and wait. Foraging is a conversation, not a theft.",
+      "South: ash, wolves, and a ruined circle of imps. Click a beast to fight. They remember who struck first.",
+      "I for your pack. Enter to speak. Click another wanderer to trade. Lock, then both accept. The Hollow hates thieves.",
+      "Voss sells what the dusk refuses to give freely. His vault is honest. His prices are not kind, but they are fair.",
+      "South of the hearth, the Binding Shrine. Stand on the purple stone and Bind. Bread, salve, blades. The shrine eats what you feed it.",
+      "I was here when the fire was a coal. I will be here when you are a story. Learn the Hollow before it learns you.",
+      "If you fall, you wake beside this fire. Coin may slip from your fingers. Pride usually does too.",
+      "The Stag is not a trophy. It is a question the forest asks. Answer carefully."
+    ]
+  },
+  "voss": {
+    "id": "voss",
+    "name": "Voss",
+    "title": "Keeper of Coin",
+    "kind": "shop",
+    "color": "#f4a261",
+    "greet": "Coin, vault, or both. Don't bleed on the counter. I just oiled it.",
+    "lines": [
+      "I keep the stall and the vault. Buy from the list. Shift-click your pack to bank. Click the vault to take it back.",
+      "Ember coins are stamped with a closed eye. Spend them like the eye is watching. It is.",
+      "Ashblades go to people who come back. If you want one, prove you can carry bread first.",
+      "I don't haggle. The dusk already took its cut. Mine is smaller.",
+      "Maera thinks I'm soft. Nima thinks I'm a vulture. Both are half right. Pay or walk.",
+      "If you die south of here, don't come crying about lost fangs. The ash keeps what it likes."
+    ],
+    "shop": [
+      {
+        "id": "hearthbread",
+        "stock": 50,
+        "buy": 6,
+        "sell": 3
+      },
+      {
+        "id": "moontea",
+        "stock": 20,
+        "buy": 12,
+        "sell": 5
+      },
+      {
+        "id": "cinder_salve",
+        "stock": 12,
+        "buy": 22,
+        "sell": 9
+      },
+      {
+        "id": "ashblade",
+        "stock": 4,
+        "buy": 55,
+        "sell": 22
+      },
+      {
+        "id": "thornbow",
+        "stock": 3,
+        "buy": 62,
+        "sell": 24
+      },
+      {
+        "id": "cinder_rod",
+        "stock": 3,
+        "buy": 70,
+        "sell": 28
+      },
+      {
+        "id": "hide_vest",
+        "stock": 4,
+        "buy": 48,
+        "sell": 18
+      },
+      {
+        "id": "ironband_mail",
+        "stock": 2,
+        "buy": 120,
+        "sell": 48
+      },
+      {
+        "id": "dusk_cloak",
+        "stock": 3,
+        "buy": 52,
+        "sell": 20
+      },
+      {
+        "id": "ember_charm",
+        "stock": 2,
+        "buy": 40,
+        "sell": 16
+      },
+      {
+        "id": "moss_charm",
+        "stock": 2,
+        "buy": 40,
+        "sell": 16
+      }
+    ]
+  },
+  "nima": {
+    "id": "nima",
+    "name": "Nima",
+    "title": "Dock Watcher",
+    "kind": "flavor",
+    "color": "#4cc9f0",
+    "greet": "West water never freezes. Don't ask why. The imps drink it. So did I, once.",
+    "lines": [
+      "I count ripples. When they run the wrong way, something in the ash is hunting upward.",
+      "Wolves hold the southern ash. They are not evil. They are hungry in a place that forgot seasons.",
+      "Imps nest in the cracked circle. They throw cinders. Keep a bow if your pride is brittle.",
+      "If you hear a bell that isn't there, that's the Hollow Stag. Rare. Proud. It walks the eastern copse at the hour with no name.",
+      "Trade with the living. The dead keep what they drop, except when they don't. Then Voss gets involved.",
+      "Maera taught me to walk. Voss taught me to count. The water taught me to wait. I'm still waiting.",
+      "Don't swim. The Hollow doesn't do drowning. It does keeping."
+    ]
+  },
+  "brin": {
+    "id": "brin",
+    "name": "Brin",
+    "title": "Ash Hunter",
+    "kind": "flavor",
+    "color": "#e85d04",
+    "greet": "If you're heading south, take bread. Wolves don't wait for speeches.",
+    "lines": [
+      "I lost a sister to the circle. Not to the imps. To the idea that she could talk them down.",
+      "Gloom wolves telegraph the lunge. Sidestep. Then punish. Combat is a rhythm, not a prayer.",
+      "The Stag only aggroes if you look at it like meat. Look at it like weather and you might live.",
+      "Fang and hide go to the shrine. Binding a vest from a thing that tried to eat you is the Hollow's sense of humor.",
+      "If you see me running, don't ask where. Follow or don't. Standing still is how the ash writes names."
+    ]
+  },
+  "selva": {
+    "id": "selva",
+    "name": "Selva",
+    "title": "Shrine Binder",
+    "kind": "flavor",
+    "color": "#9b5de5",
+    "greet": "The shrine is hungry, not holy. Feed it honestly.",
+    "lines": [
+      "Stand on the binding stone. Open Bind. The recipe list is a promise: inputs in, work out.",
+      "Moonbloom and emberwood make hearthbread. That's the first kindness. Salve is the second. Blades are a later conversation.",
+      "If Binding fails, you weren't close enough, or the dusk decided you were greedy. Usually the first.",
+      "I don't sell faith. I sell sequence. Respect the sequence and the shrine respects you.",
+      "Maera says the fire remembers. I say the shrine forgets on purpose. That's why we write recipes down."
+    ]
+  },
+  "kesh": {
+    "id": "kesh",
+    "name": "Kesh",
+    "title": "Wounded Wanderer",
+    "kind": "flavor",
+    "color": "#90be6d",
+    "greet": "I made it back. That's the whole story. The rest is bruising.",
+    "lines": [
+      "There were two of us. There is one of me. Don't look for the other name. The ash already has it.",
+      "Click a wolf, don't let it click you. If your health sings, eat bread. Pride is a terrible bandage.",
+      "I tried to trade with a corpse. Voss charged me for the lesson. Fair.",
+      "If you're kind, sit. If you're useful, go south and come back louder than you left.",
+      "The Hollow isn't cruel. It's exact. That's worse, and better."
+    ]
+  },
+  "oren": {
+    "id": "oren",
+    "name": "Oren",
+    "title": "Night Watch",
+    "kind": "flavor",
+    "color": "#b8f2e6",
+    "greet": "I don't sleep. The dusk doesn't either. We have an arrangement.",
+    "lines": [
+      "North of the hearths is quiet. Quiet is a lie with good manners.",
+      "If two wanderers stand close and lock a trade, I look away. That's the closest we get to privacy.",
+      "Chat local if your secrets are small. Global if you want Maera to sigh.",
+      "I saw the Stag drink from the west water. It didn't ripple. That's when I stopped asking the dock questions.",
+      "Stay. Or go. The watch doesn't keep people. It keeps the fire from being lonely."
+    ]
+  },
+  "tavi": {
+    "id": "tavi",
+    "name": "Tavi",
+    "title": "Scavenger",
+    "kind": "flavor",
+    "color": "#c9ada7",
+    "greet": "Don't sprint. Don't shout. Don't loot a corpse while it's still deciding.",
+    "lines": [
+      "Zomboid rule one: the bite is a schedule, not a surprise. Dusk walkers telegraph with the jaw. Sidestep, then the crowbar.",
+      "Ash dens hold fangs and hide. Mine crawlers hold ichor. Road thugs hold coin and bad ideas. Pick your hunger.",
+      "I stash nails in a bat because a pretty edge chips. Ugly lasts. That's the Hollow's whole thesis.",
+      "If you hear dragging, it's walkers. If you hear laughing, it's thugs. If you hear nothing, you already missed the hound.",
+      "Maera teaches names. I teach not dying. Both are religions. Mine has fewer hymns.",
+      "East copse is food. South ash is a test. The mine is a dare. Johns Lake strip is where GTA brains come to get paid or get cut.",
+      "Never fight two walkers in a doorway. Never fight a thug on a road. Never fight a hound while you're eating. That's the whole combat manual.",
+      "Bring bread. Bring a friend. Bring the willingness to drop the bag and run. Pride is how the ash writes obituaries."
+    ]
+  },
+  "rook": {
+    "id": "rook",
+    "name": "Rook",
+    "title": "Fence",
+    "kind": "flavor",
+    "color": "#e9c46a",
+    "greet": "Heat's a weather. I sell umbrellas. Don't tell Voss I said that.",
+    "lines": [
+      "Voss is legal. I'm adjacent. Difference is I know which thug dropped which wrap, and I don't put it on a receipt.",
+      "GTA rule: you don't own the strip. The strip owns the minute you look rich. Keep coin in the vault. Flex in the ash, not on Hwy 50.",
+      "Road thugs travel in opinions. Isolate one. The second always has a friend. The third has a story for Mira.",
+      "If you want a nail bat, bind it or take it off a man who thought the road was his. I don't ask which.",
+      "Want work? Walkers south of the plaza. Thugs on the Johns Lake strip. Hounds by the cinder circle. Crawlers in Agate. That's a night.",
+      "I don't do portraits. I do consequences. Bot girl's people do the other kind of heat. Mine bruises.",
+      "Trade with the living. The dead don't haggle, they just drop. That's the cleanest deal in Clermont."
+    ]
+  },
+  "lila": {
+    "id": "lila",
+    "name": "Lila",
+    "title": "Field Medic",
+    "kind": "flavor",
+    "color": "#ff8fab",
+    "greet": "Sit. Show me the bite. If it isn't a bite, still sit. I like looking.",
+    "lines": [
+      "Cinder salve for holes. Hearthbread for the shake after. Moontea if your hands forget they have bones.",
+      "Walkers don't sprint until they do. If you get grabbed, you are already late. Crowbar to the knee, then the jaw, then you come to me.",
+      "I keep extra wraps by the hearth. Not because I'm kind. Because corpses are terrible patients.",
+      "South ash eats cocky melee. Take a bow if your pride can stand not being seen.",
+      "If Yara sent you, you're bleeding on purpose. If Tavi sent you, you're bleeding by accident. Both pay in stories.",
+      "The Hollow likes girls who come back. Come back.",
+      "Don't kiss a wound. That's a visual novel, and this is a shift. Bind it, eat, go again."
+    ]
+  },
+  "yara": {
+    "id": "yara",
+    "name": "Yara",
+    "title": "Pit Tutor",
+    "kind": "tutor",
+    "color": "#ef233c",
+    "greet": "Click a thing that wants you dead. That's combat. Everything else is flavor.",
+    "lines": [
+      "Left click a mob: you swing. Gloom wolves lunge on a count of two. Imps spit. Walkers grab. Thugs feint. Hounds don't feint.",
+      "Range is a religion. Dirk is 1.4. Ashblade a hair more. Thornbow is how adults live. Crowbar is how adults live in doorways.",
+      "Combat XP is on hit and on kill. Don't pad on raccoons once you can take a walker. The Hollow notices when you farm cowardice.",
+      "Leash: walkers forget at 10 tiles, thugs at 12, the Stag never really forgets. Don't kite into a second pack. That's how duos become stories.",
+      "If your HP sings, bread. If it screams, salve. If it stops, you wake at the First Fire minus coin and whatever pride you packed.",
+      "Brin hunts ash. I hunt habits. Break the habit of standing still. Standing still is how the dusk signs your name.",
+      "Want a real night? Walker, thug, hound, crawler, then the Stag if you still have a face. That's the combat ladder. Climb or don't."
+    ]
+  }
 }
