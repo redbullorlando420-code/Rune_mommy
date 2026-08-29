@@ -84,6 +84,7 @@ export function setLock(world, player, locked) {
   const side = sideOf(sess, player.id);
   sess['lock' + side] = !!locked;
   sess.acceptA = sess.acceptB = false;
+  if (!sess.lockA || !sess.lockB) sess.acceptA = sess.acceptB = false;
   push(world, sess);
   return null;
 }
