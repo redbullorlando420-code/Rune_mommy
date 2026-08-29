@@ -3,8 +3,8 @@
 export const TICK_RATE = 20;
 export const TICK_MS = 1000 / TICK_RATE;
 export const TILE = 48;
-export const MAP_W = 72;
-export const MAP_H = 56;
+export const MAP_W = 112;
+export const MAP_H = 76;
 export const WALK_SPEED = 3.35;
 export const PLAYER_RADIUS = 0.32;
 export const INTERACT_RANGE = 1.65;
@@ -18,7 +18,7 @@ export const GROUND_DESPAWN_MS = 90_000;
 export const MAX_CHAT = 160;
 export const PORT = Number((typeof process !== 'undefined' && process.env && process.env.PORT) || 8080);
 export const MAX_PLAYERS = 48;
-export const SPAWN = { x: 22.5, y: 18.5 };
+export const SPAWN = { x: 28.5, y: 20.5 };
 export const NAME_RE = /^[A-Za-z][A-Za-z0-9 _-]{1,15}$/;
 
 export const CHANNELS = Object.freeze({

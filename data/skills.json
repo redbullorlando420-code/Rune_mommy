@@ -1,5 +1,27 @@
 {
-  "combat": { "id": "combat", "name": "Ashen Combat", "desc": "Steel, bow, and cinder-rod.", "color": "#e85d04" },
-  "foraging": { "id": "foraging", "name": "Dusk Foraging", "desc": "Emberwood, moonbloom, iron under moss.", "color": "#90be6d" },
-  "binding": { "id": "binding", "name": "Hearth Binding", "desc": "Bind raw things at the shrine.", "color": "#c77dff" }
+  "combat": {
+    "id": "combat",
+    "name": "Ashen Combat",
+    "desc": "Steel, bow, and cinder-rod. Each blow teaches the Hollow's old violence.",
+    "color": "#e85d04",
+    "hitXp": 6,
+    "killXp": 18,
+    "stat": "atk"
+  },
+  "foraging": {
+    "id": "foraging",
+    "name": "Dusk Foraging",
+    "desc": "Emberwood, moonbloom, and the iron that sleeps under moss.",
+    "color": "#90be6d",
+    "gatherXp": 14,
+    "stat": "yield"
+  },
+  "binding": {
+    "id": "binding",
+    "name": "Hearth Binding",
+    "desc": "Bind raw things at the shrine into bread, salve, and simple gear.",
+    "color": "#c77dff",
+    "craftXp": 22,
+    "stat": "craft"
+  }
 }

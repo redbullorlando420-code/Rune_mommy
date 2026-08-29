@@ -21,6 +21,8 @@ export const T = Object.freeze({
   LEAVES: 19,
   ROAD: 20,
   NEON: 21,
+  FENCE: 22,
+  CONCRETE: 23,
 });
 
 export const TILE_WALK = {
@@ -46,6 +48,8 @@ export const TILE_WALK = {
   [T.LEAVES]: true,
   [T.ROAD]: true,
   [T.NEON]: true,
+  [T.FENCE]: false,
+  [T.CONCRETE]: true,
 };
 
 export const TILE_NAME = {
@@ -68,6 +72,8 @@ export const TILE_NAME = {
   [T.DOCK]: 'dock boards',
   [T.SHRINE]: 'binding shrine',
   [T.LEAVES]: 'leaf litter',
-  [T.ROAD]: 'Hwy 50',
-  [T.NEON]: 'neon plaza',
+  [T.ROAD]: 'stone road',
+  [T.NEON]: 'sigil plaza',
+  [T.FENCE]: 'weathered fence',
+  [T.CONCRETE]: 'parking lot',
 };
