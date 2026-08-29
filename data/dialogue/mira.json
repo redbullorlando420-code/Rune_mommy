@@ -1,0 +1,261 @@
+{
+  "id": "mira",
+  "start": "start",
+  "speaker": "Mama Mira",
+  "portrait": "mira",
+  "age": 36,
+  "shop": "shake_bar",
+  "nodes": {
+    "start": {
+      "id": "start",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "smile",
+      "text": "Welcome in, sugar. Cool Down's the one everyone off 50 asks for. Creamy Dream if you want cookies. Biscoff Max if you need a kick. I'm Mira — I run this neon hut, sandals on, toes done, and I don't rush a good look.",
+      "choices": [
+        { "label": "The Cool Down, please.", "next": "cool" },
+        { "label": "What's good tonight?", "next": "board" },
+        { "label": "Just wanted to see you.", "next": "linger" },
+        { "label": "Show me the shop.", "next": "shop_nudge", "action": "shop" }
+      ]
+    },
+    "cool": {
+      "id": "cool",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "wink",
+      "text": "Signature. Vanilla-mint, thick enough to argue with the straw. I pour slow on purpose — you get the show, I get to lean. Neon pink wrap, gold hoops, white sandals, hot-pink toes on the foot-rail. That's the branding, mijo.",
+      "choices": [
+        { "label": "Keep leaning.", "next": "cool_pour" },
+        { "label": "Lila sent me for mint, extra cream.", "next": "lila_order" },
+        { "label": "I'll take it to go.", "next": "cool_go" }
+      ]
+    },
+    "cool_pour": {
+      "id": "cool_pour",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "lean",
+      "text": "Then watch the cup, not just the sandals. …Alright, watch both. I set it down with a click of a ring against glass. 'Taste. If you hum, I win. If you stare at my feet while you hum, I win twice.'",
+      "choices": [
+        { "label": "Taste it.", "next": "cool_taste" },
+        { "label": "You win twice.", "next": "toes" }
+      ]
+    },
+    "cool_taste": {
+      "id": "cool_taste",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "smile",
+      "text": "There it is. Mint, cream, a little sin. Best-seller because Hwy 50 is a furnace and I am a solution. I rest my hip on the counter, one sandal dangling off the rail. 'Stay and talk. The neon likes company.'",
+      "choices": [
+        { "label": "I'll stay.", "next": "neon" },
+        { "label": "Tell me about the other stalls.", "next": "row" },
+        { "label": "That sandal is doing a lot.", "next": "toes" }
+      ]
+    },
+    "cool_go": {
+      "id": "cool_go",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "look",
+      "text": "To-go is legal. Boring, but legal. I lid it, slide it, and tap the cup with a pink nail. 'If you drink it in the lot I can still see you. That's a hint, sugar.'",
+      "choices": [
+        { "label": "I'll drink it here.", "next": "cool_taste" },
+        { "label": "Thanks, Mama.", "next": "bye" }
+      ]
+    },
+    "lila_order": {
+      "id": "lila_order",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "smirk",
+      "text": "Lila. Medic with the berry toes and the cot. Extra cream, she always wants extra cream. I make hers filthier than the menu allows. 'You her errand or her problem? Either way, sit. I want gossip with the mint.'",
+      "choices": [
+        { "label": "Errand. Mostly.", "next": "lila_talk" },
+        { "label": "A little of both.", "next": "lila_talk" },
+        { "label": "Just the shakes.", "next": "cool_pour" }
+      ]
+    },
+    "lila_talk": {
+      "id": "lila_talk",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "tease",
+      "text": "Mm-hmm. She sends people she likes. She sends people she wants to see again. I pack two Cool Downs and draw a heart in cream I will deny later. 'Tell her Mira said hydrate, and that her sandals are still under my stool from last week.'",
+      "choices": [
+        { "label": "I'll tell her.", "next": "promise" },
+        { "label": "You two are a menace.", "next": "neon" }
+      ]
+    },
+    "board": {
+      "id": "board",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "smile",
+      "text": "Board's honest. Cool Down for the heat. Creamy Dream if you want cookies all the way down. Biscoff Max if you need a kick. CoCo-Loco if you're slightly unhinged. Whole row's open — Deb next door, Cal across 50, Tess west with the pink spoons. I still win.",
+      "choices": [
+        { "label": "Cool Down.", "next": "cool" },
+        { "label": "Creamy Dream.", "next": "dream" },
+        { "label": "Walk me through the ten shops.", "next": "row" },
+        { "label": "Open the stall.", "next": "shop_nudge", "action": "shop" }
+      ]
+    },
+    "dream": {
+      "id": "dream",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "wink",
+      "text": "Cookies. I crush them on the rim and lick a thumb like I'm not performing. I am performing. White sandal tapping time. 'You got a sweet tooth or you just like watching a woman work a blender?'",
+      "choices": [
+        { "label": "Both.", "next": "linger" },
+        { "label": "Just the shake, you menace.", "next": "cool_taste" }
+      ]
+    },
+    "row": {
+      "id": "row",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "look",
+      "text": "Ten stalls, sugar. Shake Bar is the flagship — that's me, 2545 E Hwy 50. Deb's diner window shares the lot. Cal's custard across the asphalt. Holly in Building H, Tess on the west end, then south: Bea, Shane, Miles, Wally, Fran. Boys and girls with cups. You still came to the neon.",
+      "choices": [
+        { "label": "I came to you.", "next": "linger" },
+        { "label": "Rosa around?", "next": "rosa" },
+        { "label": "I'll browse the shop.", "next": "shop_nudge", "action": "shop" }
+      ]
+    },
+    "rosa": {
+      "id": "rosa",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "smile",
+      "text": "Rosa's on the row with the fruit crate, flip-flops, cherry toes, twenty-two going on trouble. She calls me tía when she wants free ice. She's not wrong. 'Be sweet to her. She's mine in the way the row is mine — loud, sticky, loved.'",
+      "choices": [
+        { "label": "I'll say hi.", "next": "bye" },
+        { "label": "Stay with you a bit.", "next": "linger" }
+      ]
+    },
+    "linger": {
+      "id": "linger",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "lean",
+      "text": "Then look, sugar. I planted myself on this stool so Hwy 50 would have something worth slowing down for. Wrap tied high, sandals low, polish that matches the neon. 'Welcome in is not just for the cup. Sit before I decide you're shy.'",
+      "choices": [
+        { "label": "I'm sitting.", "next": "neon" },
+        { "label": "Those sandals are unfair.", "next": "toes" },
+        { "label": "After hours?", "next": "after" }
+      ]
+    },
+    "neon": {
+      "id": "neon",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "rest",
+      "text": "Pink and cyan on your face. I like that. I talk with my hands, with my mouth, with the ankle I leave on the rail. 'Clermont nights are all heat and engine. In here it's sugar and a woman who knows how to pour. Ask me something real.'",
+      "choices": [
+        { "label": "How long have you run this hut?", "next": "story" },
+        { "label": "Can I compliment the toes or is that rude?", "next": "toes" },
+        { "label": "Real: I like you.", "next": "like" }
+      ]
+    },
+    "story": {
+      "id": "story",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "smile",
+      "text": "Long enough that the Cool Down board is worn smooth from pointing. I came up from a kitchen that didn't put my name on the window. Now it does. Thirty-six, still in sandals, still the one they ask for. 'Mama is a joke I answered until it stuck. I don't mind. I like being the place people come back to.'",
+      "choices": [
+        { "label": "I'll come back.", "next": "promise" },
+        { "label": "The sandals helped.", "next": "toes" }
+      ]
+    },
+    "toes": {
+      "id": "toes",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "tease",
+      "text": "Rude? Mijo, I painted them for the neon. Hot pink, two coats, a little gem on the right big toe because I am extra. White sandal, thin strap, heel hanging off the rail so you get the idea. 'You can look. You can say they're pretty. You can stop pretending the shake is why you leaned in.'",
+      "choices": [
+        { "label": "They're pretty.", "next": "toes_pretty" },
+        { "label": "The shake is why. The sandals are why else.", "next": "toes_pretty" },
+        { "label": "Put your foot on the stool.", "next": "stool" }
+      ]
+    },
+    "toes_pretty": {
+      "id": "toes_pretty",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "blush",
+      "text": "Good. I point, flex, let the gem catch cyan. 'A woman stands on tile ten hours. She deserves a gaze that isn't cheap. Yours isn't cheap. Don't make it weird in front of Deb's window — or do, I'll laugh either way.'",
+      "choices": [
+        { "label": "I'll behave. A little.", "next": "stool" },
+        { "label": "After hours, then.", "next": "after" }
+      ]
+    },
+    "stool": {
+      "id": "stool",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "heat",
+      "text": "Bossy. I like a little bossy if it comes with manners. I hook a heel on the customer stool, strap loose, sole toward you like a menu you didn't know was on offer. 'That's as far as the hut goes while the neon's on. You want more, you wait until I flip the sign.'",
+      "choices": [
+        { "label": "I'll wait.", "next": "after" },
+        { "label": "This is plenty.", "next": "like" }
+      ]
+    },
+    "after": {
+      "id": "after",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "heat",
+      "text": "After hours I kick the sandals off entirely and count cups with my feet on the counter like I own the county, which I do, a little. 'Come back when the lot's empty. I'll pour you something that isn't on the board. Until then — Cool Down, company, and my painted toes on the rail. That's the special.'",
+      "choices": [
+        { "label": "I'll come back when you flip the sign.", "next": "promise" },
+        { "label": "Pour me the special energy now. I'll behave.", "next": "like" }
+      ]
+    },
+    "like": {
+      "id": "like",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "wink",
+      "text": "I like you too, sugar. That's why you got the lean, the rail, the extra mint. I tap your cup with a nail. 'Don't disappear into the wilds without a straw. And if Lila asks, tell her I still have her sandals. She knows what that means.'",
+      "choices": [
+        { "label": "Open the shop before I go.", "next": "shop_nudge", "action": "shop" },
+        { "label": "See you, Mama.", "next": "bye" }
+      ]
+    },
+    "shop_nudge": {
+      "id": "shop_nudge",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "smile",
+      "text": "Stall's open. Cool Down, Creamy Dream, Biscoff Max, CoCo-Loco — gold only, sugar. I'll be right here on the rail. Buy slow. I'm not going anywhere.",
+      "choices": [
+        { "label": "Thanks. I'll browse.", "next": null },
+        { "label": "One more thing.", "next": "start" }
+      ]
+    },
+    "promise": {
+      "id": "promise",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "smile",
+      "text": "That's a good boy. Neon will be on. Sandals will be on until they aren't. Cool Down will be the one everyone off 50 asks for. You, though — you can ask for me.",
+      "choices": [
+        { "label": "I'll ask for you.", "next": null }
+      ]
+    },
+    "bye": {
+      "id": "bye",
+      "speaker": "Mama Mira",
+      "portrait": "mira",
+      "expression": "wink",
+      "text": "Go on, sugar. Welcome in, any time. Don't let the wilds make you forget what a cold cup and a warm woman feel like.",
+      "choices": [
+        { "label": "Walk away.", "next": null }
+      ]
+    }
+  }
+}
