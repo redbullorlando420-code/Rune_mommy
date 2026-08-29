@@ -1,0 +1,119 @@
+{
+  "id": "yara",
+  "start": "start",
+  "speaker": "Yara",
+  "portrait": "yara",
+  "age": 27,
+  "nodes": {
+    "start": {
+      "id": "start",
+      "speaker": "Yara",
+      "portrait": "yara",
+      "expression": "smirk",
+      "text": "Pit tutor. Yara. Twenty-seven. I teach the square how not to die stupid. Leather wrap, gold cuff, boots unlaced because the pit is a furnace. You here to train, to stare, or to waste my shade?",
+      "choices": [
+        { "label": "Train me.", "next": "train" },
+        { "label": "Stare, honestly.", "next": "stare" },
+        { "label": "I need a breather.", "next": "rest" },
+        { "label": "I'll go.", "next": "bye" }
+      ]
+    },
+    "train": {
+      "id": "train",
+      "speaker": "Yara",
+      "portrait": "yara",
+      "expression": "look",
+      "text": "Stance. Hands up. Eyes on me, not the unlaced boots — though I notice you noticed. I circle, tap your elbow, tap your ankle with a bare instep where the boot's open. 'Pay attention or I'll make you hold it until your calves shake.'",
+      "choices": [
+        { "label": "I'll hold it.", "next": "hold" },
+        { "label": "The instep was on purpose.", "next": "instep" }
+      ]
+    },
+    "hold": {
+      "id": "hold",
+      "speaker": "Yara",
+      "portrait": "yara",
+      "expression": "care",
+      "text": "Good. Shake if you have to. Don't drop. I stand close enough that you get leather, dust, and the gold at my throat. 'Combat in the Hollow is ugly. You will still look pretty doing it if I have anything to say. Breathe.'",
+      "choices": [
+        { "label": "Breathing.", "next": "praise" },
+        { "label": "You're enjoying this.", "next": "stare" }
+      ]
+    },
+    "instep": {
+      "id": "instep",
+      "speaker": "Yara",
+      "portrait": "yara",
+      "expression": "wink",
+      "text": "Everything I do in this pit is on purpose. I hook the loose boot off, set it aside, and tap your stance again with a dusty, gold-ringed toe. 'Better teacher without the leather in the way. Don't make it a whole thing unless you can still hold the stance.'",
+      "choices": [
+        { "label": "Holding. Looking.", "next": "praise" },
+        { "label": "I dropped it. Worth it.", "next": "rest" }
+      ]
+    },
+    "praise": {
+      "id": "praise",
+      "speaker": "Yara",
+      "portrait": "yara",
+      "expression": "smile",
+      "text": "Down. That's a pass. I squeeze your shoulder, then your wrist, then — because the pit makes me honest — I leave my toes on your boot a second. 'Come back when the wolves hit. I'll be here, boots optional, standards not.'",
+      "choices": [
+        { "label": "I'll come back.", "next": "later" },
+        { "label": "Standards, and the boots optional.", "next": "stare" }
+      ]
+    },
+    "stare": {
+      "id": "stare",
+      "speaker": "Yara",
+      "portrait": "yara",
+      "expression": "tease",
+      "text": "At least you admit it. I plant a heel on the pit rail, wrap riding, unlaced boot hanging. 'I didn't put this body through Clermont summers to be ignored. Look. Then pick up a dirk and earn the look.'",
+      "choices": [
+        { "label": "I'll earn it.", "next": "train" },
+        { "label": "Can I earn a rest first?", "next": "rest" }
+      ]
+    },
+    "rest": {
+      "id": "rest",
+      "speaker": "Yara",
+      "portrait": "yara",
+      "expression": "rest",
+      "text": "Fine. Shade. I unlace the other boot and sigh like a woman who has kicked too many stances today. Bare, dusty, a little gold at the toe. 'Don't start a foot conversation unless you brought water. I might allow it anyway.'",
+      "choices": [
+        { "label": "Water later. Sit now.", "next": "sit" },
+        { "label": "I'll get water.", "next": "later" }
+      ]
+    },
+    "sit": {
+      "id": "sit",
+      "speaker": "Yara",
+      "portrait": "yara",
+      "expression": "heat",
+      "text": "We sit on the pit wall. My calf over the stone, toes idling near your knee. Not a clinic, not a stall — just a tutor cooling down. 'Maera used to have this hut. I kept the shade and raised the standards. You can come for both.'",
+      "choices": [
+        { "label": "I'll come for both.", "next": "later" },
+        { "label": "Tonight I just wanted you.", "next": "later" }
+      ]
+    },
+    "later": {
+      "id": "later",
+      "speaker": "Yara",
+      "portrait": "yara",
+      "expression": "wink",
+      "text": "Then go hunt before I invent more drills. I'll be in the pit, wrap on, boots off if the heat wins. Don't die stupid. Come back pretty.",
+      "choices": [
+        { "label": "Yes, tutor.", "next": null }
+      ]
+    },
+    "bye": {
+      "id": "bye",
+      "speaker": "Yara",
+      "portrait": "yara",
+      "expression": "look",
+      "text": "Shade's not free forever. Next time, bring a stance or a better excuse. I'll be here.",
+      "choices": [
+        { "label": "Walk away.", "next": null }
+      ]
+    }
+  }
+}
