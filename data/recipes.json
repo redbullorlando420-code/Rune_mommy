@@ -21,5 +21,189 @@
       "qty": 2
     },
     "xp": 18
+  },
+  "cinder_salve": {
+    "id": "cinder_salve",
+    "name": "Bind Cinder Salve",
+    "station": "shrine",
+    "skill": "binding",
+    "level": 3,
+    "timeMs": 2800,
+    "inputs": [
+      {
+        "id": "imp_cinder",
+        "qty": 1
+      },
+      {
+        "id": "moonbloom",
+        "qty": 2
+      }
+    ],
+    "output": {
+      "id": "cinder_salve",
+      "qty": 1
+    },
+    "xp": 32
+  },
+  "hide_vest": {
+    "id": "hide_vest",
+    "name": "Bind Hide Vest",
+    "station": "shrine",
+    "skill": "binding",
+    "level": 4,
+    "timeMs": 3500,
+    "inputs": [
+      {
+        "id": "hide_scrap",
+        "qty": 4
+      },
+      {
+        "id": "emberwood",
+        "qty": 2
+      }
+    ],
+    "output": {
+      "id": "hide_vest",
+      "qty": 1
+    },
+    "xp": 48
+  },
+  "ashblade": {
+    "id": "ashblade",
+    "name": "Bind Ashblade",
+    "station": "shrine",
+    "skill": "binding",
+    "level": 5,
+    "timeMs": 4000,
+    "inputs": [
+      {
+        "id": "iron_shard",
+        "qty": 3
+      },
+      {
+        "id": "emberwood",
+        "qty": 2
+      },
+      {
+        "id": "imp_cinder",
+        "qty": 1
+      }
+    ],
+    "output": {
+      "id": "ashblade",
+      "qty": 1
+    },
+    "xp": 64
+  },
+  "moontea": {
+    "id": "moontea",
+    "name": "Steep Moontea",
+    "station": "shrine",
+    "skill": "binding",
+    "level": 2,
+    "timeMs": 2000,
+    "inputs": [
+      {
+        "id": "moonbloom",
+        "qty": 2
+      }
+    ],
+    "output": {
+      "id": "moontea",
+      "qty": 1
+    },
+    "xp": 22
+  },
+  "crowbar": {
+    "id": "crowbar",
+    "name": "Bind Crowbar",
+    "station": "shrine",
+    "skill": "binding",
+    "level": 3,
+    "timeMs": 3000,
+    "inputs": [
+      {
+        "id": "iron_shard",
+        "qty": 2
+      },
+      {
+        "id": "emberwood",
+        "qty": 1
+      }
+    ],
+    "output": {
+      "id": "crowbar",
+      "qty": 1
+    },
+    "xp": 36
+  },
+  "nail_bat": {
+    "id": "nail_bat",
+    "name": "Bind Nail Bat",
+    "station": "shrine",
+    "skill": "binding",
+    "level": 5,
+    "timeMs": 3800,
+    "inputs": [
+      {
+        "id": "emberwood",
+        "qty": 3
+      },
+      {
+        "id": "iron_shard",
+        "qty": 2
+      },
+      {
+        "id": "walker_jaw",
+        "qty": 1
+      }
+    ],
+    "output": {
+      "id": "nail_bat",
+      "qty": 1
+    },
+    "xp": 58
+  },
+  "bandage": {
+    "id": "bandage",
+    "name": "Bind Bandage",
+    "station": "shrine",
+    "skill": "binding",
+    "level": 1,
+    "timeMs": 1800,
+    "inputs": [
+      {
+        "id": "moonbloom",
+        "qty": 1
+      }
+    ],
+    "output": {
+      "id": "bandage",
+      "qty": 2
+    },
+    "xp": 12
+  },
+  "first_aid_kit": {
+    "id": "first_aid_kit",
+    "name": "Bind First Aid Kit",
+    "station": "shrine",
+    "skill": "binding",
+    "level": 3,
+    "timeMs": 2600,
+    "inputs": [
+      {
+        "id": "bandage",
+        "qty": 2
+      },
+      {
+        "id": "antiseptic",
+        "qty": 1
+      }
+    ],
+    "output": {
+      "id": "first_aid_kit",
+      "qty": 1
+    },
+    "xp": 28
   }
 }
