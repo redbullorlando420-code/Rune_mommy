@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "town": "Clermont",
+  "region": "Hwy 50",
+  "note": "Ten Clermont shake shops as in-game NPC stalls.",
+  "shops": [
+    {"id": "shake_bar", "name": "The Shake Bar", "flagship": true, "address": "2545 E Hwy 50", "npcName": "Mama Mira", "blurb": "Neon milkshake bar. The Cool Down is the signature.", "stock": [{"itemId": "cool_down", "price": 42}, {"itemId": "creamy_dream", "price": 28}, {"itemId": "biscoff_max", "price": 36}, {"itemId": "coco_loco", "price": 32}]},
+    {"id": "culvers", "name": "Culver's", "address": "1431 Johns Lake Rd", "npcName": "Mixer Miles", "blurb": "Concrete Mixers.", "stock": [{"itemId": "butterscotch_concrete", "price": 34}, {"itemId": "mint_oreo_concrete", "price": 34}]},
+    {"id": "ritters", "name": "Ritter's Frozen Custard", "address": "2560 E Hwy 50", "npcName": "Custard Cal", "blurb": "Frozen custard on Hwy 50.", "stock": [{"itemId": "vanilla_custard", "price": 24}, {"itemId": "chocolate_custard", "price": 24}]},
+    {"id": "brusters", "name": "Bruster's", "address": "2450 E Hwy 50 Bldg H", "npcName": "Holly Scoop", "blurb": "Ice cream made in-store.", "stock": [{"itemId": "cookie_dough_scoop", "price": 20}, {"itemId": "birthday_cake_scoop", "price": 20}]},
+    {"id": "five_guys", "name": "Five Guys", "address": "1600 N Hancock Rd", "npcName": "Shaker Shane", "blurb": "Custom shakes.", "stock": [{"itemId": "bacon_milkshake", "price": 38}, {"itemId": "peanut_butter_shake", "price": 30}]},
+    {"id": "baskin", "name": "Baskin-Robbins", "address": "1110 E Hwy 50", "npcName": "Thirty-One Tess", "blurb": "Classic scoops.", "stock": [{"itemId": "gold_medal_ribbon", "price": 18}, {"itemId": "moment_31", "price": 24}]},
+    {"id": "steak_n_shake", "name": "Steak n Shake", "address": "2545 E Hwy 50", "npcName": "Diner Deb", "blurb": "Diner shakes, same building as The Shake Bar.", "stock": [{"itemId": "diner_vanilla", "price": 22}, {"itemId": "diner_chocolate", "price": 22}]},
+    {"id": "dairy_queen", "name": "Dairy Queen", "address": "860 US Hwy 27", "zip": "34714", "npcName": "Blizzard Bea", "blurb": "Blizzards, closest zip to Sanctuary Dr.", "stock": [{"itemId": "oreo_blizzard", "price": 36}, {"itemId": "reeses_blizzard", "price": 36}]},
+    {"id": "mcdonalds", "name": "McDonald's", "address": "Clermont", "npcName": "Window Wally", "blurb": "Shakes. Machine is on.", "stock": [{"itemId": "m_chocolate_shake", "price": 16}, {"itemId": "m_vanilla_shake", "price": 16}]},
+    {"id": "wendys", "name": "Wendy's", "address": "Clermont", "npcName": "Frosty Fran", "blurb": "Frosty. Spoon or straw.", "stock": [{"itemId": "chocolate_frosty", "price": 18}, {"itemId": "vanilla_frosty", "price": 18}]}
+  ]
+}
