@@ -1,0 +1,5 @@
+{
+  "maera": { "id": "maera", "name": "Maera", "title": "Hearth Tutor", "kind": "tutor", "greet": "The Hollow remembers names. Yours will do." },
+  "voss": { "id": "voss", "name": "Voss", "title": "Keeper of Coin", "kind": "shop", "greet": "Coin, vault, or both." },
+  "nima": { "id": "nima", "name": "Nima", "title": "Dock Watcher", "kind": "flavor", "greet": "West water never freezes." }
+}

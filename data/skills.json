@@ -1,0 +1,5 @@
+{
+  "combat": { "id": "combat", "name": "Ashen Combat", "desc": "Steel, bow, and cinder-rod.", "color": "#e85d04" },
+  "foraging": { "id": "foraging", "name": "Dusk Foraging", "desc": "Emberwood, moonbloom, iron under moss.", "color": "#90be6d" },
+  "binding": { "id": "binding", "name": "Hearth Binding", "desc": "Bind raw things at the shrine.", "color": "#c77dff" }
+}

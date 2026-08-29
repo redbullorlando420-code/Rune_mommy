@@ -1,0 +1,5 @@
+{
+  "hearthbread": { "id": "hearthbread", "name": "Bind Hearthbread", "station": "shrine", "skill": "binding", "level": 1, "timeMs": 2200, "inputs": [{ "id": "moonbloom", "qty": 1 }, { "id": "emberwood", "qty": 1 }], "output": { "id": "hearthbread", "qty": 2 }, "xp": 18 },
+  "cinder_salve": { "id": "cinder_salve", "name": "Bind Cinder Salve", "station": "shrine", "skill": "binding", "level": 3, "timeMs": 2800, "inputs": [{ "id": "imp_cinder", "qty": 1 }, { "id": "moonbloom", "qty": 2 }], "output": { "id": "cinder_salve", "qty": 1 }, "xp": 32 },
+  "moontea": { "id": "moontea", "name": "Steep Moontea", "station": "shrine", "skill": "binding", "level": 2, "timeMs": 2000, "inputs": [{ "id": "moonbloom", "qty": 2 }], "output": { "id": "moontea", "qty": 1 }, "xp": 22 }
+}
