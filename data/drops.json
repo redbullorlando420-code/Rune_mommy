@@ -1,23 +1,284 @@
 {
   "gloom_wolf": [
-    { "id": "wolf_fang", "min": 1, "max": 2, "chance": 0.85 },
-    { "id": "hide_scrap", "min": 1, "max": 2, "chance": 0.7 },
-    { "id": "ember_coin", "min": 3, "max": 8, "chance": 1 },
-    { "id": "hearthbread", "min": 1, "max": 1, "chance": 0.12 }
+    {
+      "id": "wolf_fang",
+      "min": 1,
+      "max": 2,
+      "chance": 0.85
+    },
+    {
+      "id": "hide_scrap",
+      "min": 1,
+      "max": 2,
+      "chance": 0.7
+    },
+    {
+      "id": "ember_coin",
+      "min": 3,
+      "max": 8,
+      "chance": 1
+    },
+    {
+      "id": "hearthbread",
+      "min": 1,
+      "max": 1,
+      "chance": 0.12
+    }
   ],
   "ash_imp": [
-    { "id": "imp_cinder", "min": 1, "max": 2, "chance": 0.8 },
-    { "id": "ember_coin", "min": 4, "max": 11, "chance": 1 },
-    { "id": "moontea", "min": 1, "max": 1, "chance": 0.1 },
-    { "id": "ember_charm", "min": 1, "max": 1, "chance": 0.04 }
+    {
+      "id": "imp_cinder",
+      "min": 1,
+      "max": 2,
+      "chance": 0.8
+    },
+    {
+      "id": "ember_coin",
+      "min": 4,
+      "max": 11,
+      "chance": 1
+    },
+    {
+      "id": "moontea",
+      "min": 1,
+      "max": 1,
+      "chance": 0.1
+    },
+    {
+      "id": "ember_charm",
+      "min": 1,
+      "max": 1,
+      "chance": 0.04
+    }
   ],
   "hollow_stag": [
-    { "id": "hide_scrap", "min": 2, "max": 4, "chance": 1 },
-    { "id": "stag_antler", "min": 1, "max": 1, "chance": 0.55 },
-    { "id": "ember_coin", "min": 18, "max": 36, "chance": 1 },
-    { "id": "cinder_salve", "min": 1, "max": 2, "chance": 0.4 }
+    {
+      "id": "hide_scrap",
+      "min": 2,
+      "max": 4,
+      "chance": 1
+    },
+    {
+      "id": "stag_antler",
+      "min": 1,
+      "max": 1,
+      "chance": 0.55
+    },
+    {
+      "id": "ember_coin",
+      "min": 18,
+      "max": 36,
+      "chance": 1
+    },
+    {
+      "id": "cinder_salve",
+      "min": 1,
+      "max": 2,
+      "chance": 0.4
+    }
   ],
-  "emberwood_tree": [{ "id": "emberwood", "min": 1, "max": 2, "chance": 1 }],
-  "moonbloom_patch": [{ "id": "moonbloom", "min": 1, "max": 2, "chance": 1 }],
-  "iron_outcrop": [{ "id": "iron_shard", "min": 1, "max": 2, "chance": 1 }]
+  "emberwood_tree": [
+    {
+      "id": "emberwood",
+      "min": 1,
+      "max": 2,
+      "chance": 1
+    }
+  ],
+  "moonbloom_patch": [
+    {
+      "id": "moonbloom",
+      "min": 1,
+      "max": 2,
+      "chance": 1
+    }
+  ],
+  "iron_outcrop": [
+    {
+      "id": "iron_shard",
+      "min": 1,
+      "max": 2,
+      "chance": 1
+    }
+  ],
+  "dust_raccoon": [
+    {
+      "id": "moon_berry",
+      "min": 1,
+      "max": 2,
+      "chance": 0.55
+    },
+    {
+      "id": "ember_coin",
+      "min": 2,
+      "max": 5,
+      "chance": 1
+    },
+    {
+      "id": "hide_scrap",
+      "min": 1,
+      "max": 1,
+      "chance": 0.4
+    }
+  ],
+  "bramble_boar": [
+    {
+      "id": "hide_scrap",
+      "min": 1,
+      "max": 3,
+      "chance": 0.85
+    },
+    {
+      "id": "ember_coin",
+      "min": 5,
+      "max": 12,
+      "chance": 1
+    },
+    {
+      "id": "hearthbread",
+      "min": 1,
+      "max": 1,
+      "chance": 0.15
+    }
+  ],
+  "moon_berry_bush": [
+    {
+      "id": "moon_berry",
+      "min": 1,
+      "max": 2,
+      "chance": 1
+    }
+  ],
+  "wild_mint_patch": [
+    {
+      "id": "wild_mint",
+      "min": 1,
+      "max": 2,
+      "chance": 1
+    }
+  ],
+  "dusk_walker": [
+    {
+      "id": "walker_jaw",
+      "min": 1,
+      "max": 2,
+      "chance": 0.8
+    },
+    {
+      "id": "cloth_wrap",
+      "min": 1,
+      "max": 1,
+      "chance": 0.12
+    },
+    {
+      "id": "ember_coin",
+      "min": 4,
+      "max": 10,
+      "chance": 1
+    },
+    {
+      "id": "hearthbread",
+      "min": 1,
+      "max": 1,
+      "chance": 0.1
+    }
+  ],
+  "road_thug": [
+    {
+      "id": "ember_coin",
+      "min": 8,
+      "max": 18,
+      "chance": 1
+    },
+    {
+      "id": "thug_wraps",
+      "min": 1,
+      "max": 1,
+      "chance": 0.08
+    },
+    {
+      "id": "hide_scrap",
+      "min": 1,
+      "max": 1,
+      "chance": 0.25
+    },
+    {
+      "id": "moontea",
+      "min": 1,
+      "max": 1,
+      "chance": 0.12
+    }
+  ],
+  "cinder_hound": [
+    {
+      "id": "hound_pelt",
+      "min": 1,
+      "max": 2,
+      "chance": 0.75
+    },
+    {
+      "id": "imp_cinder",
+      "min": 1,
+      "max": 1,
+      "chance": 0.35
+    },
+    {
+      "id": "ember_coin",
+      "min": 5,
+      "max": 12,
+      "chance": 1
+    },
+    {
+      "id": "ember_charm",
+      "min": 1,
+      "max": 1,
+      "chance": 0.03
+    }
+  ],
+  "mine_crawler": [
+    {
+      "id": "crawler_ichor",
+      "min": 1,
+      "max": 2,
+      "chance": 0.85
+    },
+    {
+      "id": "iron_shard",
+      "min": 1,
+      "max": 3,
+      "chance": 0.7
+    },
+    {
+      "id": "ember_coin",
+      "min": 10,
+      "max": 22,
+      "chance": 1
+    },
+    {
+      "id": "cinder_salve",
+      "min": 1,
+      "max": 1,
+      "chance": 0.18
+    }
+  ],
+  "feral_dog": [
+    {
+      "id": "hide_scrap",
+      "min": 1,
+      "max": 1,
+      "chance": 0.55
+    },
+    {
+      "id": "ember_coin",
+      "min": 1,
+      "max": 4,
+      "chance": 1
+    },
+    {
+      "id": "moon_berry",
+      "min": 1,
+      "max": 1,
+      "chance": 0.2
+    }
+  ]
 }
