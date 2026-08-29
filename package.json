@@ -1,7 +1,7 @@
 {
   "name": "rune-mommy",
   "version": "1.0.0",
-  "description": "Rune Mommy — 3D multiplayer browser MMO. Clermont shake row, Emberfen wilds, chat, trade, gathering, combat.",
+  "description": "Rune Mommy — a dark-fantasy browser MMO with chat, trading, gathering, and combat.",
   "type": "module",
   "main": "server/index.js",
   "scripts": {
