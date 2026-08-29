@@ -1,42 +1,41 @@
 # Rune Mommy
 
-A cozy click-to-walk **3D** multiplayer browser MMORPG. Pick a display name (no accounts), wander Clermont, sip shakes, forage the Emberfen wilds, fight critters, chat, and trade.
+Top-down **pixel** multiplayer. Project Zomboid camera and weight, GTA-lite street heat, visual-novel talk. Lightweight. Browser only.
 
-Flagship hangout: **The Shake Bar** (2545 E Hwy 50) — neon milkshake stall run by Mama Mira. Best-seller: **The Cool Down**.
+Not 3D. Not a Jagex clone. Shake shops in `data/shops.json` stay.
 
-Original game. Not affiliated with Jagex. Restaurant names and Clermont / Hwy 50 addresses are in-world flavor only.
+## Windows 11
 
-## Run locally
+1. Install [Node.js 18+ LTS](https://nodejs.org) with the Windows `.msi`. Leave **Add to PATH** checked.
+2. Close Terminal, open a new **PowerShell** or **Command Prompt**.
+3. Go to the repo folder:
 
-Requires Node.js 18+.
-
+```powershell
+cd $HOME\Downloads\Rune_mommy
 ```
+
+(or wherever you cloned it)
+
+4. Install and run:
+
+```powershell
 npm install
 npm start
 ```
 
-Open http://localhost:8080 in two browser windows with two names. The same `npm start` process serves the Three.js client and the WebSocket game server.
+5. Open [http://localhost:8080](http://localhost:8080) in two Edge or Chrome windows. Pick two names. You should see each other walk.
 
-## The shake row (starter town)
+If `npm` is not recognized, Node is not on PATH. Reinstall Node, then open a **new** Terminal. Do not use Git Bash unless you know it.
 
-Ten Clermont shake shops as 3D buildings / buyable NPC stalls. Catalog lives in `data/shops.json` (do not delete the ten shops).
-
-Spawn is the fountain plaza. The Shake Bar is the glowing magenta stall on Hwy 50. East of town is Emberfen Hollow (second town, shrine, keeper). Southeast is the Agate Mine. South is Johns Lake strip.
+Two-window check: walk, type chat, click an NPC, click the other player and Trade.
 
 ## Controls
 
-- Walk: left-click the ground
-- Orbit camera: right-drag, scroll to zoom
-- Talk, shop, attack, gather: left-click the target
-- Trade: click another player, then Trade
-- Use / drink: click an item in the pack (I)
-- Chat: type at the bottom, Enter. Whisper: `/w Name hello`
+- Left-click ground: walk
+- Left-click person/NPC: talk, attack, or trade
+- Chat box + Enter. Whisper: `/w Name hi`
+- I inventory, T trade
 
-## Two-window smoke test
+## Editing (bots)
 
-1. `npm start`
-2. Window A name MiraFan. Window B name HwyWalker.
-3. Walk. You should see the other body move in 3D.
-4. Chat hey. Whisper with `/w HwyWalker secret`
-5. Walk north to The Shake Bar, click Mama Mira, buy The Cool Down
-6. Click the other player, Trade, put the Cool Down or gold in, both lock then Accept
+Push every save to `main` so we do not merge-conflict. Huge code lives in this repo, not chat.
