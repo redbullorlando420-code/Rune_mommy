@@ -1,0 +1,13 @@
+/* Pixel VN overlay — Zomboid-adjacent, not a 3D rewrite. */
+#vnOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: auto;
+  background:
+    linear-gradient(180deg, rgba(6, 4, 10, 0.15) 0%, rgba(6, 4, 10, 0.55) 45%, rgba(8, 4, 12, 0.82) 100%);
+}
+#vnOverlay.hidden { display: none !important; }
