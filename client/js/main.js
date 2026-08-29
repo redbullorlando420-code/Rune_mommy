@@ -205,6 +205,7 @@ canvas.addEventListener('pointerup', (e) => {
     send(C2S.INTERACT, { id: hit.id });
     return;
   }
+  /* ground */
   send(C2S.MOVE, { x: g.x, y: g.y });
 });
 
