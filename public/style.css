@@ -1,0 +1,66 @@
+:root {
+  --ink: #140816; --panel: rgba(12,6,16,.78); --line: #ff4fd8;
+  --cyan: #5af0ff; --gold: #f5d76e; --hp: #ff5d8f; --en: #5af0c7;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #120814; color: #f4e9ff;
+  font-family: "Segoe UI", "Trebuchet MS", sans-serif; user-select: none; }
+#view { position: fixed; inset: 0; display: block; width: 100%; height: 100%; }
+#boot { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center;
+  background: radial-gradient(800px 500px at 50% 30%, #5a1a4a 0%, #120814 70%); }
+.boot-card { width: min(420px, 92vw); padding: 28px 28px 22px; border: 1px solid var(--line);
+  border-radius: 18px; background: rgba(18,6,22,.85); box-shadow: 0 0 40px #ff4fd855, inset 0 0 30px #5af0ff11; text-align: center; }
+.neon-kicker { letter-spacing: .28em; text-transform: uppercase; color: var(--cyan); font-size: 12px; margin: 0; }
+.boot-card h1 { font-size: 42px; margin: 8px 0 6px;
+  background: linear-gradient(90deg, #ff7ad9, #5af0ff, #f5d76e); -webkit-background-clip: text; color: transparent; }
+.sub { color: #d7c4e8; margin: 0 0 18px; }
+#join-form { display: flex; gap: 8px; }
+#join-form input, #chat, #trade-you-gold { flex: 1; background: #1c0c22; border: 1px solid #6b3a72; color: #fff;
+  border-radius: 10px; padding: 10px 12px; font: inherit; }
+#join-form button, #trade-confirm, .buy { background: linear-gradient(90deg, #ff4fd8, #7a5cff); color: #fff;
+  border: 0; border-radius: 10px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
+.hint { font-size: 12px; color: #b9a3c7; margin: 14px 0 0; }
+#minimap { position: fixed; right: 14px; top: 14px; z-index: 6; width: 160px; height: 160px;
+  border-radius: 12px; border: 2px solid #ff4fd8aa; background: #0a0610; box-shadow: 0 0 18px #ff4fd844; }
+#region-pill { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 6;
+  background: var(--panel); border: 1px solid #ff4fd866; padding: 6px 14px; border-radius: 999px; letter-spacing: .04em; }
+#hud { position: fixed; inset: auto 0 0 0; z-index: 5; display: grid;
+  grid-template-columns: 280px 1fr 260px; gap: 10px; padding: 10px; pointer-events: none; }
+#hud > * { pointer-events: auto; }
+#vitals, #chat-wrap, #inv-panel, .modal-card, .wmap-card {
+  background: var(--panel); border: 1px solid #ff4fd855; border-radius: 14px; padding: 10px 12px;
+  backdrop-filter: blur(8px); }
+.bar { position: relative; height: 16px; background: #2a1228; border-radius: 8px; overflow: hidden; margin-bottom: 6px; }
+.bar i { display: block; height: 100%; width: 50%; }
+.bar.hp i { background: linear-gradient(90deg, #a61e4d, var(--hp)); }
+.bar.en i { background: linear-gradient(90deg, #0e7c66, var(--en)); }
+.bar span { position: absolute; inset: 0; font-size: 11px; text-align: center; line-height: 16px; }
+.meta { font-size: 12px; color: var(--gold); }
+#buffs { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+#buffs b { font-size: 11px; background: #3a1840; border-radius: 6px; padding: 2px 6px; color: var(--cyan); }
+#chat-log { height: 110px; overflow-y: auto; font-size: 13px; line-height: 1.35; }
+#chat-log .sys { color: var(--gold); } #chat-log .wh { color: var(--cyan); font-style: italic; }
+#chat { width: 100%; margin-top: 6px; }
+#inv-panel h3 { margin: 0 0 6px; font-size: 16px; }
+#inv { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.slot { aspect-ratio: 1; border-radius: 8px; background: #241028; border: 1px solid #6b3a72;
+  display: grid; place-items: center; font-size: 10px; text-align: center; cursor: pointer; position: relative; }
+.slot i { position: absolute; right: 2px; bottom: 1px; font-size: 10px; color: var(--gold); font-style: normal; }
+.modal { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: #12081488; }
+.modal.hidden, .hidden { display: none !important; }
+.modal-card { width: min(520px, 92vw); }
+.modal-card header, .wmap-card header { display: flex; justify-content: space-between; align-items: center; }
+.x { background: none; border: 0; color: #fff; font-size: 22px; cursor: pointer; }
+#shop-stock { display: grid; gap: 6px; max-height: 360px; overflow: auto; }
+.stock { display: flex; justify-content: space-between; align-items: center; background: #1c0c22; padding: 8px 10px; border-radius: 10px; }
+.trade-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+#toasts { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); z-index: 30; display: grid; gap: 6px; }
+#toasts div { background: #1c0c22ee; border: 1px solid var(--cyan); padding: 8px 14px; border-radius: 10px; }
+#ctx { position: fixed; z-index: 25; background: #1c0c22; border: 1px solid var(--line); border-radius: 10px; min-width: 140px; padding: 6px; }
+#ctx button { display: block; width: 100%; background: none; border: 0; color: #fff; text-align: left; padding: 6px 8px; cursor: pointer; }
+#ctx button:hover { background: #ff4fd833; }
+#wmap { position: fixed; inset: 0; z-index: 18; display: grid; place-items: center; background: #120814cc; }
+.wmap-card { padding: 14px; }
+#wmap-legend { columns: 2; font-size: 13px; }
+#examine { position: fixed; bottom: 210px; left: 50%; transform: translateX(-50%); z-index: 8;
+  background: var(--panel); border: 1px solid var(--cyan); padding: 8px 14px; border-radius: 10px; max-width: 520px; }
