@@ -1,0 +1,187 @@
+{
+  "id": "rosa",
+  "start": "start",
+  "speaker": "Rosa",
+  "portrait": "rosa",
+  "age": 22,
+  "nodes": {
+    "start": {
+      "id": "start",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "smile",
+      "text": "Hey — easy, the cherries roll. I'm Rosa. Twenty-two, Shake Row, crate hip, sundress, flip-flops, cherry toes. Mira's the neon; I'm the fruit and the trouble two stalls down. You buying, flirting, or lost?",
+      "choices": [
+        { "label": "Who are you, really?", "next": "who" },
+        { "label": "Flirting.", "next": "flirt" },
+        { "label": "It's roasting out here.", "next": "heat" },
+        { "label": "Just passing.", "next": "bye" }
+      ]
+    },
+    "who": {
+      "id": "who",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "look",
+      "text": "Rosa Velez. I haul fruit for the shakes Mira doesn't have time to garnish. Tía Mira says I'm loud. She's right. I grew up on this asphalt. Flip-flops are the uniform. Cherry polish is the rank.",
+      "choices": [
+        { "label": "Mira your tía?", "next": "tia" },
+        { "label": "You got your own stall?", "next": "stall" },
+        { "label": "Cherry polish is working.", "next": "toes" }
+      ]
+    },
+    "tia": {
+      "id": "tia",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "wink",
+      "text": "Not by blood. By Cool Down and by yelling. She keeps my sandals under her stool when I forget them, which is always. 'Go say hi if you like women who pour. Stay here if you like women who lean on crates.'",
+      "choices": [
+        { "label": "I'll stay here a minute.", "next": "stall" },
+        { "label": "I like the lean.", "next": "flirt" }
+      ]
+    },
+    "stall": {
+      "id": "stall",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "smile",
+      "text": "Not a full shop yet. Crate, shade cloth, a chalkboard that says ROSA in pink. Cherries, mint Mira steals, sometimes a cup she 'accidentally' overpours. 'When I get a window, you'll know. Until then, you get me and the flip-flops.'",
+      "choices": [
+        { "label": "I'll take a cherry.", "next": "sample" },
+        { "label": "I'll take the company.", "next": "flirt" }
+      ]
+    },
+    "sample": {
+      "id": "sample",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "tease",
+      "text": "Open. I hold it so you have to come in, thumb at my lip after like I didn't plan that. Sweet, a little mean. 'That's the row. Sticky. Worth it. You got juice on your mouth. I'm not wiping it unless you ask.'",
+      "choices": [
+        { "label": "Ask you to.", "next": "flirt_close" },
+        { "label": "I'll live with it.", "next": "heat" }
+      ]
+    },
+    "flirt": {
+      "id": "flirt",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "smirk",
+      "text": "Direct. Cute. I pop a hip on the crate, sundress doing the Hwy 50 wind a favor, one flip-flop hanging off cherry toes. 'I get off when the neon does. Until then you can stand there and make me feel looked at. Fair?'",
+      "choices": [
+        { "label": "Fair.", "next": "flirt_close" },
+        { "label": "The flip-flop is a trap.", "next": "toes" },
+        { "label": "When the neon dies, then?", "next": "night" }
+      ]
+    },
+    "flirt_close": {
+      "id": "flirt_close",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "lean",
+      "text": "Then come here. I tug your collar with two sticky fingers and don't kiss you — I almost do, which is worse. Vanilla from Mira's blender in the air. 'You smell like wilds. I like wilds on a person.'",
+      "choices": [
+        { "label": "Almost isn't kind.", "next": "almost" },
+        { "label": "Wilds like you back.", "next": "night" }
+      ]
+    },
+    "almost": {
+      "id": "almost",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "heat",
+      "text": "Kind is for church. This is Shake Row. I give you the corner of my mouth, cherry and laugh, then a flip-flop to the shin, light. 'Come back when my chalkboard says your name. I haven't decided the spelling.'",
+      "choices": [
+        { "label": "I'll come back.", "next": "promise" },
+        { "label": "Spell it however. I'll answer.", "next": "promise" }
+      ]
+    },
+    "toes": {
+      "id": "toes",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "wink",
+      "text": "Trap? It's a flip-flop, papi, not a spell. I kick it up, catch it with my toes, drop it, step back in. Cherry ten, dusty strap. 'Mira does gems. I do cheap and shiny. You can look. Everyone on 50 looks. You're just honest about it.'",
+      "choices": [
+        { "label": "Honest: they're cute.", "next": "toes_ok" },
+        { "label": "Do that kick again.", "next": "toes_ok" }
+      ]
+    },
+    "toes_ok": {
+      "id": "toes_ok",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "blush",
+      "text": "I do it again, slower, because I am not immune to a good audience. Dust on the sole, polish bright. 'Don't tell Deb. She'll put me on the diner special board.' I leave the flip-flop off a second longer than I need to.",
+      "choices": [
+        { "label": "I won't tell Deb.", "next": "flirt_close" },
+        { "label": "Put me on your chalkboard instead.", "next": "promise" }
+      ]
+    },
+    "heat": {
+      "id": "heat",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "heat",
+      "text": "Roasting. That's why the dress is thin and the flip-flops are optional. I fan myself with the chalkboard. 'Shade's mine if you share the crate. Feet up — tile burns. I already learned that the hard way, see?' Bare sole, a little dusty, still cute.",
+      "choices": [
+        { "label": "I'll share the crate.", "next": "crate" },
+        { "label": "Mira's Cool Down would help.", "next": "send_mira" }
+      ]
+    },
+    "crate": {
+      "id": "crate",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "rest",
+      "text": "We sit. Your shoulder, my knee, the row doing its noisy thing. I hook a heel on the crate edge and talk about nothing: cherries, Lila's cot, Yara making people hold a stance until they shake. 'This is my favorite shift. Nobody rushing. Somebody staying.'",
+      "choices": [
+        { "label": "I can stay.", "next": "night" },
+        { "label": "I have to hunt. I'll come back.", "next": "promise" }
+      ]
+    },
+    "send_mira": {
+      "id": "send_mira",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "smile",
+      "text": "Go on, the neon hut. Tell her Rosa wants extra ice and that I still have her spare sandals. She'll roll her eyes and make it anyway. Bring two if you want to sit on my crate after.",
+      "choices": [
+        { "label": "Two, then.", "next": "promise" },
+        { "label": "I'd rather sit first.", "next": "crate" }
+      ]
+    },
+    "night": {
+      "id": "night",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "heat",
+      "text": "When the neon dies I walk the lot in flip-flops and whatever's left of the sundress. Sometimes I end up on Mira's rail. Sometimes I end up here, crate as a bench, talking to somebody who didn't run. 'Be that somebody once.'",
+      "choices": [
+        { "label": "Once. Soon.", "next": "promise" },
+        { "label": "Tonight's not never.", "next": "almost" }
+      ]
+    },
+    "promise": {
+      "id": "promise",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "wink",
+      "text": "Good. I'll save you a cherry and a look. Don't make me put your name on the board in mean letters. Go on — wilds, square, Mira, Lila, whoever. I'll be the flip-flops on Shake Row.",
+      "choices": [
+        { "label": "See you, Rosa.", "next": null }
+      ]
+    },
+    "bye": {
+      "id": "bye",
+      "speaker": "Rosa",
+      "portrait": "rosa",
+      "expression": "look",
+      "text": "Passing is allowed. Boring, but allowed. If you loop the row, I'm the sundress and the crate. Don't pretend you didn't see the cherry toes.",
+      "choices": [
+        { "label": "Walk away.", "next": null }
+      ]
+    }
+  }
+}
