@@ -347,6 +347,9 @@ export async function loadCatalog(readJson) {
       color: (s.palette && s.palette[0]) || '#ff4fd8',
       greet: s.greeting || s.blurb,
       lines: [s.blurb, s.address, s.examine].filter(Boolean),
+      dialogue: s.dialogue,
+      portrait: s.portrait,
+      start: s.start,
       shop: (s.stock || []).map((row) => ({
         id: row.itemId,
         stock: 99,
