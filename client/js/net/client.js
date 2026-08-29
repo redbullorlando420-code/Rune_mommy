@@ -17,7 +17,7 @@ export function send(type, payload = {}) {
 
 export function connect() {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const url = proto + '//' + location.host + '/ws';
+  const url = proto + "//" + location.host + "/ws";
   return new Promise((resolve, reject) => {
     ws = new WebSocket(url);
     ws.onopen = () => {
