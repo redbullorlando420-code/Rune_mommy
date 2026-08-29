@@ -1,34 +1,20 @@
 # Rune Mommy
 
-3D multiplayer browser MMO. Clermont shake row (10 shops), Emberfen wilds, Agate Mine, chat, 2-sided trade, gathering, combat.
+Top-down pixel multiplayer (Project Zomboid camera). Chat, trade, combat, VN talk. Lightweight. Browser only.
 
-## Run
+## Windows 11
 
-Need Node.js 18+.
+1. Install Node.js 18+ LTS from https://nodejs.org (Windows .msi, add to PATH).
+2. Open a **new** PowerShell.
+3. `cd` into this folder, then:
 
-    npm install
-    npm start
+```powershell
+npm install
+npm start
+```
 
-Open http://localhost:8080 in two browser windows. Names: 2-16 characters, start with a letter. You should see each other walk.
+4. Open http://localhost:8080 in two Edge or Chrome windows. Pick two names.
 
-## Controls
+If `npm` is not recognized, reopen Terminal after installing Node.
 
-- Left-click ground: walk
-- Left-click shop, NPC, tree, or beast: talk, shop, gather, or attack
-- Left-click another player: Trade
-- Right-drag: orbit camera. Wheel: zoom
-- Chat + Enter. Whisper: /w Name hi. /who /help
-- I pack, K arts, M places, B bind at the shrine, Esc closes windows
-
-## World
-
-72 x 56 tiles.
-
-- North: Hwy 50 shake row (Baskin, Bruster's, The Shake Bar, Steak n Shake, Ritter's)
-- Center: Clermont Square / First Fire (spawn)
-- South: Johns Lake strip (DQ, Five Guys, Culver's, McD, Wendy's)
-- East: Emberfen Hollow (Maera, Voss, Binding Shrine) and Agate Mine
-
-data/shops.json is the 10 Clermont shake shops. Do not empty it.
-
-Starter pack includes 80 ember coins (Cool Down at The Shake Bar is 42).
+Left-click ground to walk. Click people to talk, fight, or trade. Chat at the bottom.
