@@ -163,5 +163,47 @@
       "qty": 1
     },
     "xp": 58
+  },
+  "bandage": {
+    "id": "bandage",
+    "name": "Bind Bandage",
+    "station": "shrine",
+    "skill": "binding",
+    "level": 1,
+    "timeMs": 1800,
+    "inputs": [
+      {
+        "id": "moonbloom",
+        "qty": 1
+      }
+    ],
+    "output": {
+      "id": "bandage",
+      "qty": 2
+    },
+    "xp": 12
+  },
+  "first_aid_kit": {
+    "id": "first_aid_kit",
+    "name": "Bind First Aid Kit",
+    "station": "shrine",
+    "skill": "binding",
+    "level": 3,
+    "timeMs": 2600,
+    "inputs": [
+      {
+        "id": "bandage",
+        "qty": 2
+      },
+      {
+        "id": "antiseptic",
+        "qty": 1
+      }
+    ],
+    "output": {
+      "id": "first_aid_kit",
+      "qty": 1
+    },
+    "xp": 28
   }
 }
