@@ -166,7 +166,7 @@
     "title": "Field Medic",
     "kind": "flavor",
     "color": "#ff8fab",
-    "greet": "Sit. Scrubs rolled, sandals off. I'm Lila \u2014 I still make house calls to the square.",
+    "greet": "Sit. Scrubs rolled, sandals off. I'm Lila — I still make house calls to the square.",
     "lines": [
       "Cinder salve for holes. Hearthbread for the shake after. Moontea if your hands forget they have bones.",
       "Walkers don't sprint until they do. If you get grabbed, you are already late. Crowbar to the knee, then the jaw, then you come to me.",
@@ -222,7 +222,7 @@
     "title": "Shake Row",
     "kind": "flavor",
     "color": "#ff8fab",
-    "greet": "Hey \u2014 easy, the cherries roll. Crate hip, flip-flops, cherry toes. You buying, flirting, or lost?",
+    "greet": "Hey — easy, the cherries roll. Crate hip, flip-flops, cherry toes. You buying, flirting, or lost?",
     "dialogue": "rosa",
     "portrait": "rosa",
     "start": "start",
