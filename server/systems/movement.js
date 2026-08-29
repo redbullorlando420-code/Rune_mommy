@@ -11,6 +11,7 @@ export function setDestination(world, player, x, y) {
     player.path = [];
     return false;
   }
+  // If first waypoint is behind us, drop it
   if (path.length > 1 && dist(player, path[0]) < 0.35) path.shift();
   player.path = path;
   player.action = null;
@@ -36,6 +37,7 @@ export function tickMove(world, player, dt) {
     remain -= step;
     if (step >= d - 0.001) player.path.shift();
   }
+  // Keep inside walkable
   if (!walkableAt(world.map, player.x, player.y)) {
     const n = nearestWalkable(world.map.walk, world.map.w, world.map.h, player.x, player.y);
     player.x = n.x + 0.5;
