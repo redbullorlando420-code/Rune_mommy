@@ -205,7 +205,6 @@ canvas.addEventListener('pointerup', (e) => {
     send(C2S.INTERACT, { id: hit.id });
     return;
   }
-  /* ground */
   send(C2S.MOVE, { x: g.x, y: g.y });
 });
 
@@ -413,7 +412,7 @@ function onTrade(p) {
   }
   show('trade', true);
   show('panelInv', true);
-  $('tradeName').textContent = p.partner || '\u2014';
+  $('tradeName').textContent = p.partner || '—';
   $('lockYou').textContent = p.lockYou ? 'locked' : '';
   $('lockThem').textContent = p.lockThem ? 'locked' : '';
   const you = $('tradeYou'), them = $('tradeThem');
