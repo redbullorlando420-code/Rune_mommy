@@ -114,7 +114,6 @@ export class Player {
       maxHp: this.maxHp,
       action: this.action,
       dir: r2(this.dir),
-      hue: this.hue,
     };
   }
 
