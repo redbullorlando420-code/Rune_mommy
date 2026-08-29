@@ -175,6 +175,8 @@ export function generateWorld() {
     { type: 'rook', x: 48.5, y: 56.6 },
     { type: 'lila', x: 26.4, y: 22.4 },
     { type: 'yara', x: 33.5, y: 48.6 },
+    { type: 'shake_bar', x: 28.4, y: 6.6 },
+    { type: 'rosa', x: 27.2, y: 7.4 },
   ];
 
   function inBounds(x, y) {
