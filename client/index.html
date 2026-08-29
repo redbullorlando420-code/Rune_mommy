@@ -8,13 +8,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/game.css" />
-  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect fill='%230d0b12' width='64' height='64'/><circle cx='32' cy='34' r='14' fill='%23e85d04'/><circle cx='32' cy='34' r='7' fill='%23ffba08'/></svg>" />
 </head>
 <body>
   <div id="game">
     <canvas id="view"></canvas>
     <div id="vignette"></div>
+
     <header id="topbar">
       <div class="brand">
         <span class="sigil">◉</span>
@@ -35,22 +35,27 @@
       </div>
       <div id="clock"><span id="coinCount">0</span> coin · <span id="online">1</span> wandering</div>
     </header>
+
     <aside id="minimapWrap">
       <canvas id="minimap" width="180" height="140"></canvas>
       <div id="compass">N</div>
     </aside>
+
     <div id="actionBar">
       <button data-act="inv" title="Pack (I)">Bag</button>
       <button data-act="skills" title="Skills (K)">Arts</button>
       <button data-act="map" title="Places (M)">Places</button>
       <button data-act="craft" title="Binding (B)">Bind</button>
     </div>
+
     <div id="targetCard" class="hidden">
       <div class="tc-name" id="tcName"></div>
       <div class="bar hp sm"><i id="tcHp"></i></div>
       <div class="tc-sub" id="tcSub"></div>
     </div>
+
     <div id="progress" class="hidden"><i id="progressFill"></i><span id="progressLabel"></span></div>
+
     <section id="chat">
       <div id="chatTabs">
         <button data-ch="global" class="on">Global</button>
@@ -62,51 +67,79 @@
         <button type="submit">Send</button>
       </form>
     </section>
+
     <aside id="panelInv" class="panel hidden">
       <header><h2>Pack</h2><button class="x" data-close="panelInv">×</button></header>
       <div class="equip" id="equipSlots"></div>
       <div class="grid" id="invGrid"></div>
-      <p class="hint">Click to use / equip. Shift-click to drop. In a trade, click to offer.</p>
+      <p class="hint">Click to use / equip. Shift-click to drop. In a trade, click to offer. Shop open: click to sell. Vault: shift-click to deposit.</p>
     </aside>
+
     <aside id="panelSkills" class="panel hidden">
       <header><h2>Arts of the Hollow</h2><button class="x" data-close="panelSkills">×</button></header>
       <div id="skillList"></div>
     </aside>
+
     <aside id="panelMap" class="panel hidden">
       <header><h2>Places</h2><button class="x" data-close="panelMap">×</button></header>
       <ul id="poiList"></ul>
     </aside>
+
     <aside id="panelCraft" class="panel hidden">
       <header><h2>Hearth Binding</h2><button class="x" data-close="panelCraft">×</button></header>
-      <p class="hint">Stand at a Binding Shrine.</p>
+      <p class="hint">Stand on the Binding Shrine south of the First Fire.</p>
       <div id="recipeList"></div>
     </aside>
+
     <aside id="panelNpc" class="panel hidden">
       <header><h2 id="npcTitle">—</h2><button class="x" data-close="panelNpc">×</button></header>
       <p id="npcBody" class="body"></p>
       <div id="npcActions" class="row"></div>
     </aside>
+
     <aside id="panelShop" class="panel wide hidden">
-      <header><h2 id="shopTitle">Stall</h2><button class="x" data-close="panelShop">×</button></header>
-      <div class="split"><div><h3>Buy</h3><div id="shopBuy"></div></div><div><h3>Sell</h3><p class="hint">Click a pack slot to sell.</p></div></div>
+      <header><h2 id="shopTitle">Voss's Stall</h2><button class="x" data-close="panelShop">×</button></header>
+      <div class="split">
+        <div>
+          <h3>Buy</h3>
+          <div id="shopBuy"></div>
+        </div>
+        <div>
+          <h3>Sell (click a pack slot)</h3>
+          <p class="hint">Open your pack and click an item while this is open to sell it.</p>
+        </div>
+      </div>
     </aside>
+
     <aside id="panelBank" class="panel wide hidden">
       <header><h2>Keeper's Vault</h2><button class="x" data-close="panelBank">×</button></header>
+      <p class="hint">Click vault to withdraw. Shift-click pack to deposit.</p>
       <div class="grid" id="bankGrid"></div>
     </aside>
+
     <div id="trade" class="hidden">
-      <header><h2>Trade with <span id="tradeName">—</span></h2><button class="x" id="tradeX">×</button></header>
+      <header>
+        <h2>Trade with <span id="tradeName">—</span></h2>
+        <button class="x" id="tradeX">×</button>
+      </header>
       <div class="trade-cols">
-        <div><h3>You <em id="lockYou"></em></h3><div class="grid sm" id="tradeYou"></div></div>
-        <div><h3>Them <em id="lockThem"></em></h3><div class="grid sm" id="tradeThem"></div></div>
+        <div>
+          <h3>You <em id="lockYou"></em></h3>
+          <div class="grid sm" id="tradeYou"></div>
+        </div>
+        <div>
+          <h3>Them <em id="lockThem"></em></h3>
+          <div class="grid sm" id="tradeThem"></div>
+        </div>
       </div>
-      <p class="hint">Lock, then both accept.</p>
+      <p class="hint">Click pack items to offer. Click your offer to take back. Lock, then both accept.</p>
       <div class="row">
         <button id="btnLock">Lock</button>
         <button id="btnAccept" class="gold" disabled>Accept</button>
         <button id="btnCancel" class="ghost">Cancel</button>
       </div>
     </div>
+
     <div id="tradeAsk" class="modal hidden">
       <div class="card">
         <p id="tradeAskText"></p>
@@ -116,25 +149,28 @@
         </div>
       </div>
     </div>
+
     <div id="toasts"></div>
     <div id="tooltip" class="hidden"></div>
     <div id="ctx" class="hidden"></div>
   </div>
+
   <div id="login">
     <div class="login-card">
       <div class="ember"></div>
       <h1>Rune Mommy</h1>
-      <p class="tag">Clermont Square · Hwy 50 shake row · Emberfen wilds</p>
+      <p class="tag">Clermont Square · a dusk that does not end</p>
       <form id="joinForm">
         <label>Wanderer's name
           <input id="nameIn" maxlength="16" autocomplete="nickname" placeholder="e.g. Ashen Vale" autofocus />
         </label>
-        <button type="submit" class="gold">Walk into Clermont</button>
+        <button type="submit" class="gold">Enter Emberfen</button>
       </form>
-      <p class="fine">Left-click ground to walk · right-drag orbit · two browsers can play.</p>
+      <p class="fine">Click the ground to walk · click things to use · click players to trade · type to chat.<br>I pack · T trade last · Esc closes windows.</p>
       <p id="loginErr" class="err"></p>
     </div>
   </div>
+
   <script type="module" src="/js/main.js"></script>
 </body>
 </html>
