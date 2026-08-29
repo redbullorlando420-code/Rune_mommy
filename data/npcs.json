@@ -35,72 +35,17 @@
       "If you die south of here, don't come crying about lost fangs. The ash keeps what it likes."
     ],
     "shop": [
-      {
-        "id": "hearthbread",
-        "stock": 50,
-        "buy": 6,
-        "sell": 3
-      },
-      {
-        "id": "moontea",
-        "stock": 20,
-        "buy": 12,
-        "sell": 5
-      },
-      {
-        "id": "cinder_salve",
-        "stock": 12,
-        "buy": 22,
-        "sell": 9
-      },
-      {
-        "id": "ashblade",
-        "stock": 4,
-        "buy": 55,
-        "sell": 22
-      },
-      {
-        "id": "thornbow",
-        "stock": 3,
-        "buy": 62,
-        "sell": 24
-      },
-      {
-        "id": "cinder_rod",
-        "stock": 3,
-        "buy": 70,
-        "sell": 28
-      },
-      {
-        "id": "hide_vest",
-        "stock": 4,
-        "buy": 48,
-        "sell": 18
-      },
-      {
-        "id": "ironband_mail",
-        "stock": 2,
-        "buy": 120,
-        "sell": 48
-      },
-      {
-        "id": "dusk_cloak",
-        "stock": 3,
-        "buy": 52,
-        "sell": 20
-      },
-      {
-        "id": "ember_charm",
-        "stock": 2,
-        "buy": 40,
-        "sell": 16
-      },
-      {
-        "id": "moss_charm",
-        "stock": 2,
-        "buy": 40,
-        "sell": 16
-      }
+      { "id": "hearthbread", "stock": 50, "buy": 6, "sell": 3 },
+      { "id": "moontea", "stock": 20, "buy": 12, "sell": 5 },
+      { "id": "cinder_salve", "stock": 12, "buy": 22, "sell": 9 },
+      { "id": "ashblade", "stock": 4, "buy": 55, "sell": 22 },
+      { "id": "thornbow", "stock": 3, "buy": 62, "sell": 24 },
+      { "id": "cinder_rod", "stock": 3, "buy": 70, "sell": 28 },
+      { "id": "hide_vest", "stock": 4, "buy": 48, "sell": 18 },
+      { "id": "ironband_mail", "stock": 2, "buy": 120, "sell": 48 },
+      { "id": "dusk_cloak", "stock": 3, "buy": 52, "sell": 20 },
+      { "id": "ember_charm", "stock": 2, "buy": 40, "sell": 16 },
+      { "id": "moss_charm", "stock": 2, "buy": 40, "sell": 16 }
     ]
   },
   "nima": {
@@ -221,7 +166,7 @@
     "title": "Field Medic",
     "kind": "flavor",
     "color": "#ff8fab",
-    "greet": "Sit. Show me the bite. If it isn't a bite, still sit. I like looking.",
+    "greet": "Sit. Scrubs rolled, sandals off. I'm Lila \u2014 I still make house calls to the square.",
     "lines": [
       "Cinder salve for holes. Hearthbread for the shake after. Moontea if your hands forget they have bones.",
       "Walkers don't sprint until they do. If you get grabbed, you are already late. Crowbar to the knee, then the jaw, then you come to me.",
@@ -230,7 +175,10 @@
       "If Yara sent you, you're bleeding on purpose. If Tavi sent you, you're bleeding by accident. Both pay in stories.",
       "The Hollow likes girls who come back. Come back.",
       "Don't kiss a wound. That's a visual novel, and this is a shift. Bind it, eat, go again."
-    ]
+    ],
+    "dialogue": "lila",
+    "portrait": "lila",
+    "start": "start"
   },
   "yara": {
     "id": "yara",
@@ -247,6 +195,41 @@
       "If your HP sings, bread. If it screams, salve. If it stops, you wake at the First Fire minus coin and whatever pride you packed.",
       "Brin hunts ash. I hunt habits. Break the habit of standing still. Standing still is how the dusk signs your name.",
       "Want a real night? Walker, thug, hound, crawler, then the Stag if you still have a face. That's the combat ladder. Climb or don't."
+    ],
+    "dialogue": "yara",
+    "portrait": "yara",
+    "start": "start"
+  },
+  "rita": {
+    "id": "rita",
+    "name": "Rita",
+    "title": "Pump-Side Mechanic",
+    "kind": "flavor",
+    "color": "#ff9f1c",
+    "greet": "Pumps are dry but the lot still smells like summer. Check the bay if you need a tire iron.",
+    "lines": [
+      "Hancock pumps. The tanks are a rumor. The canisters on the pad are not.",
+      "Maple and Oak still have kitchens. Walk in the south door. Cabinets remember canned peaches better than people.",
+      "Walkers like the streets. Don't fight two in a doorway. Crowbar, then the lot, then me if you're leaking.",
+      "Willow Park is the only green that isn't trying to eat you. Berries, mint, the occasional raccoon with opinions.",
+      "If you find a pump key, it's mine. I'll still let you keep it. The pumps don't listen to either of us.",
+      "Gas cans, wrenches, a flashlight if the bay is kind. Don't sleep in the wrecks. The upholstery has teeth."
+    ]
+  },
+  "rosa": {
+    "id": "rosa",
+    "name": "Rosa",
+    "title": "Shake Row",
+    "kind": "flavor",
+    "color": "#ff8fab",
+    "greet": "Hey \u2014 easy, the cherries roll. Crate hip, flip-flops, cherry toes. You buying, flirting, or lost?",
+    "dialogue": "rosa",
+    "portrait": "rosa",
+    "start": "start",
+    "lines": [
+      "Mama Mira's neon is behind me. Cool Down if you're dying. I'm the crate girl. Don't make me chase a cherry down Hwy 50.",
+      "Flip-flops stay on until I say they don't. Heat like this, I don't pretend otherwise.",
+      "Selva binds. I carry. Different religions. Mine has better ankles."
     ]
   }
 }
