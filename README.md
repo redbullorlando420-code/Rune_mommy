@@ -1,41 +1,34 @@
 # Rune Mommy
 
-Top-down **pixel** multiplayer. Project Zomboid camera and weight, GTA-lite street heat, visual-novel talk. Lightweight. Browser only.
+3D multiplayer browser MMO. Clermont shake row (10 shops), Emberfen wilds, Agate Mine, chat, 2-sided trade, gathering, combat.
 
-Not 3D. Not a Jagex clone. Shake shops in `data/shops.json` stay.
+## Run
 
-## Windows 11
+Need Node.js 18+.
 
-1. Install [Node.js 18+ LTS](https://nodejs.org) with the Windows `.msi`. Leave **Add to PATH** checked.
-2. Close Terminal, open a new **PowerShell** or **Command Prompt**.
-3. Go to the repo folder:
+    npm install
+    npm start
 
-```powershell
-cd $HOME\Downloads\Rune_mommy
-```
-
-(or wherever you cloned it)
-
-4. Install and run:
-
-```powershell
-npm install
-npm start
-```
-
-5. Open [http://localhost:8080](http://localhost:8080) in two Edge or Chrome windows. Pick two names. You should see each other walk.
-
-If `npm` is not recognized, Node is not on PATH. Reinstall Node, then open a **new** Terminal. Do not use Git Bash unless you know it.
-
-Two-window check: walk, type chat, click an NPC, click the other player and Trade.
+Open http://localhost:8080 in two browser windows. Names: 2-16 characters, start with a letter. You should see each other walk.
 
 ## Controls
 
 - Left-click ground: walk
-- Left-click person/NPC: talk, attack, or trade
-- Chat box + Enter. Whisper: `/w Name hi`
-- I inventory, T trade
+- Left-click shop, NPC, tree, or beast: talk, shop, gather, or attack
+- Left-click another player: Trade
+- Right-drag: orbit camera. Wheel: zoom
+- Chat + Enter. Whisper: /w Name hi. /who /help
+- I pack, K arts, M places, B bind at the shrine, Esc closes windows
 
-## Editing (bots)
+## World
 
-Push every save to `main` so we do not merge-conflict. Huge code lives in this repo, not chat.
+72 x 56 tiles.
+
+- North: Hwy 50 shake row (Baskin, Bruster's, The Shake Bar, Steak n Shake, Ritter's)
+- Center: Clermont Square / First Fire (spawn)
+- South: Johns Lake strip (DQ, Five Guys, Culver's, McD, Wendy's)
+- East: Emberfen Hollow (Maera, Voss, Binding Shrine) and Agate Mine
+
+data/shops.json is the 10 Clermont shake shops. Do not empty it.
+
+Starter pack includes 80 ember coins (Cool Down at The Shake Bar is 42).
