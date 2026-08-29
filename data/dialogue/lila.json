@@ -10,7 +10,7 @@
       "speaker": "Lila",
       "portrait": "lila",
       "expression": "smile",
-      "text": "You're tracking grit all over my mat, coraz\u00f3n. Sit. I'm Lila \u2014 Clermont's medic, twenty-four, and the only one who still makes house calls to the square. Scrubs rolled, sandals kicked under the cot. Heat like this, I don't pretend to be formal.",
+      "text": "You're tracking grit all over my mat, corazón. Sit. I'm Lila — Clermont's medic, twenty-four, and the only one who still makes house calls to the square. Scrubs rolled, sandals kicked under the cot. Heat like this, I don't pretend to be formal.",
       "choices": [
         { "label": "I'm hurt. Treat me.", "next": "treat" },
         { "label": "Just needed a pretty face.", "next": "flirt" },
@@ -23,7 +23,7 @@
       "speaker": "Lila",
       "portrait": "lila",
       "expression": "care",
-      "text": "Shirt up. I need the bruise, not the story. Mint on my hands, cinder-salve on the tray. I work close \u2014 you can smell the moonbloom I crush for the sting. Don't flinch unless you want me to pin your wrist.",
+      "text": "Shirt up. I need the bruise, not the story. Mint on my hands, cinder-salve on the tray. I work close — you can smell the moonbloom I crush for the sting. Don't flinch unless you want me to pin your wrist.",
       "choices": [
         { "label": "Do it. Be thorough.", "next": "treat_sit" },
         { "label": "You're standing on my toes.", "next": "treat_notice" },
@@ -35,7 +35,7 @@
       "speaker": "Lila",
       "portrait": "lila",
       "expression": "look",
-      "text": "Good boy. Cot. I sit on the stool, one knee folded, a sandal dangling off painted toes \u2014 berry, not blood, in case you were wondering. The wrap goes tight. Breathe when I say, not when you want to look down.",
+      "text": "Good boy. Cot. I sit on the stool, one knee folded, a sandal dangling off painted toes — berry, not blood, in case you were wondering. The wrap goes tight. Breathe when I say, not when you want to look down.",
       "choices": [
         { "label": "Wrap it. I'll be still.", "next": "treat_wrap" },
         { "label": "Hard not to look.", "next": "treat_stare" }
@@ -91,7 +91,7 @@
       "speaker": "Lila",
       "portrait": "lila",
       "expression": "smile",
-      "text": "Ember coins if you have them. A Cool Down from Mira if you don't \u2014 send her my love and tell her I still want the mint one with extra cream. Or sit still and let me work the knots in your calf. That's a currency I invented.",
+      "text": "Ember coins if you have them. A Cool Down from Mira if you don't — send her my love and tell her I still want the mint one with extra cream. Or sit still and let me work the knots in your calf. That's a currency I invented.",
       "choices": [
         { "label": "I'll get Mira's shake.", "next": "heat_mira" },
         { "label": "Work the knots.", "next": "aftercare_hands" },
@@ -103,7 +103,7 @@
       "speaker": "Lila",
       "portrait": "lila",
       "expression": "smile",
-      "text": "Don't be a hero in the ash. If the wrap slips, you know where the cot is. And if you just want the smell of moonbloom and a woman who will tell you to sit \u2014 I'm here. Go on, coraz\u00f3n.",
+      "text": "Don't be a hero in the ash. If the wrap slips, you know where the cot is. And if you just want the smell of moonbloom and a woman who will tell you to sit — I'm here. Go on, corazón.",
       "choices": [
         { "label": "Walk away.", "next": null }
       ]
@@ -157,7 +157,7 @@
       "speaker": "Lila",
       "portrait": "lila",
       "expression": "tease",
-      "text": "Knew it. I plant a bare sole on the cot rail, berry polish, a thin gold toe-ring I stole from a Baskin spoon display. 'Florida heat makes the arches scream. Yours too. Mine first, though \u2014 you asked with your eyes ten minutes ago.'",
+      "text": "Knew it. I plant a bare sole on the cot rail, berry polish, a thin gold toe-ring I stole from a Baskin spoon display. 'Florida heat makes the arches scream. Yours too. Mine first, though — you asked with your eyes ten minutes ago.'",
       "choices": [
         { "label": "Let me.", "next": "aftercare_hold" },
         { "label": "Show-off.", "next": "aftercare_flex" }
@@ -179,7 +179,7 @@
       "speaker": "Lila",
       "portrait": "lila",
       "expression": "blush",
-      "text": "Warm ankle in your hands. I let you. I even sigh like I didn't plan it. 'Thumb the arch. Yeah. That's the Clermont knot \u2014 all of us who stand on tile all day.' My other foot finds your thigh, light, testing. 'Don't get greedy. Or do. I'm off-shift in my head already.'",
+      "text": "Warm ankle in your hands. I let you. I even sigh like I didn't plan it. 'Thumb the arch. Yeah. That's the Clermont knot — all of us who stand on tile all day.' My other foot finds your thigh, light, testing. 'Don't get greedy. Or do. I'm off-shift in my head already.'",
       "choices": [
         { "label": "Stay off-shift.", "next": "aftercare_stay" },
         { "label": "I should go before I get greedy.", "next": "aftercare_go" }
@@ -222,7 +222,7 @@
       "speaker": "Lila",
       "portrait": "lila",
       "expression": "heat",
-      "text": "Close enough that my laugh lands on your mouth. I don't kiss you all the way \u2014 I'm cruel like that \u2014 just the corner, mint and chapstick. 'Come back with a real injury or a better line. I'll be on the cot, sandals off, pretending I don't hope it's you.'",
+      "text": "Close enough that my laugh lands on your mouth. I don't kiss you all the way — I'm cruel like that — just the corner, mint and chapstick. 'Come back with a real injury or a better line. I'll be on the cot, sandals off, pretending I don't hope it's you.'",
       "choices": [
         { "label": "I'll bring both.", "next": "promise" },
         { "label": "That's enough for tonight.", "next": "leave" }
@@ -255,7 +255,7 @@
       "speaker": "Lila",
       "portrait": "lila",
       "expression": "tease",
-      "text": "Then look at me when you say it. Eyes up \u2014 then you can look wherever you were looking. I perch on the cot, smock a little unfair, one foot swinging. 'Clermont makes everyone thirsty. I prefer thirsty people who use their words.'",
+      "text": "Then look at me when you say it. Eyes up — then you can look wherever you were looking. I perch on the cot, smock a little unfair, one foot swinging. 'Clermont makes everyone thirsty. I prefer thirsty people who use their words.'",
       "choices": [
         { "label": "You're the prettiest thing on the square.", "next": "flirt_closer" },
         { "label": "Words: I want you closer.", "next": "flirt_rule" }
@@ -277,7 +277,7 @@
       "speaker": "Lila",
       "portrait": "lila",
       "expression": "lean",
-      "text": "I step between your knees. Lantern at my back, olive skin, gold at my throat. You get the smell of salve and cheap vanilla. 'This is lingering. Notice the sandals still on \u2014 that's me being shy. It won't last.'",
+      "text": "I step between your knees. Lantern at my back, olive skin, gold at my throat. You get the smell of salve and cheap vanilla. 'This is lingering. Notice the sandals still on — that's me being shy. It won't last.'",
       "choices": [
         { "label": "Lose the shy.", "next": "flirt_rule" },
         { "label": "Stay just like this.", "next": "flirt_linger" }
@@ -288,7 +288,7 @@
       "speaker": "Lila",
       "portrait": "lila",
       "expression": "heat",
-      "text": "Rule is: you don't get the whole night on the first visit. You get this \u2014 my hip against your thigh, my mouth almost, my toes finding your boot like a period at the end of a sentence. 'Break the rule tomorrow.'",
+      "text": "Rule is: you don't get the whole night on the first visit. You get this — my hip against your thigh, my mouth almost, my toes finding your boot like a period at the end of a sentence. 'Break the rule tomorrow.'",
       "choices": [
         { "label": "I'll be back to break it.", "next": "promise" },
         { "label": "Bend it tonight.", "next": "almost" }
@@ -322,7 +322,7 @@
       "speaker": "Lila",
       "portrait": "lila",
       "expression": "smile",
-      "text": "Good. Sit. I wet a cloth in the basin \u2014 it's not cold, it's 'less hot,' which is Clermont's love language. I lay it on the back of your neck, then steal a corner for my own throat. 'Share. I'm the medic. I make the rules.'",
+      "text": "Good. Sit. I wet a cloth in the basin — it's not cold, it's 'less hot,' which is Clermont's love language. I lay it on the back of your neck, then steal a corner for my own throat. 'Share. I'm the medic. I make the rules.'",
       "choices": [
         { "label": "Share more.", "next": "heat_cloth" },
         { "label": "Keep the cloth. I'll watch.", "next": "heat_unzip" }
@@ -344,7 +344,7 @@
       "speaker": "Lila",
       "portrait": "lila",
       "expression": "blush",
-      "text": "Then take it. I guide your wrist to my collarbone, then my calf, then \u2014 because I am terrible \u2014 the top of my foot. 'Medical. Circulation. Don't look at me like that.' I look at you like that anyway.",
+      "text": "Then take it. I guide your wrist to my collarbone, then my calf, then — because I am terrible — the top of my foot. 'Medical. Circulation. Don't look at me like that.' I look at you like that anyway.",
       "choices": [
         { "label": "Circulation. Sure.", "next": "heat_feet" },
         { "label": "Cot. Both of us.", "next": "heat_cot" }
@@ -399,7 +399,7 @@
       "speaker": "Lila",
       "portrait": "lila",
       "expression": "look",
-      "text": "Go on, then. I'll be here with the salve, the cot, and my sandals wherever I kicked them. If the Hollow bites, you know the door. If it doesn't \u2014 you still know the door.",
+      "text": "Go on, then. I'll be here with the salve, the cot, and my sandals wherever I kicked them. If the Hollow bites, you know the door. If it doesn't — you still know the door.",
       "choices": [
         { "label": "Walk away.", "next": null }
       ]
