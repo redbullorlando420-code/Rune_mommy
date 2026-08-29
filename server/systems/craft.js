@@ -78,7 +78,7 @@ export function tickCraft(world) {
       spawnGround(world, player.x, player.y, out.id, out.qty);
       player.send(S2C.NOTIFY, { text: 'No room — the binding falls to stone.', kind: 'info' });
     }
-    if (player.addXp) player.addXp('binding', rec.xp || 22);
+    player.addXp('binding', rec.xp || 22);
     player.send(S2C.CRAFT_OK, { id: rec.id });
     player.send(S2C.INV, { inv: serializeInv(player.inv) });
   }
