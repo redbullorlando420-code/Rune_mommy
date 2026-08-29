@@ -1,0 +1,408 @@
+{
+  "id": "lila",
+  "start": "start",
+  "speaker": "Lila",
+  "portrait": "lila",
+  "age": 24,
+  "nodes": {
+    "start": {
+      "id": "start",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "smile",
+      "text": "You're tracking grit all over my mat, corazón. Sit. I'm Lila — Clermont's medic, twenty-four, and the only one who still makes house calls to the square. Scrubs rolled, sandals kicked under the cot. Heat like this, I don't pretend to be formal.",
+      "choices": [
+        { "label": "I'm hurt. Treat me.", "next": "treat" },
+        { "label": "Just needed a pretty face.", "next": "flirt" },
+        { "label": "It's too hot out there.", "next": "heat" },
+        { "label": "I'll go.", "next": "leave" }
+      ]
+    },
+    "treat": {
+      "id": "treat",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "care",
+      "text": "Shirt up. I need the bruise, not the story. Mint on my hands, cinder-salve on the tray. I work close — you can smell the moonbloom I crush for the sting. Don't flinch unless you want me to pin your wrist.",
+      "choices": [
+        { "label": "Do it. Be thorough.", "next": "treat_sit" },
+        { "label": "You're standing on my toes.", "next": "treat_notice" },
+        { "label": "Easy. I'm ticklish.", "next": "treat_tease" }
+      ]
+    },
+    "treat_sit": {
+      "id": "treat_sit",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "look",
+      "text": "Good boy. Cot. I sit on the stool, one knee folded, a sandal dangling off painted toes — berry, not blood, in case you were wondering. The wrap goes tight. Breathe when I say, not when you want to look down.",
+      "choices": [
+        { "label": "Wrap it. I'll be still.", "next": "treat_wrap" },
+        { "label": "Hard not to look.", "next": "treat_stare" }
+      ]
+    },
+    "treat_tease": {
+      "id": "treat_tease",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "smirk",
+      "text": "Ticklish is a confession. I drag the cloth slower on purpose, then laugh when you jump. 'Medical,' I say, which is a lie I enjoy. The salve is warm. My knee bumps yours and I don't move it.",
+      "choices": [
+        { "label": "Keep going.", "next": "treat_wrap" },
+        { "label": "You're enjoying this.", "next": "treat_stare" }
+      ]
+    },
+    "treat_notice": {
+      "id": "treat_notice",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "wink",
+      "text": "Oops. Bare sole on your boot. I leave it a second too long, then hook the sandal back with two fingers. 'Florida floors. I kick them off to think.' You can think about that while I find the bruise.",
+      "choices": [
+        { "label": "Leave them off.", "next": "treat_stare" },
+        { "label": "Just the wrap, medic.", "next": "treat_wrap" }
+      ]
+    },
+    "treat_wrap": {
+      "id": "treat_wrap",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "care",
+      "text": "There. Tight, clean, a little showy with the knot. You'll live. Hwy 50 heat will try to undo my work by dusk, so come back if it throbs. Or come back if it doesn't. I keep the cot made.",
+      "choices": [
+        { "label": "What do I owe you?", "next": "treat_pay" },
+        { "label": "Stay a minute.", "next": "aftercare_offer" },
+        { "label": "Thanks. I'm good.", "next": "treat_done" }
+      ]
+    },
+    "treat_stare": {
+      "id": "treat_stare",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "blush",
+      "text": "Mm. You're staring at my feet, not the wrap. That's a diagnosis too. I flex, berry polish catching the lantern, and I don't tuck them away. 'Aftercare is part of the visit. You can say no. You won't.'",
+      "choices": [
+        { "label": "Then don't tuck them away.", "next": "aftercare_offer" },
+        { "label": "Professional, Lila.", "next": "treat_pay" }
+      ]
+    },
+    "treat_pay": {
+      "id": "treat_pay",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "smile",
+      "text": "Ember coins if you have them. A Cool Down from Mira if you don't — send her my love and tell her I still want the mint one with extra cream. Or sit still and let me work the knots in your calf. That's a currency I invented.",
+      "choices": [
+        { "label": "I'll get Mira's shake.", "next": "heat_mira" },
+        { "label": "Work the knots.", "next": "aftercare_hands" },
+        { "label": "Coins. Then I go.", "next": "treat_done" }
+      ]
+    },
+    "treat_done": {
+      "id": "treat_done",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "smile",
+      "text": "Don't be a hero in the ash. If the wrap slips, you know where the cot is. And if you just want the smell of moonbloom and a woman who will tell you to sit — I'm here. Go on, corazón.",
+      "choices": [
+        { "label": "Walk away.", "next": null }
+      ]
+    },
+    "aftercare_offer": {
+      "id": "aftercare_offer",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "lean",
+      "text": "Stay still. Let me work the knots. I swing a leg over the stool, smock riding up, sandals abandoned. Clermont heat makes everyone honest. You get my hands. I get to watch you try not to look at my toes.",
+      "choices": [
+        { "label": "Hands first.", "next": "aftercare_hands" },
+        { "label": "You already know where I'm looking.", "next": "aftercare_feet" }
+      ]
+    },
+    "aftercare_hands": {
+      "id": "aftercare_hands",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "care",
+      "text": "Thumbs into the calf, slow, mean in a kind way. I hum something off Hwy 50 radio. 'Tell me if it's too much.' It is not too much. My hair clip slips; dark hair brushes your knee. I leave it.",
+      "choices": [
+        { "label": "That's perfect. Don't stop.", "next": "aftercare_deeper" },
+        { "label": "Your hair's in the way. I like it.", "next": "aftercare_hair" }
+      ]
+    },
+    "aftercare_hair": {
+      "id": "aftercare_hair",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "blush",
+      "text": "Then don't you dare pin it back. I shake it loose on purpose and keep kneading. 'Medic with her hair down. Scandal of the square.' My laugh is quiet. My hands are not.",
+      "choices": [
+        { "label": "Keep going.", "next": "aftercare_deeper" },
+        { "label": "Come here.", "next": "almost" }
+      ]
+    },
+    "aftercare_deeper": {
+      "id": "aftercare_deeper",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "heat",
+      "text": "I switch to the other leg, straddle the stool closer. The lantern makes my collarbone look like a dare. 'Aftercare isn't in the textbook. I wrote this chapter because Clermont boys come in wound tight and leave softer. You're almost there.'",
+      "choices": [
+        { "label": "Softer is good.", "next": "aftercare_stay" },
+        { "label": "And the feet?", "next": "aftercare_feet" }
+      ]
+    },
+    "aftercare_feet": {
+      "id": "aftercare_feet",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "tease",
+      "text": "Knew it. I plant a bare sole on the cot rail, berry polish, a thin gold toe-ring I stole from a Baskin spoon display. 'Florida heat makes the arches scream. Yours too. Mine first, though — you asked with your eyes ten minutes ago.'",
+      "choices": [
+        { "label": "Let me.", "next": "aftercare_hold" },
+        { "label": "Show-off.", "next": "aftercare_flex" }
+      ]
+    },
+    "aftercare_flex": {
+      "id": "aftercare_flex",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "wink",
+      "text": "I flex, point, flex again, slow as a Cool Down drip. 'A show-off would charge. This is complimentary.' The sandal on the floor stares at us like a chaperone I fired. I wiggle the gold ring. 'Say something sweet or I'll put them back on.'",
+      "choices": [
+        { "label": "They're pretty. Don't you dare.", "next": "aftercare_hold" },
+        { "label": "Put the sandals on. Slowly.", "next": "aftercare_sandal" }
+      ]
+    },
+    "aftercare_hold": {
+      "id": "aftercare_hold",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "blush",
+      "text": "Warm ankle in your hands. I let you. I even sigh like I didn't plan it. 'Thumb the arch. Yeah. That's the Clermont knot — all of us who stand on tile all day.' My other foot finds your thigh, light, testing. 'Don't get greedy. Or do. I'm off-shift in my head already.'",
+      "choices": [
+        { "label": "Stay off-shift.", "next": "aftercare_stay" },
+        { "label": "I should go before I get greedy.", "next": "aftercare_go" }
+      ]
+    },
+    "aftercare_sandal": {
+      "id": "aftercare_sandal",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "smirk",
+      "text": "Bossy patient. I hook a sandal with two toes, slide it on like a joke, then the other, strap loose on purpose. 'Happy? They're still a suggestion, not a lock.' I rest the stacked heels on your knee. 'Kiss the strap and I'll consider another visit.'",
+      "choices": [
+        { "label": "Consider it done.", "next": "almost" },
+        { "label": "Another visit. Soon.", "next": "aftercare_stay" }
+      ]
+    },
+    "aftercare_stay": {
+      "id": "aftercare_stay",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "rest",
+      "text": "Then stay. I drop beside you on the cot, smock untied at the throat, one leg folded so the berry polish sits in the lantern like a secret. Outside, Hwy 50 keeps being Hwy 50. In here it's mint, skin, and a medic who likes you more than protocol.",
+      "choices": [
+        { "label": "This is the best clinic in town.", "next": "almost" },
+        { "label": "I'll come back tomorrow.", "next": "promise" }
+      ]
+    },
+    "aftercare_go": {
+      "id": "aftercare_go",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "look",
+      "text": "Smart. Annoying. Attractive. I slide my sandals on without tying them. 'Go before I invent a follow-up exam.' She squeezes your wrist once. 'Don't make me hear you fainted at Culver's. I will mock you with my whole mouth.'",
+      "choices": [
+        { "label": "Walk away.", "next": null }
+      ]
+    },
+    "almost": {
+      "id": "almost",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "heat",
+      "text": "Close enough that my laugh lands on your mouth. I don't kiss you all the way — I'm cruel like that — just the corner, mint and chapstick. 'Come back with a real injury or a better line. I'll be on the cot, sandals off, pretending I don't hope it's you.'",
+      "choices": [
+        { "label": "I'll bring both.", "next": "promise" },
+        { "label": "That's enough for tonight.", "next": "leave" }
+      ]
+    },
+    "promise": {
+      "id": "promise",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "wink",
+      "text": "Tomorrow, then. I'll save the berry polish and the loose strap. If you bring a Cool Down from Mira I might even forget to bill you. Go hunt, gather, do the Hollow thing. I'll be the reason you walk back toward the square.",
+      "choices": [
+        { "label": "See you, Lila.", "next": null }
+      ]
+    },
+    "flirt": {
+      "id": "flirt",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "smirk",
+      "text": "A pretty face. Mine, you mean. I set the tray down like I might throw it and don't. 'I don't date patients. I do, however, linger, lean, and take my sandals off when the conversation gets interesting.' Is it getting interesting?",
+      "choices": [
+        { "label": "It's getting interesting.", "next": "flirt_line" },
+        { "label": "Then I'll get injured on purpose.", "next": "flirt_injury" },
+        { "label": "Teach me the lingering.", "next": "flirt_closer" }
+      ]
+    },
+    "flirt_line": {
+      "id": "flirt_line",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "tease",
+      "text": "Then look at me when you say it. Eyes up — then you can look wherever you were looking. I perch on the cot, smock a little unfair, one foot swinging. 'Clermont makes everyone thirsty. I prefer thirsty people who use their words.'",
+      "choices": [
+        { "label": "You're the prettiest thing on the square.", "next": "flirt_closer" },
+        { "label": "Words: I want you closer.", "next": "flirt_rule" }
+      ]
+    },
+    "flirt_injury": {
+      "id": "flirt_injury",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "look",
+      "text": "Don't. I like you walking. I like you sitting. I do not like stitching show-offs. 'Come in dusty and honest instead. I'll still put my hands on you. That's the deal.'",
+      "choices": [
+        { "label": "Dusty and honest, then.", "next": "flirt_closer" },
+        { "label": "Hands on me now?", "next": "aftercare_offer" }
+      ]
+    },
+    "flirt_closer": {
+      "id": "flirt_closer",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "lean",
+      "text": "I step between your knees. Lantern at my back, olive skin, gold at my throat. You get the smell of salve and cheap vanilla. 'This is lingering. Notice the sandals still on — that's me being shy. It won't last.'",
+      "choices": [
+        { "label": "Lose the shy.", "next": "flirt_rule" },
+        { "label": "Stay just like this.", "next": "flirt_linger" }
+      ]
+    },
+    "flirt_rule": {
+      "id": "flirt_rule",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "heat",
+      "text": "Rule is: you don't get the whole night on the first visit. You get this — my hip against your thigh, my mouth almost, my toes finding your boot like a period at the end of a sentence. 'Break the rule tomorrow.'",
+      "choices": [
+        { "label": "I'll be back to break it.", "next": "promise" },
+        { "label": "Bend it tonight.", "next": "almost" }
+      ]
+    },
+    "flirt_linger": {
+      "id": "flirt_linger",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "rest",
+      "text": "Then we linger. I rest my forehead on yours and let the square be loud without us. One sandal slips. I don't pick it up. 'This is the nicest stillness I've had all week. Don't ruin it by being brave too fast.'",
+      "choices": [
+        { "label": "I can be still.", "next": "aftercare_stay" },
+        { "label": "A little brave.", "next": "almost" }
+      ]
+    },
+    "heat": {
+      "id": "heat",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "heat",
+      "text": "Clermont heat. It makes the tile bite and the smock a suggestion. I fan myself with a chart, then give up and unzip the medic wrap a greedy inch. Sandals already under the cot. 'You came to the right shade. I charge extra for complaining, though.'",
+      "choices": [
+        { "label": "I'm not complaining.", "next": "heat_fan" },
+        { "label": "Got anything cold?", "next": "heat_mira" },
+        { "label": "You look melted. In a good way.", "next": "heat_unzip" }
+      ]
+    },
+    "heat_fan": {
+      "id": "heat_fan",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "smile",
+      "text": "Good. Sit. I wet a cloth in the basin — it's not cold, it's 'less hot,' which is Clermont's love language. I lay it on the back of your neck, then steal a corner for my own throat. 'Share. I'm the medic. I make the rules.'",
+      "choices": [
+        { "label": "Share more.", "next": "heat_cloth" },
+        { "label": "Keep the cloth. I'll watch.", "next": "heat_unzip" }
+      ]
+    },
+    "heat_unzip": {
+      "id": "heat_unzip",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "tease",
+      "text": "Melted, he says. I laugh, unzip another inch, and kick a sandal so it skates across the mat. Berry toes, gold ring, a woman who has decided the heat is a co-conspirator. 'Don't make it weird. Or do. I'm too warm to police you.'",
+      "choices": [
+        { "label": "Stay melted.", "next": "heat_stay" },
+        { "label": "Let me cool you off.", "next": "heat_cloth" }
+      ]
+    },
+    "heat_cloth": {
+      "id": "heat_cloth",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "blush",
+      "text": "Then take it. I guide your wrist to my collarbone, then my calf, then — because I am terrible — the top of my foot. 'Medical. Circulation. Don't look at me like that.' I look at you like that anyway.",
+      "choices": [
+        { "label": "Circulation. Sure.", "next": "heat_feet" },
+        { "label": "Cot. Both of us.", "next": "heat_cot" }
+      ]
+    },
+    "heat_mira": {
+      "id": "heat_mira",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "wink",
+      "text": "Mira's Cool Down, north row, neon you can see from the square. Tell her Lila sent you and that I still want mint with extra cream. If she teases you about me, you deserve it. Come back with two cups if you want a second appointment.",
+      "choices": [
+        { "label": "I'll bring you one.", "next": "promise" },
+        { "label": "Stay and melt a little longer.", "next": "heat_stay" }
+      ]
+    },
+    "heat_stay": {
+      "id": "heat_stay",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "rest",
+      "text": "We wait the heat out. I sit opposite you, soles on the cot edge, toes idly stacking. The square ticks. A shake-row laugh carries. 'This is my favorite kind of shift. Nobody dying. Somebody looking. Me, allowing it.'",
+      "choices": [
+        { "label": "Allow a little more.", "next": "heat_feet" },
+        { "label": "This is enough. Thank you.", "next": "leave" }
+      ]
+    },
+    "heat_feet": {
+      "id": "heat_feet",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "tease",
+      "text": "I stretch until my toes find your wrist, light as a dare. 'Hot tile, tired arches, a medic with no shame left in this weather.' If you hold, I'll let you. If you don't, I'll pretend I was stretching. I'm a generous liar.",
+      "choices": [
+        { "label": "I hold.", "next": "aftercare_hold" },
+        { "label": "Stretch all you want.", "next": "heat_cot" }
+      ]
+    },
+    "heat_cot": {
+      "id": "heat_cot",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "heat",
+      "text": "Cot it is. We end up sideways, my calf over yours, smock a rumor, sandals a memory. I talk into your shoulder about Hwy 50, about Mira's neon, about how Clermont nights never really cool. 'Don't sleep. Just stay until the tile is less cruel.'",
+      "choices": [
+        { "label": "I can do that.", "next": "aftercare_stay" },
+        { "label": "I'll come back when it cools.", "next": "promise" }
+      ]
+    },
+    "leave": {
+      "id": "leave",
+      "speaker": "Lila",
+      "portrait": "lila",
+      "expression": "look",
+      "text": "Go on, then. I'll be here with the salve, the cot, and my sandals wherever I kicked them. If the Hollow bites, you know the door. If it doesn't — you still know the door.",
+      "choices": [
+        { "label": "Walk away.", "next": null }
+      ]
+    }
+  }
+}
