@@ -14,6 +14,7 @@ export function interactNpc(world, player, eid) {
   const payload = {
     id: def.id, name: def.name, title: def.title, kind: def.kind,
     greet: def.greet, lines: def.lines || [],
+    dialogue: def.dialogue, portrait: def.portrait, start: def.start,
     shop: def.kind === 'shop', bank: def.kind === 'shop' || def.kind === 'bank',
   };
   world.to(player, { t: 'npc', p: payload });
