@@ -10,11 +10,20 @@
       "speaker": "Michelle",
       "portrait": "michelle",
       "expression": "sassy",
-      "text": "The Sanctuary Drive front door swings in. Michelle \u2014 fifty, Pinckney-fair, long wavy blonde hair with soft bangs, dark sunglasses \u2014 steps through in a knee-length teal dress already riding up those slightly thick toned thighs, strappy neutral sandals, french-tipped toes flashing. She rolls her eyes at how obvious you are. \"Alec, I just got off the plane, can you not stare at my tits for five seconds?\"",
+      "text": "The Sanctuary Drive front door swings in. Michelle — fifty, Pinckney-fair, long wavy blonde hair with soft bangs, dark sunglasses — steps through in a knee-length teal dress already riding up those slightly thick toned thighs, strappy neutral sandals, french-tipped toes flashing. She rolls her eyes at how obvious you are. \"Alec, I just got off the plane, can you not stare at my tits for five seconds?\"",
       "choices": [
-        {"label": "I missed you, Mommy.", "next": "grab"},
-        {"label": "That dress is unfair.", "next": "grab"},
-        {"label": "Welcome to Florida.", "next": "grab"}
+        {
+          "label": "I missed you, Mommy.",
+          "next": "grab"
+        },
+        {
+          "label": "That dress is unfair.",
+          "next": "grab"
+        },
+        {
+          "label": "Welcome to Florida.",
+          "next": "grab"
+        }
       ]
     },
     "grab": {
@@ -24,12 +33,30 @@
       "expression": "melt",
       "text": "Sunglasses hit the foyer table. She grabs your cock through your pants with a CPA's grip, 5'6\" of blonde bangs and outdoor glow pressed to the doorframe. The sass melts into a filthy little laugh. \"fine. Mommy's here. Breed me already.\"",
       "choices": [
-        {"label": "Guest ensuite. Now.", "next": "guest"},
-        {"label": "Garage. Door down.", "next": "garage"},
-        {"label": "Master shower.", "next": "shower"},
-        {"label": "Back lawn. Toward the swamp.", "next": "lawn"},
-        {"label": "Sandals. Right here.", "next": "foot"},
-        {"label": "The Tesla. That first ride.", "next": "tesla"}
+        {
+          "label": "Guest ensuite. Now.",
+          "next": "guest"
+        },
+        {
+          "label": "Garage. Door down.",
+          "next": "garage"
+        },
+        {
+          "label": "Master shower.",
+          "next": "shower"
+        },
+        {
+          "label": "Back lawn. Toward the swamp.",
+          "next": "lawn"
+        },
+        {
+          "label": "Sandals. Right here.",
+          "next": "foot"
+        },
+        {
+          "label": "The Tesla. That first ride.",
+          "next": "tesla"
+        }
       ]
     },
     "guest": {
@@ -39,13 +66,35 @@
       "expression": "heat",
       "text": "Guest bedroom ensuite. She yanks the teal top down so those massive natural tits spill, dress bunched at her tiny waist, sandals still on. \"Amanda's at yoga. Jordan's in class. Dave's in Pinckney doing crypto and tax season. Fill Mommy, baby boy. That's what the flight was for.\"",
       "choices": [
-        {"label": "Breed her on the guest quilt.", "next": "breed", "action": "breed"},
-        {"label": "French tips first.", "next": "foot"},
-        {"label": "Call Dave. Speaker.", "next": "cuck"},
-        {"label": "Toys. Mommy packed greedy.", "next": "toys"},
-        {"label": "Sit. Let the dress ride.", "next": "upskirt"},
-        {"label": "Talk while I stretch you.", "next": "talk"},
-        {"label": "Amanda's almost home.", "next": "bye"}
+        {
+          "label": "Breed her on the guest quilt.",
+          "next": "breed",
+          "action": "breed"
+        },
+        {
+          "label": "French tips first.",
+          "next": "foot"
+        },
+        {
+          "label": "Call Dave. Speaker.",
+          "next": "cuck"
+        },
+        {
+          "label": "Toys. Mommy packed greedy.",
+          "next": "toys"
+        },
+        {
+          "label": "Sit. Let the dress ride.",
+          "next": "upskirt"
+        },
+        {
+          "label": "Talk while I stretch you.",
+          "next": "talk"
+        },
+        {
+          "label": "Amanda's almost home.",
+          "next": "bye"
+        }
       ]
     },
     "garage": {
@@ -55,13 +104,35 @@
       "expression": "heat",
       "text": "The garage door rolls shut. Concrete, one rental, a sweating Starbucks cup in the cupholder from MCO. Michelle drops to her knees, strappy sandals folding under her, french tips on your zipper. \"Quiet. Neighborhood watches. Mommy's mouth isn't on the 1040.\"",
       "choices": [
-        {"label": "Stay down. Breed her after.", "next": "breed", "action": "breed"},
-        {"label": "French tips. Up.", "next": "foot"},
-        {"label": "Speaker. Dave.", "next": "cuck"},
-        {"label": "Toys. Mommy packed greedy.", "next": "toys"},
-        {"label": "Sit. Let the dress ride.", "next": "upskirt"},
-        {"label": "Talk while I stretch you.", "next": "talk"},
-        {"label": "Guest ensuite instead.", "next": "guest"}
+        {
+          "label": "Stay down. Breed her after.",
+          "next": "breed",
+          "action": "breed"
+        },
+        {
+          "label": "French tips. Up.",
+          "next": "foot"
+        },
+        {
+          "label": "Speaker. Dave.",
+          "next": "cuck"
+        },
+        {
+          "label": "Toys. Mommy packed greedy.",
+          "next": "toys"
+        },
+        {
+          "label": "Sit. Let the dress ride.",
+          "next": "upskirt"
+        },
+        {
+          "label": "Talk while I stretch you.",
+          "next": "talk"
+        },
+        {
+          "label": "Guest ensuite instead.",
+          "next": "guest"
+        }
       ]
     },
     "shower": {
@@ -71,13 +142,35 @@
       "expression": "heat",
       "text": "Master bath. Steam. Teal dress on the hook, sandals hooked on the glass. Blonde hair dark with water, bright piercing blue eyes half-lidded. \"Plane air is disgusting. Starbucks later. Michigan game on mute. Right now you breed me against this tile, Alec.\"",
       "choices": [
-        {"label": "Take her against the tile.", "next": "breed", "action": "breed"},
-        {"label": "Call the cuck.", "next": "cuck"},
-        {"label": "Guest ensuite.", "next": "guest"},
-        {"label": "Toys. Mommy packed greedy.", "next": "toys"},
-        {"label": "Sit. Let the dress ride.", "next": "upskirt"},
-        {"label": "Talk while I stretch you.", "next": "talk"},
-        {"label": "Dry off. Amanda's coming.", "next": "bye"}
+        {
+          "label": "Take her against the tile.",
+          "next": "breed",
+          "action": "breed"
+        },
+        {
+          "label": "Call the cuck.",
+          "next": "cuck"
+        },
+        {
+          "label": "Guest ensuite.",
+          "next": "guest"
+        },
+        {
+          "label": "Toys. Mommy packed greedy.",
+          "next": "toys"
+        },
+        {
+          "label": "Sit. Let the dress ride.",
+          "next": "upskirt"
+        },
+        {
+          "label": "Talk while I stretch you.",
+          "next": "talk"
+        },
+        {
+          "label": "Dry off. Amanda's coming.",
+          "next": "bye"
+        }
       ]
     },
     "lawn": {
@@ -87,13 +180,35 @@
       "expression": "heat",
       "text": "Back lawn, then the darker swamp strip where Florida eats the yard. She kicks the strappy sandals into the clover, french-tipped toes in wet grass, teal dress clinging to that round ass. \"Pinckney doesn't have this heat. Dave never takes me out here. You will. In the grass. Now.\"",
       "choices": [
-        {"label": "Breed her in the grass.", "next": "breed", "action": "breed"},
-        {"label": "Sandals off. Kiss the tips.", "next": "foot"},
-        {"label": "Inside. Guest bed.", "next": "guest"},
-        {"label": "Toys. Mommy packed greedy.", "next": "toys"},
-        {"label": "Sit. Let the dress ride.", "next": "upskirt"},
-        {"label": "Talk while I stretch you.", "next": "talk"},
-        {"label": "Amanda's almost home.", "next": "bye"}
+        {
+          "label": "Breed her in the grass.",
+          "next": "breed",
+          "action": "breed"
+        },
+        {
+          "label": "Sandals off. Kiss the tips.",
+          "next": "foot"
+        },
+        {
+          "label": "Inside. Guest bed.",
+          "next": "guest"
+        },
+        {
+          "label": "Toys. Mommy packed greedy.",
+          "next": "toys"
+        },
+        {
+          "label": "Sit. Let the dress ride.",
+          "next": "upskirt"
+        },
+        {
+          "label": "Talk while I stretch you.",
+          "next": "talk"
+        },
+        {
+          "label": "Amanda's almost home.",
+          "next": "bye"
+        }
       ]
     },
     "foot": {
@@ -103,10 +218,23 @@
       "expression": "tease",
       "text": "French-tipped toes in your face, one strappy sandal dangling off a heel. \"Dave never looks at them. Twenty-nine years and he still thinks they're just for tax-season pumps. You stare like they're on the menu. They are. Kiss, then breed.\"",
       "choices": [
-        {"label": "Oil them. Slow.", "next": "foot_oil"},
-        {"label": "Kiss. Don't stop.", "next": "foot_kiss"},
-        {"label": "Worship, then breed.", "next": "breed", "action": "breed"},
-        {"label": "Call Dave while you do that.", "next": "cuck"}
+        {
+          "label": "Oil them. Slow.",
+          "next": "foot_oil"
+        },
+        {
+          "label": "Kiss. Don't stop.",
+          "next": "foot_kiss"
+        },
+        {
+          "label": "Worship, then breed.",
+          "next": "breed",
+          "action": "breed"
+        },
+        {
+          "label": "Call Dave while you do that.",
+          "next": "cuck"
+        }
       ]
     },
     "cuck": {
@@ -114,12 +242,25 @@
       "speaker": "Michelle",
       "portrait": "michelle",
       "expression": "smirk",
-      "text": "Speaker. Dave. She keeps the bubbly supermom voice while you breed her, teal dress wrecked, sandals hooked on your hips. \"Hi honey, just landed, Starbucks run with Alec\u2014 mm. Tax season looks light. Crypto's fine. Tell Jordan I said go Blue. Love you. Don't wait up.\" Mute. \"Don't you dare stop.\"",
+      "text": "Speaker. Dave. She keeps the bubbly supermom voice while you breed her, teal dress wrecked, sandals hooked on your hips. \"Hi honey, just landed, Starbucks run with Alec— mm. Tax season looks light. Crypto's fine. Tell Jordan I said go Blue. Love you. Don't wait up.\" Mute. \"Don't you dare stop.\"",
       "choices": [
-        {"label": "Keep him on. Fill her.", "next": "breed", "action": "breed"},
-        {"label": "Hang up. Feet.", "next": "foot"},
-        {"label": "Guest bed. Door shut.", "next": "guest"},
-        {"label": "Hang up. Amanda's coming.", "next": "bye"}
+        {
+          "label": "Keep him on. Fill her.",
+          "next": "breed",
+          "action": "breed"
+        },
+        {
+          "label": "Hang up. Feet.",
+          "next": "foot"
+        },
+        {
+          "label": "Guest bed. Door shut.",
+          "next": "guest"
+        },
+        {
+          "label": "Hang up. Amanda's coming.",
+          "next": "bye"
+        }
       ]
     },
     "breed": {
@@ -127,13 +268,31 @@
       "speaker": "Michelle",
       "portrait": "michelle",
       "expression": "melt",
-      "text": "Creampie. The meter fills. Sassy is gone. Teal dress is a belt, french tips in your hair, ankles in strappy sandals locking your back. \"That's it \u2014 put it in Mommy. Every Florida night. Don't waste it. I didn't fly out of Michigan to be careful.\" She melts, loud, fifty and starving for it.",
+      "text": "Creampie. The meter fills. Sassy is gone. Teal dress is a belt, french tips in your hair, ankles in strappy sandals locking your back. \"That's it — put it in Mommy. Every Florida night. Don't waste it. I didn't fly out of Michigan to be careful.\" She melts, loud, fifty and starving for it.",
       "choices": [
-        {"label": "Give her everything.", "next": "bun", "action": "breed"},
-        {"label": "Keep going. Fill her.", "next": "preg", "action": "preg"},
-        {"label": "Again. Don't pull out.", "next": "breed", "action": "breed"},
-        {"label": "Talk. Crypto. Michigan.", "next": "talk"},
-        {"label": "Hold her after.", "next": "bye"}
+        {
+          "label": "Give her everything.",
+          "next": "bun",
+          "action": "breed"
+        },
+        {
+          "label": "Keep going. Fill her.",
+          "next": "preg",
+          "action": "preg"
+        },
+        {
+          "label": "Again. Don't pull out.",
+          "next": "breed",
+          "action": "breed"
+        },
+        {
+          "label": "Talk. Crypto. Michigan.",
+          "next": "talk"
+        },
+        {
+          "label": "Hold her after.",
+          "next": "bye"
+        }
       ]
     },
     "bun": {
@@ -143,9 +302,20 @@
       "expression": "soft",
       "text": "Phone buzz. She texts you from three feet away, grinning, blonde bangs stuck down, a hand on her belly: \"I think you put a bun in Mommy's oven this time baby boy.\" Then out loud: \"Don't tell Amanda. Don't tell Dave. Tell my womb.\"",
       "choices": [
-        {"label": "You think you're pregnant?", "next": "preg", "action": "preg"},
-        {"label": "Once more, to be sure.", "next": "breed", "action": "breed"},
-        {"label": "Kiss her. Fix the dress.", "next": "bye"}
+        {
+          "label": "You think you're pregnant?",
+          "next": "preg",
+          "action": "preg"
+        },
+        {
+          "label": "Once more, to be sure.",
+          "next": "breed",
+          "action": "breed"
+        },
+        {
+          "label": "Kiss her. Fix the dress.",
+          "next": "bye"
+        }
       ]
     },
     "preg": {
@@ -155,9 +325,18 @@
       "expression": "soft",
       "text": "Dialogue shift. Heavier tits, sluttier teal tops that don't fit, bangs in her face. She rubs the tiny waist that won't stay tiny. \"Mommy's pregnant. Starbucks order just got bigger. CPA from Pinckney walking through Michigan with a secret. Breed me anyway. The meter's not done.\"",
       "choices": [
-        {"label": "Show me. Guest ensuite.", "next": "guest"},
-        {"label": "Call Dave with the news.", "next": "cuck"},
-        {"label": "Starbucks after. Dress.", "next": "bye"}
+        {
+          "label": "Show me. Guest ensuite.",
+          "next": "guest"
+        },
+        {
+          "label": "Call Dave with the news.",
+          "next": "cuck"
+        },
+        {
+          "label": "Starbucks after. Dress.",
+          "next": "bye"
+        }
       ]
     },
     "bye": {
@@ -167,8 +346,15 @@
       "expression": "sassy",
       "text": "She fixes the knee-length teal dress, slides the sunglasses on, checks french tips, buckles the strappy sandals. Amanda gets home in twenty. \"I look like a Michigan mom who just flew in, not like you just bred me. Don't text from Amanda's house. Starbucks if you have to.\" A last look, softer. \"You can stare at my tits now. You earned it.\"",
       "choices": [
-        {"label": "One more. Guest room.", "next": "guest"},
-        {"label": "See you, Mommy.", "next": null, "action": "close"}
+        {
+          "label": "One more. Guest room.",
+          "next": "guest"
+        },
+        {
+          "label": "See you, Mommy.",
+          "next": null,
+          "action": "close"
+        }
       ]
     },
     "hi": {
@@ -178,12 +364,30 @@
       "expression": "sassy",
       "text": "She's in the Sanctuary Drive doorway again, teal, sandals, eye-roll that's half fond. \"Alec. I had a Venti. Tax files are in the guest room. You can stare for five seconds. Then you know what Mommy flew here for.\"",
       "choices": [
-        {"label": "Guest ensuite.", "next": "guest"},
-        {"label": "Garage.", "next": "garage"},
-        {"label": "Shower.", "next": "shower"},
-        {"label": "Back lawn.", "next": "lawn"},
-        {"label": "French tips. Now.", "next": "foot"},
-        {"label": "Greedy. Toys.", "next": "toys"}
+        {
+          "label": "Guest ensuite.",
+          "next": "guest"
+        },
+        {
+          "label": "Garage.",
+          "next": "garage"
+        },
+        {
+          "label": "Shower.",
+          "next": "shower"
+        },
+        {
+          "label": "Back lawn.",
+          "next": "lawn"
+        },
+        {
+          "label": "French tips. Now.",
+          "next": "foot"
+        },
+        {
+          "label": "Greedy. Toys.",
+          "next": "toys"
+        }
       ]
     },
     "tesla": {
@@ -193,9 +397,19 @@
       "expression": "sassy",
       "text": "Sunglasses still on. She laughs, a little mean. \"You picked me up from MCO in that Tesla like I was going to Disney. I had my sandal off before we hit 27. Foot in your hand. Amanda thought I needed sun. I needed you to stop pretending you weren't staring.\" She grabs you through your pants again. \"Door's shut now, baby boy. Same deal.\"",
       "choices": [
-        {"label": "Guest bed. Lock it.", "next": "guest"},
-        {"label": "Kiss those french tips.", "next": "foot"},
-        {"label": "Breed me already.", "next": "breed", "action": "breed"}
+        {
+          "label": "Guest bed. Lock it.",
+          "next": "guest"
+        },
+        {
+          "label": "Kiss those french tips.",
+          "next": "foot"
+        },
+        {
+          "label": "Breed me already.",
+          "next": "breed",
+          "action": "breed"
+        }
       ]
     },
     "foot_oil": {
@@ -205,9 +419,19 @@
       "expression": "tease",
       "text": "She kicks one strappy sandal into your lap and wiggles those oiled french tips under your nose. \"Dave hasn't looked at these in years. Tax-season pumps and that's it. You get the pretty ones. Warm oil. Kiss the pad, then the arch, then tell Mommy if you want them on your face while you knock me up.\"",
       "choices": [
-        {"label": "Kiss every tip.", "next": "foot_kiss"},
-        {"label": "Keep them on my face. Breed.", "next": "breed", "action": "breed"},
-        {"label": "Toys. Mommy's greedy.", "next": "toys"}
+        {
+          "label": "Kiss every tip.",
+          "next": "foot_kiss"
+        },
+        {
+          "label": "Keep them on my face. Breed.",
+          "next": "breed",
+          "action": "breed"
+        },
+        {
+          "label": "Toys. Mommy's greedy.",
+          "next": "toys"
+        }
       ]
     },
     "foot_kiss": {
@@ -217,9 +441,19 @@
       "expression": "melt",
       "text": "French tips flex against your mouth. She talks like a Starbucks line, filthy underneath. \"Michigan's playing Saturday. Crypto's red. My 1040 can wait. You keep kissing. Mommy flew two thousand miles so those toes would be the last thing you see before you fill her.\"",
       "choices": [
-        {"label": "Breed her with them on your cheek.", "next": "breed", "action": "breed"},
-        {"label": "Speaker. Let Dave hear.", "next": "cuck"},
-        {"label": "Guest ensuite. Door locked.", "next": "guest"}
+        {
+          "label": "Breed her with them on your cheek.",
+          "next": "breed",
+          "action": "breed"
+        },
+        {
+          "label": "Speaker. Let Dave hear.",
+          "next": "cuck"
+        },
+        {
+          "label": "Guest ensuite. Door locked.",
+          "next": "guest"
+        }
       ]
     },
     "toys": {
@@ -229,9 +463,19 @@
       "expression": "greedy",
       "text": "She pulls a little travel pouch from the carry-on like it's lotion. \"Mommy packed greedy. Anal if you ask nice. Double if you're going to actually fill this womb and not just talk about it. Teal dress stays up. Sandals stay on. I want to feel stuffed and still look like I just got off a plane.\"",
       "choices": [
-        {"label": "Greedy it is. Then breed.", "next": "breed", "action": "breed"},
-        {"label": "Feet on my face while we do that.", "next": "foot_kiss"},
-        {"label": "Call Dave. Keep him on.", "next": "cuck"}
+        {
+          "label": "Greedy it is. Then breed.",
+          "next": "breed",
+          "action": "breed"
+        },
+        {
+          "label": "Feet on my face while we do that.",
+          "next": "foot_kiss"
+        },
+        {
+          "label": "Call Dave. Keep him on.",
+          "next": "cuck"
+        }
       ]
     },
     "upskirt": {
@@ -241,9 +485,19 @@
       "expression": "smirk",
       "text": "Knee-length teal, that's the joke. She sits on the guest ottoman, knees a little too wide, sunglasses still on like this is a patio in Pinckney. \"Public if the blinds are wrong. Upskirt if you kneel. I might even make a mess if Mommy's in the mood. Dave would die. You won't. Look. Then breed.\"",
       "choices": [
-        {"label": "Kneel. Then fill her.", "next": "breed", "action": "breed"},
-        {"label": "French tips first.", "next": "foot"},
-        {"label": "Too loud. Garage.", "next": "garage"}
+        {
+          "label": "Kneel. Then fill her.",
+          "next": "breed",
+          "action": "breed"
+        },
+        {
+          "label": "French tips first.",
+          "next": "foot"
+        },
+        {
+          "label": "Too loud. Garage.",
+          "next": "garage"
+        }
       ]
     },
     "talk": {
@@ -253,9 +507,20 @@
       "expression": "melt",
       "text": "She talks through it on purpose. Crypto. Michigan football. Tax season. Fifty, CPA, bouncing on you like none of that matters. \"Go Blue. File extension. Don't you dare pull out while Mommy's explaining a 1031. That's it. Stretch me. Dave never could.\"",
       "choices": [
-        {"label": "Keep talking. Don't stop.", "next": "breed", "action": "breed"},
-        {"label": "Mute the lecture. Fill her.", "next": "bun", "action": "preg"},
-        {"label": "Speaker. Dave should hear this.", "next": "cuck"}
+        {
+          "label": "Keep talking. Don't stop.",
+          "next": "breed",
+          "action": "breed"
+        },
+        {
+          "label": "Mute the lecture. Fill her.",
+          "next": "bun",
+          "action": "preg"
+        },
+        {
+          "label": "Speaker. Dave should hear this.",
+          "next": "cuck"
+        }
       ]
     }
   }
