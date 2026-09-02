@@ -40,7 +40,7 @@ def load_shops(path: Path | None = None) -> dict:
     data = json.loads(p.read_text(encoding="utf-8"))
     shops = data.get("shops") or []
     if len(shops) < 10:
-        raise RuntimeError(f"shops.json expected at least {10} stalls, got {len(shops)}")
+        raise RuntimeError(f"shops.json expected at least 10 stalls, got {len(shops)}")
     return data
 
 

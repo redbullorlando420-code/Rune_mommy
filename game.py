@@ -1,7 +1,6 @@
 """Rune Mommy — 3D desktop (Ursina). No browser.
 Controls: WASD walk, mouse look, Space jump, E enter/exit car or talk, LMB shoot, Esc quit.
 """
-from pathlib import Path
 import math
 
 from ursina import (
@@ -9,11 +8,6 @@ from ursina import (
     Text, Vec3, application, Sky, DirectionalLight, AmbientLight,
 )
 from ursina.prefabs.first_person_controller import FirstPersonController
-from loaders import shop_list
-
-ROOT = Path(__file__).resolve().parent
-DATA = ROOT / "data"
-PORTRAITS = ROOT / "client" / "portraits"
 
 app = Ursina(title="Rune Mommy", borderless=False, fullscreen=False, development_mode=False)
 from ursina import window as win
@@ -32,28 +26,40 @@ ground = Entity(
     texture_scale=(60, 60),
     collider="box",
 )
+# highway strip
 Entity(model="cube", scale=(80, 0.12, 8), position=(0, 0.06, -18), color=color.rgb(45, 42, 48), collider="box")
 
-shops = shop_list()
+from loaders import load_shops, portrait_texture_path
+
+shop_data = load_shops()
+shops = list(shop_data.get("shops") or [])
+if len(shops) < 11:
+    raise RuntimeError("need all 11 stalls (10 shakes + gun_hut), got %d" % len(shops))
 stall_colors = [
     color.rgb(255, 79, 216), color.rgb(245, 213, 71), color.rgb(255, 143, 171),
     color.rgb(214, 40, 40), color.rgb(233, 30, 140), color.rgb(30, 75, 142),
     color.rgb(211, 47, 47), color.rgb(227, 24, 55), color.rgb(255, 199, 44),
     color.rgb(228, 28, 56),
 ]
-for i, s in enumerate(shops):
+# Shake row from JSON. gun_hut stays in the catalog and uses the Gun Hut below.
+shake_stalls = [s for s in shops if s.get("id") != "gun_hut"]
+for i, s in enumerate(shake_stalls):
     x = -28 + (i % 5) * 12
     z = -22 - (i // 5) * 10
     col = stall_colors[i % len(stall_colors)]
     Entity(model="cube", scale=(4, 3, 3), position=(x, 1.5, z), color=col, collider="box")
+    Text(text=s.get("name", "Shop")[:18], position=(0,0), parent=camera.ui, enabled=False)
     label = Entity(parent=scene, position=(x, 3.4, z))
     Text(text=s.get("name", "Shop")[:16], parent=label, scale=8, billboard=True, color=color.white, origin=(0, 0))
 
+# gun stall
 Entity(model="cube", scale=(5, 3.2, 4), position=(22, 1.6, -6), color=color.rgb(80, 70, 50), collider="box")
 gl = Entity(position=(22, 3.6, -6))
 Text(text="Gun Hut", parent=gl, scale=10, billboard=True, color=color.orange, origin=(0, 0))
 
-mira_tex = str(PORTRAITS / "mira-coffee.jpg") if (PORTRAITS / "mira-coffee.jpg").exists() else None
+# Mira
+_mira_p = portrait_texture_path("mira") or portrait_texture_path("shake_bar")
+mira_tex = str(_mira_p) if _mira_p else None
 mira = Entity(model="cube", scale=(1.2, 2.2, 0.4), position=(-28, 1.2, -18), color=color.rgb(255, 79, 216), collider="box")
 if mira_tex:
     try:
@@ -70,6 +76,7 @@ player = FirstPersonController(speed=10, jump_height=1.6, mouse_sensitivity=Vec3
 player.position = Vec3(0, 2, 8)
 player.cursor.visible = True
 
+# cars
 CARS = []
 car_spots = [(-8, 0.6, 4), (6, 0.6, 4), (-8, 0.6, 10), (6, 0.6, 10), (14, 0.6, -8), (-16, 0.6, 2)]
 car_cols = [color.red, color.azure, color.gold, color.white, color.rgb(40, 40, 50), color.lime]
@@ -105,6 +112,7 @@ def update():
     global in_car, gold, has_gun, ammo, toast_until
     if toast_t.enabled and time.time() > toast_until:
         toast_t.enabled = False
+
     if in_car:
         player.visible = False
         player.collider = None
@@ -123,17 +131,20 @@ def update():
         in_car["speed"] += (accel - in_car["speed"] * 2.2) * time.dt
         rad = math.radians(yaw)
         car.rotation_y = yaw
-        car.x = car.x + math.sin(rad) * in_car["speed"] * time.dt
-        car.z = car.z + math.cos(rad) * in_car["speed"] * time.dt
+        nx = car.x + math.sin(rad) * in_car["speed"] * time.dt
+        nz = car.z + math.cos(rad) * in_car["speed"] * time.dt
+        car.x, car.z = nx, nz
         player.position = Vec3(car.x, car.y + 1.2, car.z)
         camera.rotation_y = yaw
     else:
         player.visible = True
         if player.collider is None:
             player.collider = "capsule"
+
     mode = "CAR" if in_car else "ON FOOT"
     gun = "pistol %d" % ammo if has_gun else "unarmed"
     hud.text = "WASD move  |  mouse look  |  E car/talk/buy  |  LMB shoot\n%s  |  gold %d  |  %s" % (mode, gold, gun)
+
     mira_d = (mira.position - player.position).length()
     gun_d = (Vec3(22, 1, -6) - player.position).length()
     if not in_car and mira_d < 4:
@@ -192,7 +203,10 @@ def input(key):
             return
         ammo -= 1
         hit = raycast(camera.world_position, camera.forward, distance=40, ignore=(player,))
-        toast("Hit." if hit.hit else "Miss.")
+        if hit.hit:
+            toast("Hit.")
+        else:
+            toast("Miss.")
 
 Text(text="Clermont · Hwy 50", position=(0, 0.47), origin=(0, 0), scale=1.4, color=color.pink)
 toast("WASD to walk. Mouse to look. E for cars.")

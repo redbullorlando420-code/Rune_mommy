@@ -1,1 +1,1 @@
-ursina>=7.0.0
+ursina
