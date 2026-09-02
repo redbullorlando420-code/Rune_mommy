@@ -26,6 +26,8 @@ _ALIASES = {
     "shake_bar": "mira",
     "shakebar": "mira",
     "lila": "lila",
+    "michelle": "michelle",
+    "mommy": "michelle",
     "rosa": "rosa",
     "yara": "yara",
     "gage": "gage",
@@ -36,12 +38,16 @@ _EXPR_ALIASES = {
     "default": "smile",
     "look": "smile",
     "rest": "smile",
-    "smirk": "wink",
-    "tease": "wink",
-    "blush": "lean",
-    "heat": "lean",
+    "smirk": "tease",
+    "tease": "tease",
+    "blush": "smile",
+    "heat": "tease",
+    "sassy": "sassy",
+    "greedy": "tease",
+    "melt": "tease",
+    "soft": "smile",
 }
-_FALLBACK = ["default", "smile", "wink", "lean"]
+_FALLBACK = ["sassy", "tease", "default", "smile", "wink", "lean"]
 
 # Old hardcoded map, used only if a file exists in _legacy or the character folder.
 PORTRAIT_EXPR = {
@@ -253,4 +259,41 @@ def load_items(path: Path | None = None) -> dict:
     if not p.is_file():
         return {}
     data = json.loads(p.read_text(encoding="utf-8"))
+    return data if isinstance(data, dict) else {}
+
+def _read_json(rel: str):
+    p = DATA / rel
+    if not p.is_file():
+        p = ROOT / "data" / Path(rel).name
+    if not p.is_file():
+        return {}
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def load_oss_items() -> dict:
+    """CC-BY-SA CDDA workshop tools. Does not write shops.json."""
+    data = _read_json("oss_items.json")
+    items = data.get("items") or {}
+    return items if isinstance(items, dict) else {}
+
+
+def load_vehicles() -> dict:
+    """Local park cars plus CDDA bike/moto catalog."""
+    local = _read_json("vehicles.json")
+    oss = _read_json("oss_vehicles.json")
+    return {"local": local if isinstance(local, dict) else {}, "oss": (oss.get("vehicles") if isinstance(oss, dict) else None) or []}
+
+
+def load_skills() -> dict:
+    """Hollow skills plus CDDA skill ids for leveling."""
+    hollow = _read_json("skills.json")
+    oss = _read_json("oss_skills.json")
+    return {"hollow": hollow if isinstance(hollow, dict) else {}, "oss": oss if isinstance(oss, dict) else {}}
+
+
+def load_progression() -> dict:
+    data = _read_json("progression.json")
     return data if isinstance(data, dict) else {}
