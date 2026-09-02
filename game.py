@@ -424,13 +424,19 @@ class Game:
         Entity = self.Entity
         color = self.color
         portrait = None
-        if self.mira_portrait_path.exists():
+        mp = self.mira_portrait_path
+        mp_ok = False
+        try:
+            mp_ok = Path(mp).exists() if mp else False
+        except Exception:
+            mp_ok = False
+        if mp_ok:
             try:
                 from ursina import load_texture
-                portrait = load_texture(str(self.mira_portrait_path))
+                portrait = load_texture(str(mp))
                 self.mira_texture = portrait
             except Exception:
-                portrait = str(self.mira_portrait_path)
+                portrait = str(mp)
                 self.mira_texture = portrait
 
         shake = next((s for s in self.stalls if s['id'] == 'shake_bar'), None)
