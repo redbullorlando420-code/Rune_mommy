@@ -1,0 +1,18 @@
+{
+  "source": "Cataclysm: Dark Days Ahead data/json/items/tool/workshop.json",
+  "license": "CC-BY-SA-3.0",
+  "items": {
+    "hammer": {"id": "hammer", "name": "hammer", "kind": "tool", "skill": "mechanics", "source": "cdda"},
+    "hacksaw": {"id": "hacksaw", "name": "hacksaw", "kind": "tool", "skill": "mechanics", "source": "cdda"},
+    "claw_bar": {"id": "claw_bar", "name": "claw bar", "kind": "tool", "skill": "mechanics", "source": "cdda"},
+    "wrench": {"id": "wrench", "name": "adjustable wrench", "kind": "tool", "skill": "mechanics", "source": "cdda"},
+    "screwdriver": {"id": "screwdriver", "name": "screwdriver", "kind": "tool", "skill": "mechanics", "source": "cdda"},
+    "multitool": {"id": "multitool", "name": "multitool", "kind": "tool", "skill": "mechanics", "source": "cdda"},
+    "jack": {"id": "jack", "name": "bottle jack", "kind": "tool", "skill": "mechanics", "source": "cdda"},
+    "lug_wrench": {"id": "lug_wrench", "name": "lug wrench", "kind": "tool", "skill": "mechanics", "source": "cdda"},
+    "welder": {"id": "welder", "name": "arc welder", "kind": "tool", "skill": "mechanics", "source": "cdda"},
+    "pickaxe": {"id": "pickaxe", "name": "pickaxe", "kind": "tool", "skill": "mechanics", "source": "cdda"},
+    "pliers": {"id": "pliers", "name": "pliers", "kind": "tool", "skill": "mechanics", "source": "cdda"},
+    "hose": {"id": "hose", "name": "rubber hose", "kind": "tool", "skill": "mechanics", "source": "cdda"}
+  }
+}

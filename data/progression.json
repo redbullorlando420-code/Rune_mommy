@@ -1,0 +1,12 @@
+{
+  "max_level": 10,
+  "xp_base": 100,
+  "note": "CDDA-style: each level costs xp_base * (level+1).",
+  "practice": {
+    "driving": {"skill": "driving", "xp": 4},
+    "shoot": {"skill": "pistol", "xp": 6, "also": "gun"},
+    "melee": {"skill": "melee", "xp": 5},
+    "talk": {"skill": "speech", "xp": 3},
+    "repair": {"skill": "mechanics", "xp": 8}
+  }
+}

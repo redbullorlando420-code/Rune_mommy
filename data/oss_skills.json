@@ -1,0 +1,28 @@
+{
+  "source": "Cataclysm: Dark Days Ahead",
+  "license": "CC-BY-SA-3.0",
+  "url": "https://github.com/CleverRaven/Cataclysm-DDA",
+  "note": "Skill ids/names from CDDA data/json/skills.json. Level 0-10.",
+  "max_level": 10,
+  "xp_per_level": 100,
+  "skills": [
+    {"id": "speech", "name": "social", "category": "interaction"},
+    {"id": "firstaid", "name": "health care", "category": "interaction"},
+    {"id": "mechanics", "name": "mechanics", "category": "interaction"},
+    {"id": "driving", "name": "vehicles", "category": "interaction"},
+    {"id": "swimming", "name": "athletics", "category": "interaction"},
+    {"id": "survival", "name": "survival", "category": "crafting"},
+    {"id": "fabrication", "name": "fabrication", "category": "crafting"},
+    {"id": "cooking", "name": "food handling", "category": "crafting"},
+    {"id": "electronics", "name": "electronics", "category": "crafting"},
+    {"id": "gun", "name": "marksmanship", "category": "ranged", "combat": true},
+    {"id": "pistol", "name": "handguns", "category": "ranged", "combat": true},
+    {"id": "rifle", "name": "rifles", "category": "ranged", "combat": true},
+    {"id": "shotgun", "name": "shotguns", "category": "ranged", "combat": true},
+    {"id": "melee", "name": "melee", "category": "melee", "combat": true},
+    {"id": "bashing", "name": "bashing weapons", "category": "melee", "combat": true},
+    {"id": "cutting", "name": "cutting weapons", "category": "melee", "combat": true},
+    {"id": "dodge", "name": "dodging", "category": "melee", "combat": true},
+    {"id": "unarmed", "name": "unarmed combat", "category": "melee", "combat": true}
+  ]
+}
