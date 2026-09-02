@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "note": "Parkable top-down cars on the 112x76 Clermont slice. Original props, not GTA assets.",
+  "physics": {
+    "accel": 16,
+    "brake": 22,
+    "friction": 5.5,
+    "maxSpeed": 9.2,
+    "reverseMax": 3.6,
+    "turnRate": 2.9,
+    "radius": 0.72
+  },
+  "vehicles": [
+    {
+      "id": "sedan_hwy_a",
+      "name": "Dusk Sedan",
+      "x": 16.5,
+      "y": 7.5,
+      "facing": 0,
+      "color": "#c1121f",
+      "kind": "sedan"
+    },
+    {
+      "id": "coupe_hwy_b",
+      "name": "Lot Coupe",
+      "x": 34.5,
+      "y": 7.5,
+      "facing": 0,
+      "color": "#1d3557",
+      "kind": "coupe"
+    },
+    {
+      "id": "wagon_hwy_c",
+      "name": "Hwy Wagon",
+      "x": 52.5,
+      "y": 7.5,
+      "facing": 3.1416,
+      "color": "#457b9d",
+      "kind": "wagon"
+    },
+    {
+      "id": "hatch_hwy_d",
+      "name": "East Hatch",
+      "x": 64.5,
+      "y": 7.5,
+      "facing": 0,
+      "color": "#6a994e",
+      "kind": "hatch"
+    },
+    {
+      "id": "hatch_hancock_a",
+      "name": "Pump Hatch",
+      "x": 72.5,
+      "y": 16.5,
+      "facing": 1.5708,
+      "color": "#e9c46a",
+      "kind": "hatch"
+    },
+    {
+      "id": "truck_hancock_b",
+      "name": "Bay Truck",
+      "x": 80.5,
+      "y": 17.5,
+      "facing": 1.5708,
+      "color": "#2a9d8f",
+      "kind": "truck"
+    },
+    {
+      "id": "van_hancock_c",
+      "name": "Lot Van",
+      "x": 67.5,
+      "y": 19.5,
+      "facing": 0,
+      "color": "#6d6875",
+      "kind": "van"
+    },
+    {
+      "id": "sedan_maple",
+      "name": "Maple Sedan",
+      "x": 36.5,
+      "y": 32.5,
+      "facing": 0,
+      "color": "#9b2226",
+      "kind": "sedan"
+    },
+    {
+      "id": "coupe_oak",
+      "name": "Oak Coupe",
+      "x": 40.5,
+      "y": 44.5,
+      "facing": 3.1416,
+      "color": "#264653",
+      "kind": "coupe"
+    },
+    {
+      "id": "coupe_johns",
+      "name": "Strip Coupe",
+      "x": 28.5,
+      "y": 55.5,
+      "facing": 0,
+      "color": "#bc6c25",
+      "kind": "coupe"
+    }
+  ]
+}
