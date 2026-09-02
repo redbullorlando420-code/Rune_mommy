@@ -1,37 +1,21 @@
 # Rune Mommy
 
-3D desktop game set on Hwy 50 in Clermont, Florida. Native Python (Ursina). Not a browser client.
+Pixel multiplayer browser game. Clermont shake row, Emberfen, Agate Mine.
+Click the ground to walk. JS client uses WebSocket /ws.
 
-## Install (Windows 11)
+## Python server (Windows 11, Python 3.11+)
 
 ```
-py -3 -m pip install -r requirements.txt
-py -3 game.py
+py -3 -m pip install -r py/requirements.txt
+py -3 py/server.py
 ```
 
-`requirements.txt` is just `ursina`.
+Then open http://localhost:8080
 
-## How to play
+`PORT` env var overrides the default 8080.
 
-- **WASD** walk
-- **Mouse** look (Tab unlocks the cursor)
-- **Space** jump
-- **E** enter/exit a car, talk, or buy
-- **1** draw / holster the pistol
-- **LMB** shoot (need a gun from Gage)
-- **Esc** close a talk panel, or quit
+## Node server
 
-Cars sit in the Hwy 50 median. **Mama Mira** is at The Shake Bar (neon stall). **Gage** runs Hancock Gun Hut on the east edge of the pumps (pistol + ammo). Gold starts at 200.
+npm start still runs the old Node server (`server/index.js`).
 
-## Shops
-
-`data/shops.json` is the ten Clermont shake shops plus Hancock Gun Hut. Do not empty it.
-
-The Shake Bar, Steak n Shake, Ritter's, Bruster's, Baskin-Robbins, Culver's, Five Guys, Dairy Queen, McDonald's, Wendy's.
-
-## Layout
-
-- `game.py` — desktop game
-- `loaders.py` — shops + portraits
-- `data/` — shops, items, NPCs, dialogue
-- `py/` — Python ports of the old JS sim
+data/shops.json has the ten Clermont shake shops. Do not empty it.
