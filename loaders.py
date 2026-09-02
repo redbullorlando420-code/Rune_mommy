@@ -1,7 +1,12 @@
-"""Load shops.json and portrait files for the Ursina desktop game.
+"""Load shops, npcs, items, and per-character portrait folders.
 
-Does not write shops.json. Keeps every stall in the file (the ten Clermont
-shake shops plus anything Coder added). game.py can `from loaders import ...`.
+Portrait layout (supplied by Imagine generator):
+    client/portraits/<npc>/<expression>.png|.jpg
+    client/portraits/_legacy/   old flat names, ignored as a character
+
+Filename stem is the expression (smile, wink, lean, ...).
+Dialogue keys look/smirk/tease/rest/blush/heat/care fall back to smile or lean.
+Does not write shops.json.
 """
 from __future__ import annotations
 
@@ -11,31 +16,35 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
 PORTRAITS_DIR = ROOT / "client" / "portraits"
+IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp"}
 
-# Fallback map if the folder is incomplete. Keys are NPC ids / first names.
-PORTRAIT_EXPR = {
-    "mira": {
-        "smile": "mira-coffee.jpg",
-        "wink": "mira-dinner.jpg",
-        "lean": "mira-gown.jpg",
-        "heat": "mira-lookback.jpg",
-        "blush": "mira-stairs.jpg",
-        "tease": "mira-courtyard.jpg",
-        "default": "mira-coffee.jpg",
-    },
-    "shake_bar": {
-        "default": "mira-coffee.jpg",
-        "smile": "mira-coffee.jpg",
-    },
-    "lila": {
-        "smile": "lila-yoga.jpg",
-        "default": "lila-yoga.jpg",
-    },
+EXPR_FALLBACK = {
+    "look": ("smile", "default"),
+    "smirk": ("wink", "smile", "default"),
+    "tease": ("lean", "wink", "smile", "default"),
+    "rest": ("smile", "default"),
+    "blush": ("smile", "lean", "default"),
+    "heat": ("lean", "wink", "smile", "default"),
+    "care": ("smile", "default"),
+    "default": ("smile",),
+}
+
+ALIASES = {
+    "shake_bar": "mira",
+    "mama mira": "mira",
+    "mama_mira": "mira",
+    "mira": "mira",
+    "gun_hut": "gage",
+    "gage": "gage",
+    "lila": "lila",
+    "rosa": "rosa",
+    "yara": "yara",
+    "maera": "yara",
 }
 
 
 def load_shops(path: Path | None = None) -> dict:
-    """Return the shops.json object as-is. Never drop entries."""
+    """Return shops.json as-is. Never drop entries."""
     p = path or (DATA / "shops.json")
     data = json.loads(p.read_text(encoding="utf-8"))
     shops = data.get("shops") or []
@@ -56,33 +65,104 @@ def shop_by_id(shop_id: str, data: dict | None = None) -> dict | None:
     return None
 
 
-def portrait_path(filename: str) -> Path:
-    return PORTRAITS_DIR / filename
+def load_npcs(path: Path | None = None) -> dict:
+    p = path or (DATA / "npcs.json")
+    data = json.loads(p.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise RuntimeError("npcs.json must be an object keyed by id")
+    return data
 
 
-def list_portraits() -> list[Path]:
-    if not PORTRAITS_DIR.is_dir():
-        return []
-    return sorted(p for p in PORTRAITS_DIR.iterdir() if p.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"})
+def load_mobs(path: Path | None = None) -> dict:
+    p = path or (DATA / "mobs.json")
+    data = json.loads(p.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise RuntimeError("mobs.json must be an object keyed by id")
+    return data
 
 
-def portraits_for(who: str) -> dict[str, Path]:
-    """NPC id or short name -> {expr: absolute Path} for files that exist."""
-    key = (who or "").lower()
-    pack = PORTRAIT_EXPR.get(key) or {}
-    out = {}
-    for expr, name in pack.items():
-        p = portrait_path(name)
-        if p.is_file():
-            out[expr] = p
-    if not out:
-        # fuzzy: any file starting with the name
-        for p in list_portraits():
-            if p.name.lower().startswith(key):
+def load_items(path: Path | None = None) -> dict:
+    p = path or (DATA / "items.json")
+    data = json.loads(p.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise RuntimeError("items.json must be an object keyed by id")
+    return data
+
+
+def _norm(who: str) -> str:
+    key = (who or "").strip().lower().replace("-", "_")
+    key = " ".join(key.split())
+    if key in ALIASES:
+        return ALIASES[key]
+    last = key.split()[-1] if key else ""
+    if last in ALIASES:
+        return ALIASES[last]
+    return key.replace(" ", "_")
+
+
+def _scan_folder(folder: Path) -> dict[str, Path]:
+    out: dict[str, Path] = {}
+    if not folder.is_dir():
+        return out
+    for p in folder.iterdir():
+        if not p.is_file() or p.suffix.lower() not in IMAGE_EXTS:
+            continue
+        out[p.stem.lower()] = p
+    return out
+
+
+def _legacy_for(who: str) -> dict[str, Path]:
+    out: dict[str, Path] = {}
+    folders = [PORTRAITS_DIR, PORTRAITS_DIR / "_legacy"]
+    prefix = who.lower() + "-"
+    for folder in folders:
+        if not folder.is_dir():
+            continue
+        for p in folder.iterdir():
+            if not p.is_file() or p.suffix.lower() not in IMAGE_EXTS:
+                continue
+            name = p.name.lower()
+            if name.startswith(prefix):
+                expr = p.stem.lower()[len(who) + 1 :]
+                out.setdefault(expr or "default", p)
+            elif p.stem.lower() == who:
                 out.setdefault("default", p)
     return out
 
 
+def portraits_for(who: str) -> dict[str, Path]:
+    key = _norm(who)
+    pack = _scan_folder(PORTRAITS_DIR / key)
+    for expr, path in _legacy_for(key).items():
+        pack.setdefault(expr, path)
+    if "default" not in pack:
+        for cand in ("smile", "wink", "lean"):
+            if cand in pack:
+                pack["default"] = pack[cand]
+                break
+        if "default" not in pack and pack:
+            pack["default"] = next(iter(pack.values()))
+    return pack
+
+
 def portrait_texture_path(who: str, expr: str = "default") -> Path | None:
     pack = portraits_for(who)
-    return pack.get(expr) or pack.get("default")
+    if not pack:
+        return None
+    want = (expr or "default").lower()
+    if want in pack:
+        return pack[want]
+    for fb in EXPR_FALLBACK.get(want, ()):
+        if fb in pack:
+            return pack[fb]
+    return pack.get("default") or pack.get("smile") or next(iter(pack.values()), None)
+
+
+def list_characters() -> list[str]:
+    if not PORTRAITS_DIR.is_dir():
+        return []
+    names = []
+    for p in sorted(PORTRAITS_DIR.iterdir()):
+        if p.is_dir() and not p.name.startswith("_") and not p.name.startswith("."):
+            names.append(p.name)
+    return names
