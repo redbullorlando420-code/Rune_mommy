@@ -1,28 +1,37 @@
 # Rune Mommy
 
-3D desktop game (Ursina). Pixel-hot Clermont / Emberfen. Not a browser app.
+3D desktop game set on Hwy 50 in Clermont, Florida. Native Python (Ursina). Not a browser client.
 
-`data/shops.json` holds the ten Clermont shake shops (do not empty it).
+## Install (Windows 11)
 
-## Windows 11
-
-1. Install Python 3.11+ from https://www.python.org/downloads/ (check **Add python.exe to PATH**).
-2. Open a **new** PowerShell in this folder.
-
-```powershell
-py -3 -m pip install ursina
-py -3 game.py
 ```
-
-Or:
-
-```powershell
 py -3 -m pip install -r requirements.txt
 py -3 game.py
 ```
 
-If `py` is not recognized, reopen Terminal after installing Python, or use `python` instead of `py -3`.
+`requirements.txt` is just `ursina`.
 
-## Loaders
+## How to play
 
-`loaders.py` reads `data/shops.json` and `client/portraits/` for the desktop game. Do not strip shops.
+- **WASD** walk
+- **Mouse** look (Tab unlocks the cursor)
+- **Space** jump
+- **E** enter/exit a car, talk, or buy
+- **1** draw / holster the pistol
+- **LMB** shoot (need a gun from Gage)
+- **Esc** close a talk panel, or quit
+
+Cars sit in the Hwy 50 median. **Mama Mira** is at The Shake Bar (neon stall). **Gage** runs Hancock Gun Hut on the east edge of the pumps (pistol + ammo). Gold starts at 200.
+
+## Shops
+
+`data/shops.json` is the ten Clermont shake shops plus Hancock Gun Hut. Do not empty it.
+
+The Shake Bar, Steak n Shake, Ritter's, Bruster's, Baskin-Robbins, Culver's, Five Guys, Dairy Queen, McDonald's, Wendy's.
+
+## Layout
+
+- `game.py` — desktop game
+- `loaders.py` — shops + portraits
+- `data/` — shops, items, NPCs, dialogue
+- `py/` — Python ports of the old JS sim
