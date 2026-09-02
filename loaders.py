@@ -158,6 +158,7 @@ def portraits_for(who: str) -> dict[str, Path]:
         for p in folder.iterdir():
             if p.is_file() and p.suffix.lower() in IMAGE_EXTS:
                 out[p.stem.lower()] = p
+    # legacy flat files: mira-coffee.jpg sitting in portraits/ or _legacy/
     search_roots = [PORTRAITS_DIR, PORTRAITS_DIR / "_legacy"]
     for root in search_roots:
         if not root.is_dir():
@@ -171,6 +172,7 @@ def portraits_for(who: str) -> dict[str, Path]:
                 out.setdefault(expr, p)
             elif stem == nid:
                 out.setdefault("default", p)
+    # old hardcoded names, only if those files exist
     pack = PORTRAIT_EXPR.get(nid) or {}
     for expr, name in pack.items():
         p = portrait_path(name)
