@@ -1,17 +1,4 @@
-"""Houses, stalls, signs."""
-from __future__ import annotations
-import random
-from models3d._base import _t, _rgb
-
-def _pitched_roof(Entity, color, x, y, z, w, d, roof_col, pitch=0.35):
-    """Two rotated cubes forming a simple pitched roof."""
-    Entity(model='cube', scale=(w * 0.55, 0.22, d + 0.15), position=(x - w * 0.22, y, z),
-           color=roof_col, rotation_z=pitch * 55)
-    Entity(model='cube', scale=(w * 0.55, 0.22, d + 0.15), position=(x + w * 0.22, y, z),
-           color=roof_col, rotation_z=-pitch * 55)
-    # ridge
-    Entity(model='cube', scale=(0.18, 0.14, d + 0.2), position=(x, y + 0.35, z), color=roof_col.tint(0.1) if hasattr(roof_col, 'tint') else roof_col)
-
+from models3d._base import *
 
 def make_house(Entity, color, Text, scene_parent, x, z, *, w=3.6, h=2.8, d=3.2, body_col=None,
                roof_col=None, label=None, porch=True, garage=False, rng=None):
@@ -65,6 +52,7 @@ def make_house(Entity, color, Text, scene_parent, x, z, *, w=3.6, h=2.8, d=3.2, 
     return n
 
 
+
 def make_shop_stall(Entity, color, Text, scene_parent, x, z, w, d, h, body_col, neon, trim, name, is_gun=False):
     """Strip-mall / shake stall with neon trim, awning, counter."""
     n = 0
@@ -102,6 +90,7 @@ def make_shop_stall(Entity, color, Text, scene_parent, x, z, w, d, h, body_col, 
     return n
 
 
+
 def make_billboard(Entity, color, Text, scene_parent, x, z, text, face_yaw=0):
     Entity(model='cube', scale=(0.18, 4.2, 0.18), position=(x, 2.1, z), color=_rgb(color, 50, 40, 60), collider='box')
     Entity(model='cube', scale=(3.6, 1.8, 0.12), position=(x, 3.6, z), color=_rgb(color, 20, 8, 28), rotation_y=face_yaw)
@@ -116,6 +105,7 @@ def make_billboard(Entity, color, Text, scene_parent, x, z, text, face_yaw=0):
     return 3
 
 
+
 def make_street_sign(Entity, color, Text, scene_parent, x, z, text):
     Entity(model='cube', scale=(0.1, 2.4, 0.1), position=(x, 1.2, z), color=_rgb(color, 60, 60, 70))
     Entity(model='cube', scale=(1.8, 0.55, 0.08), position=(x, 2.35, z), color=_rgb(color, 40, 120, 80))
@@ -123,4 +113,6 @@ def make_street_sign(Entity, color, Text, scene_parent, x, z, text):
         Text(parent=scene_parent, text=text, position=(x, 2.5, z), origin=(0, 0),
              billboard=True, color=_rgb(color, 240, 255, 240))
     return 2
+
+
 
