@@ -19,11 +19,16 @@ ROOT = Path(__file__).resolve().parent
 os.chdir(ROOT)
 
 from loaders import (
-    load_shops, portrait_texture_path, load_npcs, load_mobs, load_items,
+    load_shops, portrait_texture_path, portrait_asset_path, load_npcs, load_mobs, load_items,
     load_oss_items, load_skills, load_progression, load_vehicles,
 )
 from crowd import spawn_crowd, tick_crowd, spawn_heat_hunter
 from traffic import spawn_traffic, tick_traffic
+from lighting import apply_lighting, apply_perf
+from models3d import (
+    make_humanoid, make_car, make_house, make_shop_stall,
+    make_billboard, make_street_sign, make_poi_building,
+)
 
 SHAKE_IDS = (
     'shake_bar',
@@ -169,6 +174,7 @@ class Game:
         self.skills = load_skills()
         self.progression = load_progression()
         self.vehicle_catalog = load_vehicles()
+        self.quests_data = load_json('data/quests.json', {}) or {}
         oss_sk = (self.skills or {}).get('oss') or {}
         n_skills = len(oss_sk.get('skills') or []) if isinstance(oss_sk, dict) else 0
         n_veh = len((self.vehicle_catalog or {}).get('oss') or [])
@@ -204,6 +210,18 @@ class Game:
         self.house_vols = []
         self.sanctuary_door = None
         self.michelle = None
+        self.building_count = 0
+        self.pois = []
+        self.quest_defs = list((self.quests_data or {}).get('quests') or [])
+        self.quest_active = []
+        self.quest_completed = set()
+        self.quest_progress = {}
+        self.hud_quest = None
+        self.tutorial_active = False
+        self.tutorial_step = 0
+        self.tutorial_overlay = None
+        self.tutorial_text = None
+        self.kill_quest_count = 0
 
         self.player = None
         self.cam_pivot = None
@@ -257,15 +275,17 @@ class Game:
         except Exception:
             pass
 
-        self.Sky(color=color.rgb32(20, 8, 34))
+        self.render_opts = apply_perf(window=window, camera=camera, color=color)
         try:
-            sun = DirectionalLight(shadows=False)
-            sun.look_at(self.Vec3(1, -1.4, 0.4))
-            sun.color = color.rgb32(210, 160, 190)
-            AmbientLight(color=color.rgb32(90, 60, 110))
-            PointLight(position=(0, 5, 0), color=color.rgb32(255, 90, 210))
+            apply_lighting(
+                color, self.Vec3,
+                Sky=self.Sky,
+                DirectionalLight=DirectionalLight,
+                AmbientLight=AmbientLight,
+                PointLight=PointLight,
+            )
         except Exception:
-            pass
+            self.Sky(color=color.rgb32(20, 8, 34))
 
         self._lock_mouse(True)
 
@@ -273,6 +293,7 @@ class Game:
         self._build_highway()
         self._build_skyline()
         self._build_town_slice()
+        self._build_pois()
         self._build_house()
         self._build_stalls()
         self._build_npcs()
@@ -282,8 +303,13 @@ class Game:
         self._build_traffic()
         self._build_player()
         self._build_hud()
+        self._init_quests()
+        self._init_tutorial()
         self._rebuild_ignore()
 
+        tut = 'on' if self.tutorial_active else 'off'
+        print('  buildings=%d quests=%d tutorial=%s' % (
+            self.building_count, len(self.quest_defs), tut))
         self.toast("Michelle's at the door.")
 
     def _lock_mouse(self, locked):
@@ -304,40 +330,9 @@ class Game:
         color = self.color
         Entity(
             model='plane',
-            scale=(140, 1, 110),
+            scale=(160, 1, 130),
             color=color.rgb32(32, 24, 36),
             texture='white_cube',
             texture_scale=(70, 55),
             collider=None,
             y=0,
-        )
-        # lot asphalt patch
-        Entity(
-            model='cube',
-            scale=(78, 0.04, 52),
-            position=(2, 0.02, -14),
-            color=color.rgb32(24, 18, 28),
-            texture='white_cube',
-            texture_scale=(24, 16),
-        )
-
-    def _build_highway(self):
-        Entity = self.Entity
-        color = self.color
-        # Hwy 50 east-west between the two stall rows
-        Entity(
-            model='cube',
-            scale=(88, 0.08, 9.5),
-            position=(2, 0.05, -16),
-            color=color.rgb32(18, 16, 20),
-        )
-        for x in range(-40, 44, 5):
-            Entity(
-                model='cube',
-                scale=(2.2, 0.09, 0.18),
-                position=(x, 0.1, -16),
-                color=color.rgb32(230, 200, 60),
-            )
-        # sidewalks
-        Entity(model='cube', scale=(88, 0.07, 1.6), position=(2, 0.06, -10.4), color=color.rgb32(48, 38, 52))
-        Entity(model='cube', scale=(88, 0.07, 1.6), position=(2, 0.06, -21.6), color=color.rgb32(48, 38, 52))
