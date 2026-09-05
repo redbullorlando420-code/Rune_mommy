@@ -1,1 +1,160 @@
-PLACEHOLDER
+{
+  "version": 1,
+  "note": "Clermont / Hwy 50 / US-27 starter quests. Pins: Sanctuary Drive, shakes, Club 27 Cabaret (215 US-27), Quiet Spa, Citrus Tower, Waterfront Park. Bot girl deepens dialogue later. Shakes stay.",
+  "quests": [
+    {
+      "id": "tutorial_walk",
+      "name": "Door Duty",
+      "desc": "Walk to Sanctuary Drive and talk to Michelle at the door.",
+      "type": "talk",
+      "npc": "michelle",
+      "reward_gold": 25,
+      "hud": "Talk to Michelle at the door",
+      "auto_start": true
+    },
+    {
+      "id": "cool_down",
+      "name": "Cool Down Run",
+      "desc": "Buy a Cool Down from Mama Mira at The Shake Bar.",
+      "type": "buy",
+      "item": "cool_down",
+      "npc": "mira",
+      "reward_gold": 15,
+      "hud": "Buy a Cool Down from Mira",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "heat_check",
+      "name": "Heat Check",
+      "desc": "Buy a lot pistol from Gage at Hancock Gun Hut.",
+      "type": "buy_pistol",
+      "npc": "gage",
+      "reward_gold": 20,
+      "hud": "Buy a pistol from Gage (east)",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "lot_cleanup",
+      "name": "Lot Cleanup",
+      "desc": "Drop 3 lot rats or dusk walkers on the Hwy 50 lot.",
+      "type": "kill",
+      "kinds": [
+        "lot_rat",
+        "walker",
+        "dusk_walker"
+      ],
+      "count": 3,
+      "reward_gold": 40,
+      "hud": "Kill 3 lot rats / dusk walkers ({progress}/3)",
+      "requires": [
+        "heat_check"
+      ]
+    },
+    {
+      "id": "starbucks_run",
+      "name": "Siren Run",
+      "desc": "Visit the Green Siren kiosk barista on Hwy 50.",
+      "type": "talk",
+      "npc": "barista",
+      "reward_gold": 18,
+      "hud": "Talk to the kiosk barista",
+      "requires": [
+        "cool_down"
+      ]
+    },
+    {
+      "id": "motel_checkin",
+      "name": "Palm Court",
+      "desc": "Ask the motel clerk about rooms.",
+      "type": "talk",
+      "npc": "motel_clerk",
+      "reward_gold": 12,
+      "hud": "Talk to the motel clerk",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "rx_pickup",
+      "name": "Rx Pickup",
+      "desc": "Talk to the pharmacist at Clermont Rx.",
+      "type": "talk",
+      "npc": "pharmacist",
+      "reward_gold": 15,
+      "hud": "Talk to the pharmacist",
+      "requires": [
+        "starbucks_run"
+      ]
+    },
+    {
+      "id": "foot_favor",
+      "name": "Foot Favor",
+      "desc": "Optional \u2014 talk to Michelle at a house room node (guest / lawn).",
+      "type": "michelle_room",
+      "rooms": [
+        "guest",
+        "lawn",
+        "shower"
+      ],
+      "npc": "michelle",
+      "reward_gold": 30,
+      "hud": "Optional: Michelle house room (guest/lawn)",
+      "requires": [
+        "tutorial_walk"
+      ],
+      "optional": true
+    },
+    {
+      "id": "club27_vip",
+      "name": "Club 27 Cover",
+      "desc": "Talk to the Club 27 hostess on US-27.",
+      "type": "talk",
+      "npc": "club27_host",
+      "reward_gold": 22,
+      "hud": "Talk to Club 27 hostess",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "quiet_hour",
+      "name": "Quiet Hour",
+      "desc": "Talk to the Quiet Spa tech on Hwy 50 west.",
+      "type": "talk",
+      "npc": "quiet_spa_tech",
+      "reward_gold": 20,
+      "hud": "Talk to Quiet Spa tech",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "tower_view",
+      "name": "Tower View",
+      "desc": "Visit Citrus Tower north of Hwy 50.",
+      "type": "visit",
+      "poi": "citrus_tower",
+      "reward_gold": 25,
+      "hud": "Visit Citrus Tower",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "waterfront_walk",
+      "name": "Waterfront Loop",
+      "desc": "Walk the Waterfront Park loop south of Hwy 50 and talk to the ranger.",
+      "type": "talk",
+      "npc": "park_ranger",
+      "reward_gold": 18,
+      "hud": "Talk to the Waterfront Park ranger",
+      "requires": [
+        "tutorial_walk"
+      ]
+    }
+  ]
+}
