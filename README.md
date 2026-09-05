@@ -1,21 +1,45 @@
 # Rune Mommy
 
-Pixel multiplayer browser game. Clermont shake row, Emberfen, Agate Mine.
-Click the ground to walk. JS client uses WebSocket /ws.
+3D desktop game (Ursina / Python). Clermont / Hwy 50. **Not a browser game.**
 
-## Python server (Windows 11, Python 3.11+)
+## Windows 11 (Python 3.10+)
 
+Open a terminal in this folder, then:
+
+```bat
+py -3 -m pip install -r requirements.txt
+py -3 game.py
 ```
-py -3 -m pip install -r py/requirements.txt
-py -3 py/server.py
-```
 
-Then open http://localhost:8080
+A window titled **Rune Mommy** should open. If `py` is missing, use `python` instead of `py -3`.
 
-`PORT` env var overrides the default 8080.
+Need a Python install? https://www.python.org/downloads/windows/ — check **Add python.exe to PATH**.
 
-## Node server
+## Controls
 
-npm start still runs the old Node server (`server/index.js`).
+- **WASD** walk
+- **Mouse** look
+- **Space** jump
+- **E** enter/exit a parked car, talk, buy
+- **1** draw / holster pistol (buy one from Gage at Hancock Gun Hut)
+- **LMB** shoot
+- **H** drink a shake (heals)
+- **Tab** free the cursor
+- **Esc** close talk panel, or quit
+- **1–4** pick dialogue choices
 
-data/shops.json has the ten Clermont shake shops. Do not empty it.
+You spawn in the **Sanctuary Drive** driveway. Michelle is at the front door.
+
+## What is in it
+
+- Overflowing Hwy 50 traffic and a lot crowd (shoot, loot gold, heat)
+- Ten Clermont shake shops plus Hancock Gun Hut (`data/shops.json` — do not empty it)
+- Mama Mira, Gage, Lila, Rosa, Yara, and **Michelle** (Sanctuary Drive). Michelle only — no last name.
+
+## Portraits
+
+`client/portraits/<name>/` (for example `client/portraits/michelle/sassy.jpg`). Full-size PNGs may live on disk and not on GitHub; small JPGs are on the repo so faces do not 404.
+
+## Data
+
+Do not empty `data/shops.json`. Keep all ten shake stalls.
