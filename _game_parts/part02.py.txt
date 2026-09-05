@@ -1,6 +1,3 @@
-            collider=None,
-            y=0,
-        )
         # lot asphalt patch
         Entity(
             model='cube',
@@ -126,8 +123,6 @@
         self.pois = []
         specs = (
             ('gas', 18.0, -8.0, 'rita'),
-            # Hwy 27 Fuel — US-27 near Club 27 / east
-            ('gas_hwy27', 38.0, -14.0, None),
             ('motel', -8.0, 6.5, 'motel_clerk'),
             ('laundromat', 8.0, 5.0, 'lot_attendant'),
             ('starbucks', -20.0, -10.5, 'barista'),
@@ -148,15 +143,12 @@
         for kind, x, z, npc_id in specs:
             parts, interact, label = make_poi_building(Entity, color, Text, self._scene(), kind, x, z)
             self.building_count += 1
-            is_gas = kind in ('gas', 'gas_hwy27') or (label or '').lower().find('gas') >= 0 or (label or '').lower().find('fuel') >= 0
             self.pois.append({
                 'id': kind,
                 'name': label,
                 'pos': (interact[0], 0, interact[2]),
                 'npc_id': npc_id,
                 'line': None,
-                'is_gas': is_gas,
-                'pump_r': 4.2 if is_gas else 3.4,
             })
 
     def _build_house(self):
@@ -188,3 +180,7 @@
         Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz - 0.9), color=wood)
         Entity(model='cube', scale=(0.7, 0.5, 0.55), position=(hx - 4.3, 0.4, hz + 2.2), color=color.rgb32(70, 78, 90))
         # garage south of body
+        Entity(model='cube', scale=(5.4, 2.5, 4.6), position=(hx + 0.2, 1.25, hz - 5.4), color=color.rgb32(210, 196, 176), collider='box')
+        Entity(model='cube', scale=(5.6, 0.28, 4.8), position=(hx + 0.2, 2.62, hz - 5.4), color=teal)
+        Entity(model='cube', scale=(3.4, 1.9, 0.12), position=(hx + 2.7, 1.0, hz - 5.4), color=color.rgb32(70, 78, 90))
+        door = Entity(model='cube', scale=(0.16, 2.15, 1.05), position=(hx + 4.08, 1.12, hz), color=wood)
