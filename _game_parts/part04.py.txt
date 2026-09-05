@@ -1,0 +1,232 @@
+        # Six shootable hostiles from mobs.json, south of Hwy 50 (z < -16).
+        mix = ('dusk_walker', 'road_thug', 'cinder_hound', 'dusk_walker', 'road_thug', 'cinder_hound')
+        spots = [(-12, -32), (2, -34), (14, -31), (22, -36), (-22, -30), (6, -40)]
+        for i, (mid, (x, z)) in enumerate(zip(mix, spots)):
+            spec = (self.mobs_data or {}).get(mid) or {'id': mid, 'name': mid, 'hp': 30, 'xp': 10, 'color': '#6d6875'}
+            shirt = hex_color(spec.get('color') or '#6d6875')
+            skin = color.rgb32(170, 190, 150) if 'walker' in mid else color.rgb32(220, 160, 120)
+            t = self._humanoid(x, z, shirt=shirt, pants=color.rgb32(24, 24, 28), skin=skin, hitbox=True)
+            t.npc_id = f"{mid}_{i}"
+            t.mob_id = mid
+            t.npc_name = spec.get('name', mid)
+            t.kind = 'mob'
+            t.hp = int(spec.get('hp', 30))
+            t.max_hp = t.hp
+            t.xp = int(spec.get('xp', 10))
+            t.heading = random.uniform(0, 360)
+            t.wander_t = random.uniform(0, 2)
+            t.hittable = True
+            try:
+                sz = float(spec.get('size') or 1.0)
+                t.scale = sz
+            except Exception:
+                pass
+            self.targets.append(t)
+            self.npcs.append(t)
+        # barrels
+        Entity = self.Entity
+        for x, z in ((12, -8), (11.2, -8.6), (-6, -22)):
+            b = Entity(model='cube', color=color.rgb32(150, 70, 30), scale=(0.7, 1.0, 0.7), position=(x, 0.5, z), collider='box')
+            b.kind = 'barrel'
+            b.hittable = True
+            b.hp = 15
+            b.xp = 0
+            b.npc_name = 'barrel'
+            self.targets.append(b)
+
+    def _build_player(self):
+        Entity = self.Entity
+        color = self.color
+        camera = self.camera
+        Vec3 = self.Vec3
+
+        self.player = Entity(position=(-24.6, 0, 12.0), rotation_y=-90)
+        self.visual = Entity(parent=self.player)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(30, 40, 55), scale=(0.44, 0.55, 0.3), y=0.28)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.52, 0.62, 0.34), y=0.82)
+        Entity(parent=self.visual, model='sphere', color=color.rgb32(255, 210, 175), scale=0.33, y=1.32)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.12, 0.5, 0.12), x=0.34, y=0.78)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.12, 0.5, 0.12), x=-0.34, y=0.78)
+        self.gun_model = Entity(
+            parent=self.visual,
+            model='cube',
+            color=color.rgb32(40, 42, 48),
+            scale=(0.08, 0.16, 0.42),
+            position=(0.38, 1.05, 0.28),
+            enabled=False,
+        )
+        Entity(parent=self.gun_model, model='cube', color=color.rgb32(30, 30, 32), scale=(0.7, 0.45, 0.35), position=(0, -0.4, -0.15))
+
+        self.cam_pivot = Entity(parent=self.player, y=1.35)
+        camera.parent = self.cam_pivot
+        camera.position = Vec3(0, 1.65, -8.8)
+        camera.rotation = Vec3(12, 0, 0)
+        camera.fov = 80
+
+    def _build_hud(self):
+        Entity = self.Entity
+        Text = self.Text
+        color = self.color
+        camera = self.camera
+
+        Text(text='RUNE MOMMY', position=(-0.86, 0.48), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 210))
+        Text(text='Clermont / Hwy 50', position=(-0.86, 0.445), origin=(-0.5, 0.5), color=color.rgb32(140, 230, 255), scale=0.75)
+        self.hud_gold = Text(text='Gold  200', position=(-0.86, 0.40), origin=(-0.5, 0.5), color=color.rgb32(255, 220, 90))
+        self.hud_hp = Text(text='HP  100', position=(-0.86, 0.370), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 170), scale=0.85)
+        self.hud_heat = Text(text='HEAT  0.0', position=(-0.86, 0.340), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 90), scale=0.85)
+        self.hud_ammo = Text(text='Pistol  --', position=(-0.86, 0.310), origin=(-0.5, 0.5), color=color.rgb32(200, 200, 210), scale=0.85)
+        self.hud_pack = Text(text='Pack  0', position=(-0.86, 0.280), origin=(-0.5, 0.5), color=color.rgb32(180, 230, 200), scale=0.85)
+        self.hud_breed = Text(text='BREED  0%', position=(-0.86, 0.250), origin=(-0.5, 0.5), color=color.rgb32(46, 196, 182), scale=0.85)
+        self.hud_prompt = Text(text='', position=(0, -0.42), origin=(0, 0), color=color.rgb32(255, 240, 180), scale=0.9)
+        self.hud_toast = Text(text='', position=(0, 0.32), origin=(0, 0), color=color.rgb32(255, 180, 220), scale=0.85)
+        self.crosshair = Entity(parent=camera.ui, model='quad', color=color.rgb32(255, 255, 255), scale=0.008, rotation_z=45)
+
+        self.panel_bg = Entity(
+            parent=camera.ui,
+            model='quad',
+            color=color.rgba32(10, 4, 18, 235),
+            scale=(1.58, 0.50),
+            position=(0.06, -0.28),
+            enabled=False,
+            z=0.1,
+        )
+        self.panel_portrait = Entity(
+            parent=camera.ui,
+            model='quad',
+            scale=(0.34, 0.60),
+            position=(-0.68, -0.26),
+            enabled=False,
+            z=-0.05,
+        )
+        if self.mira_texture:
+            self.panel_portrait.texture = self.mira_texture
+        self.panel_name = Text(text='', position=(-0.52, -0.08), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 210), enabled=False)
+        self.panel_body = Text(text='', position=(-0.52, -0.13), origin=(-0.5, 0.5), color=color.rgb32(245, 230, 255), enabled=False, scale=0.8)
+        self.panel_choices = []
+        for i in range(4):
+            t = Text(
+                text='',
+                position=(-0.52, -0.34 - i * 0.045),
+                origin=(-0.5, 0.5),
+                color=color.rgb32(160, 230, 255),
+                enabled=False,
+                scale=0.75,
+            )
+            self.panel_choices.append(t)
+        Text(
+            text='WASD walk   mouse look   E use   1 pistol   LMB shoot   ESC quit',
+            position=(-0.86, -0.48),
+            origin=(-0.5, 0.5),
+            color=color.rgb32(160, 140, 180),
+            scale=0.65,
+        )
+
+    # ----- tick -----------------------------------------------------------
+
+    def tick(self):
+        from ursina import time, held_keys, mouse, raycast, Vec3, destroy, color
+        dt = min(time.dt, 0.05)
+        self.shoot_cd = max(0.0, self.shoot_cd - dt)
+        if self.toast_timer > 0:
+            self.toast_timer -= dt
+            if self.toast_timer <= 0 and self.hud_toast:
+                self.hud_toast.text = ''
+
+        self.panic_t = max(0.0, getattr(self, 'panic_t', 0.0) - dt)
+        self._wander_targets(dt)
+        tick_crowd(self, dt)
+        tick_traffic(self, dt)
+        self._tick_heat(dt)
+
+        if self.ui_open:
+            self._refresh_hud()
+            return
+
+        if self.in_car:
+            self._drive(dt)
+        else:
+            self._walk(dt)
+
+        self._maybe_auto_michelle()
+
+        if self.pistol_drawn and self.owned_pistol and held_keys['left mouse'] and self.shoot_cd <= 0:
+            self._shoot()
+
+        self._refresh_hud()
+
+    def _walk(self, dt):
+        from ursina import held_keys, mouse, raycast, Vec3, time
+        player = self.player
+        if getattr(mouse, 'locked', False):
+            player.rotation_y += mouse.velocity[0] * 140
+            self.cam_pivot.rotation_x -= mouse.velocity[1] * 140
+            self.cam_pivot.rotation_x = max(-35, min(40, self.cam_pivot.rotation_x))
+
+        wish = Vec3(
+            held_keys['d'] - held_keys['a'],
+            0,
+            held_keys['w'] - held_keys['s'],
+        )
+        if wish.length() > 0:
+            wish = wish.normalized()
+            move = (player.forward * wish.z + player.right * wish.x) * 7.2 * dt
+            origin = player.world_position + Vec3(0, 0.9, 0)
+            hit = raycast(origin, move.normalized(), distance=0.7 + move.length(), ignore=self.ignore, debug=False)
+            if not hit.hit:
+                player.position += move
+            player.x = max(-48, min(52, player.x))
+            player.z = max(-52, min(22, player.z))
+
+        self.y_vel -= 32 * dt
+        player.y += self.y_vel * dt
+        if player.y <= 0:
+            player.y = 0
+            self.y_vel = 0
+            self.grounded = True
+        else:
+            self.grounded = False
+
+        if held_keys['space'] and self.grounded:
+            self.y_vel = 8.2
+            self.grounded = False
+
+        if not self.visual.enabled:
+            self.visual.enabled = True
+        if self.cam_in_car:
+            self._set_camera_follow(False)
+
+    def _drive(self, dt):
+        from ursina import held_keys, mouse, raycast, Vec3
+        car = self.in_car
+        if getattr(mouse, 'locked', False):
+            car.cam_pivot.rotation_x -= mouse.velocity[1] * 80
+            car.cam_pivot.rotation_x = max(-20, min(25, car.cam_pivot.rotation_x))
+
+        accel, brake, vmax = 16.0, 28.0, 24.0
+        if held_keys['w']:
+            car.speed += accel * dt
+        elif held_keys['s']:
+            if car.speed > 0.6:
+                car.speed -= brake * dt
+            else:
+                car.speed -= accel * 0.55 * dt
+        else:
+            if abs(car.speed) < 0.4:
+                car.speed = 0
+            else:
+                car.speed -= math.copysign(8.0 * dt, car.speed)
+        if held_keys['space']:
+            car.speed *= max(0.0, 1 - 3.5 * dt)
+        car.speed = max(-9.0, min(vmax, car.speed))
+
+        steer = (held_keys['a'] - held_keys['d'])
+        if abs(car.speed) > 0.25:
+            turn = steer * 95 * (abs(car.speed) / vmax) * dt
+            if car.speed < 0:
+                turn = -turn
+            car.rotation_y += turn
+
+        move = car.forward * car.speed * dt
+        origin = car.world_position + Vec3(0, 0.7, 0)
+        ign = list(self.ignore) + [car, car.body]
+        hit = raycast(origin, move.normalized() if move.length() else car.forward, distance=2.0, ignore=ign, debug=False)
