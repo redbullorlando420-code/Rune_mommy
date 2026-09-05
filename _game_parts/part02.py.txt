@@ -1,0 +1,221 @@
+        # street lamps
+        for x in (-28, -12, 0, 14, 28):
+            for z in (-10.2, -21.8):
+                Entity(model='cube', scale=(0.12, 3.2, 0.12), position=(x, 1.6, z), color=color.rgb32(40, 30, 50))
+                Entity(model='sphere', scale=0.35, position=(x, 3.3, z), color=color.rgb32(255, 90, 200))
+
+    def _build_skyline(self):
+        Entity = self.Entity
+        color = self.color
+        rng = random.Random(50)
+        # background buildings north and south
+        for i in range(10):
+            w, h, d = rng.uniform(3, 7), rng.uniform(4, 14), rng.uniform(3, 6)
+            x = -40 + i * 9 + rng.uniform(-1, 1)
+            z = 16 + rng.uniform(0, 4)
+            if math.hypot(x + 32.0, z - 12.0) < 14.0:
+                continue
+            Entity(
+                model='cube',
+                scale=(w, h, d),
+                position=(x, h / 2, z),
+                color=color.rgb32(rng.randint(28, 55), rng.randint(16, 40), rng.randint(40, 70)),
+                collider='box',
+            )
+        for i in range(8):
+            w, h, d = rng.uniform(3, 6), rng.uniform(3, 9), rng.uniform(3, 5)
+            x = -34 + i * 10
+            z = -48
+            Entity(
+                model='cube',
+                scale=(w, h, d),
+                position=(x, h / 2, z),
+                color=color.rgb32(rng.randint(30, 60), rng.randint(18, 36), rng.randint(28, 50)),
+                collider='box',
+            )
+        # palm-ish trees
+        for x, z in ((-30, 6), (26, 8), (-22, -38), (24, -38), (40, -10), (-36, -8)):
+            if math.hypot(x + 32.0, z - 12.0) < 12.0:
+                continue
+            Entity(model='cube', scale=(0.28, 2.4, 0.28), position=(x, 1.2, z), color=color.rgb32(70, 42, 28), collider='box')
+            Entity(model='sphere', scale=1.6, position=(x, 2.8, z), color=color.rgb32(30, 110, 55))
+
+    def _build_town_slice(self):
+        Entity = self.Entity
+        color = self.color
+        rng = random.Random(77)
+        houses = (
+            (-28, -34), (-18, -38), (-6, -36), (8, -39),
+            (20, -35), (32, -37), (-32, -42), (12, -44),
+        )
+        for x, z in houses:
+            w, h, d = rng.uniform(2.6, 4.2), rng.uniform(2.2, 3.8), rng.uniform(2.4, 3.5)
+            Entity(
+                model='cube',
+                scale=(w, h, d),
+                position=(x, h / 2, z),
+                color=color.rgb32(rng.randint(40, 70), rng.randint(18, 40), rng.randint(48, 80)),
+                collider='box',
+            )
+            Entity(
+                model='cube',
+                scale=(0.45, 0.38, 0.08),
+                position=(x, h * 0.55, z - d / 2 - 0.02),
+                color=color.rgb32(255, rng.randint(90, 180), 210),
+            )
+        for x in (-32, -16, 4, 18, 34):
+            z = -32.0
+            Entity(model='cube', scale=(0.12, 3.0, 0.12), position=(x, 1.5, z), color=color.rgb32(40, 30, 50))
+            Entity(model='sphere', scale=0.32, position=(x, 3.15, z), color=color.rgb32(255, 90, 200))
+
+    def _build_house(self):
+        """Suburban cubes at about (-32, 0, 12). Body, teal roof, garage, door, back lawn, Sanctuary Drive."""
+        Entity = self.Entity
+        color = self.color
+        Text = self.Text
+        teal = color.rgb32(46, 196, 182)
+        body_col = color.rgb32(232, 214, 188)
+        wood = color.rgb32(90, 55, 40)
+        hx, hz = -32.0, 12.0
+        self.house_vols = []
+        self.sanctuary_pos = (hx, 0.0, hz)
+
+        # lot grass + darker back-lawn swamp strip (west) + driveway (east)
+        Entity(model='cube', scale=(16, 0.05, 14), position=(hx - 1.0, 0.025, hz), color=color.rgb32(34, 88, 46))
+        Entity(model='cube', scale=(7.5, 0.06, 12), position=(hx - 7.2, 0.03, hz), color=color.rgb32(16, 42, 28))
+        Entity(model='cube', scale=(6.2, 0.07, 5.6), position=(hx + 6.4, 0.035, hz), color=color.rgb32(48, 44, 50))
+
+        # body
+        Entity(model='cube', scale=(8.0, 3.2, 6.4), position=(hx, 1.6, hz), color=body_col)
+        # teal/white roof
+        Entity(model='cube', scale=(8.6, 0.48, 7.0), position=(hx, 3.42, hz), color=teal)
+        Entity(model='cube', scale=(4.6, 0.22, 7.1), position=(hx, 3.72, hz), color=color.rgb32(245, 248, 252))
+        # garage south of body
+        Entity(model='cube', scale=(5.4, 2.5, 4.6), position=(hx + 0.2, 1.25, hz - 5.4), color=color.rgb32(210, 196, 176), collider='box')
+        Entity(model='cube', scale=(5.6, 0.28, 4.8), position=(hx + 0.2, 2.62, hz - 5.4), color=teal)
+        Entity(model='cube', scale=(3.4, 1.9, 0.12), position=(hx + 2.7, 1.0, hz - 5.4), color=color.rgb32(70, 78, 90))
+        # door on east face, toward the lot / driveway
+        door = Entity(model='cube', scale=(0.16, 2.15, 1.05), position=(hx + 4.08, 1.12, hz), color=wood)
+        self.sanctuary_door = door
+        Entity(model='cube', scale=(1.5, 0.16, 1.7), position=(hx + 4.9, 0.1, hz), color=color.rgb32(180, 180, 175))
+
+        # guest bed + shower markers inside
+        Entity(model='cube', scale=(2.2, 0.42, 1.5), position=(hx + 1.8, 0.45, hz + 1.5), color=color.rgb32(220, 210, 200))
+        Entity(model='cube', scale=(1.35, 1.9, 1.35), position=(hx - 2.1, 1.05, hz + 1.7), color=color.rgb32(180, 220, 215))
+
+        door_xz = (hx + 4.1, hz)
+        guest_xz = (hx + 1.8, hz + 1.5)
+        garage_xz = (hx + 0.2, hz - 5.4)
+        shower_xz = (hx - 2.1, hz + 1.7)
+        lawn_xz = (hx - 7.2, hz)
+        self.house_rooms = {
+            'door': door_xz,
+            'guest': guest_xz,
+            'garage': garage_xz,
+            'shower': shower_xz,
+            'lawn': lawn_xz,
+        }
+
+        def vol(xz, sx, sz, col, node):
+            e = Entity(model='cube', scale=(sx, 0.06, sz), position=(xz[0], 0.12, xz[1]), color=col)
+            e.room_node = node
+            self.house_vols.append(e)
+            return e
+
+        vol(guest_xz, 3.0, 2.4, color.rgb32(70, 180, 170), 'guest')
+        vol(garage_xz, 3.6, 3.2, color.rgb32(70, 70, 78), 'garage')
+        vol(shower_xz, 2.2, 2.2, color.rgb32(90, 200, 210), 'shower')
+        vol(lawn_xz, 4.2, 5.0, color.rgb32(22, 58, 32), 'lawn')
+        vol(door_xz, 2.2, 2.2, color.rgb32(90, 70, 55), 'door')
+
+        Entity(model='cube', scale=(0.14, 2.8, 0.14), position=(hx + 7.4, 1.4, hz + 3.4), color=color.rgb32(70, 60, 50))
+        Entity(model='cube', scale=(2.8, 0.7, 0.08), position=(hx + 7.4, 2.7, hz + 3.4), color=teal)
+        Text(
+            parent=self._scene(),
+            text='Sanctuary Drive',
+            position=(hx + 7.4, 3.2, hz + 3.4),
+            origin=(0, 0),
+            billboard=True,
+            color=teal,
+        )
+
+        # Michelle at the door — teal shirt, not hittable
+        michelle = self._humanoid(
+            door_xz[0],
+            door_xz[1],
+            shirt=color.rgb32(46, 196, 182),
+            pants=color.rgb32(245, 245, 240),
+            skin=color.rgb32(255, 214, 170),
+        )
+        michelle.npc_id = 'michelle'
+        michelle.npc_name = 'Michelle'
+        michelle.kind = 'michelle'
+        michelle.hittable = False
+        michelle.line = "Alec, I just got off the plane, can you not stare at my tits for five seconds?"
+        michelle.portrait_tex = None
+        pp = portrait_texture_path('michelle')
+        if pp and Path(pp).is_file():
+            try:
+                from ursina import load_texture
+                tex = load_texture(str(pp))
+            except Exception:
+                tex = str(pp)
+            michelle.portrait_tex = tex
+            bill = Entity(
+                parent=michelle,
+                model='quad',
+                texture=tex,
+                scale=(1.05, 1.4),
+                position=(0, 1.45, -0.55),
+                double_sided=True,
+            )
+            try:
+                bill.billboard = True
+            except Exception:
+                pass
+        self.npcs.append(michelle)
+        self.michelle = michelle
+
+    def _build_stalls(self):
+
+        Entity = self.Entity
+        color = self.color
+        Text = self.Text
+        shops = list((self.shops_data or {}).get('shops') or [])
+        for shop in shops:
+            sid = shop.get('id', '')
+            name = shop.get('name', sid)
+            pal = shop.get('palette') or ['#ff4fd8', '#5af0ff', '#1a081c']
+            is_gun = sid == 'gun_hut' or 'gun' in name.lower()
+            if is_gun:
+                x, z = 36.0, 4.0
+                w, d, h = 4.2, 3.6, 3.1
+                body_col = hex_color(pal[0])
+                accent = hex_color(pal[1])
+                Entity(
+                    model='cube',
+                    scale=(w, h, d),
+                    position=(x, h / 2, z),
+                    color=body_col,
+                    collider='box',
+                )
+                Entity(model='cube', scale=(w + 0.6, 0.18, d + 0.5), position=(x, h + 0.1, z), color=accent)
+                Entity(model='cube', scale=(1.4, 0.9, 1.1), position=(x + 2.6, 0.45, z - 1.4), color=color.rgb32(90, 70, 40), collider='box')
+                Entity(model='cube', scale=(0.35, 1.4, 0.12), position=(x - 1.4, 1.6, z - 1.9), color=color.rgb32(196, 90, 24))
+            else:
+                x, z = tile_to_world(shop.get('tileX', 16), shop.get('tileY', 7))
+                w = max(3.2, float(shop.get('w', 4)) * 0.85)
+                d = max(2.8, float(shop.get('h', 4)) * 0.7)
+                h = 2.35 if shop.get('flagship') else 2.05
+                body_col = hex_color(pal[2] if len(pal) > 2 else pal[0]).tint(-0.15)
+                neon = hex_color(pal[0])
+                trim = hex_color(pal[1] if len(pal) > 1 else pal[0])
+                Entity(
+                    model='cube',
+                    scale=(w, h, d),
+                    position=(x, h / 2, z),
+                    color=body_col,
+                    collider='box',
+                )
+                Entity(model='cube', scale=(w + 0.55, 0.12, d + 0.4), position=(x, h + 0.12, z), color=neon)
+                Entity(model='cube', scale=(w + 0.2, 0.08, 0.12), position=(x, h + 0.28, z - d / 2 - 0.05), color=trim)
