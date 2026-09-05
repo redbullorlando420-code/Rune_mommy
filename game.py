@@ -1,1 +1,1 @@
-file:///workspace/Rune_mommy/game.py
+!include /workspace/Rune_mommy/game.py
