@@ -1,10 +1,53 @@
+        self._build_npcs()
+        self._build_cars()
+        self._build_targets()
+        self._build_crowd()
+        self._build_traffic()
+        self._build_player()
+        self._build_hud()
+        self._init_quests()
+        self._init_tutorial()
+        self._rebuild_ignore()
+
+        tut = 'on' if self.tutorial_active else 'off'
+        print('  buildings=%d quests=%d tutorial=%s' % (
+            self.building_count, len(self.quest_defs), tut))
+        self.toast("Click the window, then WASD. E talks to Michelle at the door.")
+
+    def _lock_mouse(self, locked):
+        mouse = self.mouse
+        try:
+            mouse.locked = bool(locked)
+            mouse.visible = not locked
+        except Exception:
+            try:
+                mouse.visible = not locked
+            except Exception:
+                pass
+
+    # ----- world ----------------------------------------------------------
+
+    def _build_ground(self):
+        Entity = self.Entity
+        color = self.color
+        grass = load_tex('grass')
+        asphalt = load_tex('asphalt')
+        Entity(
+            model='plane',
+            scale=(160, 1, 130),
+            color=color.rgb32(48, 90, 42) if grass else color.rgb32(32, 24, 36),
+            texture=grass or 'white_cube',
+            texture_scale=(70, 55),
+            collider=None,
+            y=0,
+        )
         # lot asphalt patch
         Entity(
             model='cube',
             scale=(78, 0.04, 52),
             position=(2, 0.02, -14),
-            color=color.rgb32(24, 18, 28),
-            texture='white_cube',
+            color=color.rgb32(36, 34, 38) if asphalt else color.rgb32(24, 18, 28),
+            texture=asphalt or 'white_cube',
             texture_scale=(24, 16),
         )
 
@@ -12,11 +55,15 @@
         Entity = self.Entity
         color = self.color
         # Hwy 50 east-west between the two stall rows
+        asphalt = load_tex('asphalt')
+        concrete = load_tex('concrete')
         Entity(
             model='cube',
             scale=(88, 0.08, 9.5),
             position=(2, 0.05, -16),
-            color=color.rgb32(18, 16, 20),
+            color=color.rgb32(28, 26, 30) if asphalt else color.rgb32(18, 16, 20),
+            texture=asphalt,
+            texture_scale=(28, 3),
         )
         for x in range(-40, 44, 5):
             Entity(
@@ -26,8 +73,12 @@
                 color=color.rgb32(230, 200, 60),
             )
         # sidewalks
-        Entity(model='cube', scale=(88, 0.07, 1.6), position=(2, 0.06, -10.4), color=color.rgb32(48, 38, 52))
-        Entity(model='cube', scale=(88, 0.07, 1.6), position=(2, 0.06, -21.6), color=color.rgb32(48, 38, 52))
+        Entity(model='cube', scale=(88, 0.07, 1.6), position=(2, 0.06, -10.4),
+               color=color.rgb32(120, 115, 110) if concrete else color.rgb32(48, 38, 52),
+               texture=concrete, texture_scale=(40, 1))
+        Entity(model='cube', scale=(88, 0.07, 1.6), position=(2, 0.06, -21.6),
+               color=color.rgb32(120, 115, 110) if concrete else color.rgb32(48, 38, 52),
+               texture=concrete, texture_scale=(40, 1))
         # street lamps
         for x in (-28, -12, 0, 14, 28):
             for z in (-10.2, -21.8):
@@ -47,7 +98,8 @@
             if math.hypot(x + 32.0, z - 12.0) < 14.0:
                 continue
             body = color.rgb32(rng.randint(28, 55), rng.randint(16, 40), rng.randint(40, 70))
-            Entity(model='cube', scale=(w, h, d), position=(x, h / 2, z), color=body, collider='box')
+            Entity(model='cube', scale=(w, h, d), position=(x, h / 2, z), color=body,
+                   texture=load_tex('brick') or load_tex('stucco'), texture_scale=(2.5, 2.0), collider='box')
             Entity(model='cube', scale=(w + 0.3, 0.2, d + 0.3), position=(x, h + 0.1, z), color=body.tint(0.15) if hasattr(body, 'tint') else body)
             # window grid
             for wy in (0.35, 0.55, 0.75):
@@ -58,7 +110,9 @@
             w, h, d = rng.uniform(3, 5.5), rng.uniform(3.2, 8.0), rng.uniform(3, 5)
             x = -34 + i * 10
             z = -50
-            Entity(model='cube', scale=(w, h, d), position=(x, h / 2, z), color=color.rgb32(rng.randint(30, 60), rng.randint(18, 36), rng.randint(28, 50)), collider='box')
+            Entity(model='cube', scale=(w, h, d), position=(x, h / 2, z),
+                   color=color.rgb32(rng.randint(30, 60), rng.randint(18, 36), rng.randint(28, 50)),
+                   texture=load_tex('stucco') or load_tex('brick'), texture_scale=(2.2, 1.8), collider='box')
             Entity(model='cube', scale=(w + 0.2, 0.15, d + 0.2), position=(x, h + 0.08, z), color=color.rgb32(60, 40, 80))
             self.building_count += 1
         for x, z in ((-30, 6), (26, 8), (-22, -38), (24, -38), (40, -10), (-36, -8), (8, 10), (-8, -42)):
@@ -123,6 +177,8 @@
         self.pois = []
         specs = (
             ('gas', 18.0, -8.0, 'rita'),
+            # Hwy 27 Fuel — US-27 near Club 27 / east
+            ('gas_hwy27', 38.0, -14.0, None),
             ('motel', -8.0, 6.5, 'motel_clerk'),
             ('laundromat', 8.0, 5.0, 'lot_attendant'),
             ('starbucks', -20.0, -10.5, 'barista'),
@@ -143,44 +199,14 @@
         for kind, x, z, npc_id in specs:
             parts, interact, label = make_poi_building(Entity, color, Text, self._scene(), kind, x, z)
             self.building_count += 1
+            is_gas = kind in ('gas', 'gas_hwy27') or (label or '').lower().find('gas') >= 0 or (label or '').lower().find('fuel') >= 0
             self.pois.append({
                 'id': kind,
                 'name': label,
                 'pos': (interact[0], 0, interact[2]),
                 'npc_id': npc_id,
                 'line': None,
+                'is_gas': is_gas,
+                'pump_r': 4.2 if is_gas else 3.4,
             })
 
-    def _build_house(self):
-        """Suburban cubes at about (-32, 0, 12). Body, teal roof, garage, door, back lawn, Sanctuary Drive."""
-        Entity = self.Entity
-        color = self.color
-        Text = self.Text
-        teal = color.rgb32(46, 196, 182)
-        body_col = color.rgb32(232, 214, 188)
-        wood = color.rgb32(90, 55, 40)
-        hx, hz = -32.0, 12.0
-        self.house_vols = []
-        self.sanctuary_pos = (hx, 0.0, hz)
-
-        # lot grass + darker back-lawn swamp strip (west) + driveway (east)
-        Entity(model='cube', scale=(16, 0.05, 14), position=(hx - 1.0, 0.025, hz), color=color.rgb32(34, 88, 46))
-        Entity(model='cube', scale=(7.5, 0.06, 12), position=(hx - 7.2, 0.03, hz), color=color.rgb32(16, 42, 28))
-        Entity(model='cube', scale=(6.2, 0.07, 5.6), position=(hx + 6.4, 0.035, hz), color=color.rgb32(48, 44, 50))
-
-        # body + porch + windows + AC (composed, not a lone cube)
-        Entity(model='cube', scale=(8.0, 3.2, 6.4), position=(hx, 1.6, hz), color=body_col, collider='box')
-        Entity(model='cube', scale=(8.6, 0.35, 3.6), position=(hx - 1.2, 3.55, hz), color=teal, rotation_z=18)
-        Entity(model='cube', scale=(8.6, 0.35, 3.6), position=(hx + 1.2, 3.55, hz), color=teal, rotation_z=-18)
-        Entity(model='cube', scale=(0.3, 0.25, 7.0), position=(hx, 3.95, hz), color=color.rgb32(245, 248, 252))
-        for wz in (-1.6, 1.6):
-            Entity(model='cube', scale=(0.08, 0.7, 0.7), position=(hx + 4.05, 1.7, hz + wz), color=color.rgb32(120, 200, 230))
-        Entity(model='cube', scale=(2.8, 0.14, 2.2), position=(hx + 5.2, 0.1, hz), color=color.rgb32(170, 160, 140))
-        Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz + 0.9), color=wood)
-        Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz - 0.9), color=wood)
-        Entity(model='cube', scale=(0.7, 0.5, 0.55), position=(hx - 4.3, 0.4, hz + 2.2), color=color.rgb32(70, 78, 90))
-        # garage south of body
-        Entity(model='cube', scale=(5.4, 2.5, 4.6), position=(hx + 0.2, 1.25, hz - 5.4), color=color.rgb32(210, 196, 176), collider='box')
-        Entity(model='cube', scale=(5.6, 0.28, 4.8), position=(hx + 0.2, 2.62, hz - 5.4), color=teal)
-        Entity(model='cube', scale=(3.4, 1.9, 0.12), position=(hx + 2.7, 1.0, hz - 5.4), color=color.rgb32(70, 78, 90))
-        door = Entity(model='cube', scale=(0.16, 2.15, 1.05), position=(hx + 4.08, 1.12, hz), color=wood)
