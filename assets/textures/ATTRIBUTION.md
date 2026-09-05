@@ -12,3 +12,7 @@ Sources and licenses for files in this folder:
 | water.jpg | Procedural original for Rune Mommy | original |
 
 AmbientCG: https://ambientcg.com/ — CC0. Resized/compressed for repo size.
+
+## Zip / GitHub note
+
+Binary AmbientCG jpgs may stay **local-only** (MCP push truncates them). On first `py -3 game.py`, `assets/generate_textures.py` writes procedural PNG fallbacks (`grass.png`, `asphalt.png`, …) into this folder when jpgs are missing, so a fresh zip is not blank white. Prefer real jpgs from disk when present; `load_tex` checks `.jpg` before `.png`.
