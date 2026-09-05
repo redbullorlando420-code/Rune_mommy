@@ -233,6 +233,7 @@
             'yara': self.yara_dlg,
             'michelle': self.michelle_dlg,
         }
+        dlg = dlg_map.get(who)
         titles = {
             'lila': 'Lila',
             'rosa': 'Rosa',
