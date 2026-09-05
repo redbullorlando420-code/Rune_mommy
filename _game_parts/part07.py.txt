@@ -1,247 +1,227 @@
-            self.hud_heat.text = f'HEAT  {self.heat:.1f}'
-        if getattr(self, 'hud_breed', None):
-            flag = '  PREG' if self.preg else ''
-            self.hud_breed.text = f'Breed  {int(self.breed)}%{flag}'
-        if self.hud_ammo:
-            if not self.owned_pistol:
-                self.hud_ammo.text = 'Pistol  not owned'
-            elif self.pistol_drawn:
-                self.hud_ammo.text = f'Pistol  DRAWN   ammo {self.ammo}'
-            else:
-                self.hud_ammo.text = f'Pistol  holstered   ammo {self.ammo}'
-        if self.hud_pack:
-            self.hud_pack.text = f'Pack  {len(self.pack)}'
-        if getattr(self, 'hud_quest', None):
-            self.hud_quest.text = self._quest_hud_line()
-        if getattr(self, 'hud_mode', None):
-            if self.in_car:
-                fuel = int(getattr(self.in_car, 'fuel', 0) or 0)
-                dmg = int(getattr(self.in_car, 'damage', 0) or 0)
-                self.hud_mode.text = f'DRIVE   FUEL {fuel}%   DMG {dmg}%'
-            else:
-                self.hud_mode.text = 'WALK'
-        if self.gun_model:
-            self.gun_model.enabled = bool(self.pistol_drawn and self.owned_pistol and not self.in_car)
-        if self.ui_open:
-            if self.hud_prompt:
-                self.hud_prompt.text = '1-4 choose    ESC close'
-            return
-        prompt = self._nearest_prompt()
-        if self.hud_prompt:
-            self.hud_prompt.text = prompt
-
-    def _nearest_prompt(self):
-        pos = self._actor_pos()
-        gas = self._nearest_gas(pos)
-        if self.in_car:
-            if gas:
-                car = self.in_car
-                fuel = float(getattr(car, 'fuel', 100) or 0)
-                dmg = float(getattr(car, 'damage', 0) or 0)
-                need = max(0.0, 100.0 - fuel)
-                cost = max(1, int(math.ceil(need / 2.0))) if need > 0.5 else 0
-                if need > 0.5:
-                    return f'E  fill tank ({cost}g)'
-                if dmg >= 5:
-                    return 'E  repair (50g)'
-                return 'E  exit car  ·  tank full'
-            return 'E  exit car'
-        car, cd = self._nearest_car(pos, 3.2)
-        npc, nd = self._nearest_npc(pos, 3.0)
-        stall, sd = self._nearest_stall(pos, 3.6)
-        options = []
-        if gas:
-            near_car, _ncd = self._nearest_car(pos, 5.0)
-            if near_car and not getattr(near_car, 'traffic', False):
-                fuel = float(getattr(near_car, 'fuel', 100) or 0)
-                need = max(0.0, 100.0 - fuel)
-                cost = max(1, int(math.ceil(need / 2.0))) if need > 0.5 else 0
-                dmg = float(getattr(near_car, 'damage', 0) or 0)
-                if need > 0.5:
-                    options.append((0.1, f'E  fill tank ({cost}g)'))
-                elif dmg >= 5:
-                    options.append((0.1, 'E  repair (50g)'))
-                else:
-                    options.append((0.15, 'E  gas station'))
-            else:
-                options.append((0.2, 'E  gas pump'))
-        if car and not getattr(car, 'disabled', False):
-            options.append((cd, f'E  enter car'))
-        if npc:
-            kind = getattr(npc, 'kind', '')
-            if kind == 'mira':
-                options.append((nd, 'E  talk to Mama Mira'))
-            elif kind == 'michelle':
-                options.append((nd, 'E  talk to Michelle'))
-            elif kind == 'gun':
-                options.append((nd, 'E  Hancock Gun Hut (Gage)'))
-            elif kind not in ('target', 'mob'):
-                options.append((nd, f'E  talk to {getattr(npc, "npc_name", "NPC")}'))
-        if stall and (not npc or sd + 0.4 < nd):
-            if stall['kind'] == 'gun':
-                options.append((sd, 'E  Hancock Gun Hut'))
-            else:
-                options.append((sd, f'E  {stall["name"]}'))
-        door_xz = (self.house_rooms or {}).get('door')
-        if door_xz and not self.michelle_seen:
-            dd = dist_xz(pos, (door_xz[0], 0, door_xz[1]))
-            if dd < 3.0:
-                options.append((dd, 'E  Sanctuary Drive'))
-        for poi in getattr(self, 'pois', []) or []:
-            if poi.get('is_gas'):
-                continue
-            pd = dist_xz(pos, poi['pos'])
-            if pd < 3.4:
-                options.append((pd, f"E  {poi.get('name', 'POI')}"))
-        if not options:
-            return ''
-        options.sort(key=lambda x: x[0])
-        return options[0][1]
-
-    def _actor_pos(self):
-        if self.in_car:
-            p = self.in_car.world_position
-            return (p.x, p.y, p.z)
-        p = self.player.world_position
-        return (p.x, p.y, p.z)
-
-    def _nearest_car(self, pos, radius):
-        best, best_d = None, radius
-        for car in self.cars:
-            if not car:
-                continue
-            if getattr(car, 'disabled', False):
-                continue
-            d = dist_xz(pos, (car.x, 0, car.z))
-            if d < best_d:
-                best, best_d = car, d
-        return best, best_d
-
-    def _nearest_gas(self, pos, radius=None):
-        best, best_d = None, 99.0
-        for poi in getattr(self, 'pois', []) or []:
-            if not poi.get('is_gas'):
-                continue
-            r = float(radius if radius is not None else poi.get('pump_r', 4.2))
-            d = dist_xz(pos, poi['pos'])
-            if d < r and d < best_d:
-                best, best_d = poi, d
-        return best
-
-    def _nearest_npc(self, pos, radius):
-        best, best_d = None, radius
-        for npc in self.npcs:
-            if not npc:
-                continue
-            kind = getattr(npc, 'kind', '')
-            if kind in ('target', 'mob', 'civilian', 'lot_rat', 'walker', 'thug', 'heat_hunter', 'barrel'):
-                continue
-            if getattr(npc, 'hittable', False):
-                continue
-            if getattr(npc, 'enabled', True) is False:
-                continue
-            d = dist_xz(pos, (npc.x, 0, npc.z))
-            if d < best_d:
-                best, best_d = npc, d
-        return best, best_d
-
-    def _nearest_stall(self, pos, radius):
-        best, best_d = None, radius
-        for st in self.stalls:
-            d = dist_xz(pos, st['pos'])
-            if d < best_d:
-                best, best_d = st, d
-        return best, best_d
-
-    # ----- input ----------------------------------------------------------
-
-    def on_input(self, key):
-        from ursina import application, mouse
-        if key in ('enter', 'return') and getattr(self, 'tutorial_active', False):
-            self._finish_tutorial()
-            return
-        if key == 'escape':
-            if self.ui_open:
-                self.close_panel()
-                return
-            application.quit()
-            return
-        if self.ui_open:
-            if key in ('1', '2', '3', '4'):
-                self._pick_choice(int(key) - 1)
-            return
-        if key == 'e':
-            self._interact()
-            return
-        if key == '1':
-            self._toggle_pistol()
-            return
-        if key in ('h', 'H'):
-            self._eat_food()
-            return
-        if key == 'left mouse down':
-            # Clicking the window should capture the mouse for look+WASD.
-            if not self.ui_open and not getattr(self.mouse, 'locked', False):
-                self._lock_mouse(True)
-                self.toast('Mouse locked. WASD walk. E talk. Tab frees cursor.')
-                return
-            if self.pistol_drawn:
+            if self.pistol_drawn and self.owned_pistol and held_keys['left mouse'] and self.shoot_cd <= 0:
                 self._shoot()
-            return
-        if key == 'tab':
-            self.mouse_free = not getattr(self, 'mouse_free', False)
-            self._lock_mouse(not self.mouse_free)
-            self.toast('Cursor free (Tab to recapture)' if self.mouse_free else 'Mouse locked. WASD to walk.')
-            return
 
-    def _toggle_pistol(self):
-        if not self.owned_pistol:
-            self.toast('No pistol. Buy one from Gage at Hancock Gun Hut (east).')
-            return
-        self.pistol_drawn = not self.pistol_drawn
-        if self.gun_model and not self.in_car:
-            self.gun_model.enabled = self.pistol_drawn
-        if self.pistol_drawn:
-            self.panic_t = max(self.panic_t, 3.5)
-            self.toast('Pistol drawn.')
+        self._refresh_hud()
+
+    def _walk(self, dt):
+        from ursina import held_keys, mouse, raycast, Vec3
+        player = self.player
+        # Re-lock every frame so WASD works after click/focus (unless panel or Tab-free).
+        if not self.ui_open and not getattr(self, 'mouse_free', False):
+            self._lock_mouse(True)
+        if getattr(mouse, 'locked', False):
+            sens = float(getattr(self, 'mouse_sens', 140) or 140)
+            player.rotation_y += mouse.velocity[0] * sens
+            self.cam_pivot.rotation_x -= mouse.velocity[1] * sens
+            self.cam_pivot.rotation_x = max(-35, min(40, self.cam_pivot.rotation_x))
+
+        wish = Vec3(
+            held_keys['d'] - held_keys['a'],
+            0,
+            held_keys['w'] - held_keys['s'],
+        )
+        if wish.length() > 0:
+            wish = wish.normalized()
+            speed = 8.5
+            move = (player.forward * wish.z + player.right * wish.x) * speed * dt
+            origin = player.world_position + Vec3(0, 0.9, 0)
+            ign = list(self.ignore)
+            # Try full move, then axis slides so a curb never hard-locks you.
+            hit = raycast(origin, move.normalized(), distance=0.55 + move.length(), ignore=ign, debug=False)
+            if not hit.hit:
+                player.position += move
+            else:
+                mx = Vec3(move.x, 0, 0)
+                mz = Vec3(0, 0, move.z)
+                if mx.length() > 1e-5:
+                    hx = raycast(origin, mx.normalized(), distance=0.55 + mx.length(), ignore=ign, debug=False)
+                    if not hx.hit:
+                        player.x += mx.x
+                if mz.length() > 1e-5:
+                    hz = raycast(origin, mz.normalized(), distance=0.55 + mz.length(), ignore=ign, debug=False)
+                    if not hz.hit:
+                        player.z += mz.z
+            if getattr(self, 'mode', 'play') == 'safe':
+                cx, _cy, cz = getattr(self, 'safe_yard_center', (80.0, 0.0, 80.0))
+                player.x = max(cx - 12.0, min(cx + 12.0, player.x))
+                player.z = max(cz - 12.0, min(cz + 12.0, player.z))
+            else:
+                player.x = max(-55, min(58, player.x))
+                player.z = max(-55, min(28, player.z))
+
+        self.y_vel -= 32 * dt
+        player.y += self.y_vel * dt
+        if player.y <= 0:
+            player.y = 0
+            self.y_vel = 0
+            self.grounded = True
         else:
-            self.toast('Holstered.')
+            self.grounded = False
 
-    def _interact(self):
-        pos = self._actor_pos()
-        gas = self._nearest_gas(pos)
-        if self.in_car:
-            if gas:
-                self.open_gas_station(gas, self.in_car)
-                return
-            self._exit_car()
+        if held_keys['space'] and self.grounded:
+            self.y_vel = 8.2
+            self.grounded = False
+
+        if not self.visual.enabled:
+            self.visual.enabled = True
+        if self.cam_in_car:
+            self._set_camera_follow(False)
+
+
+    def _drive(self, dt):
+        from ursina import held_keys, mouse, raycast, Vec3, Entity, destroy, color
+        from vendor.vehicle import bicycle_step
+        car = self.in_car
+        if getattr(mouse, 'locked', False):
+            # Clamp mouse look while driving (pitch only on cam_pivot)
+            car.cam_pivot.rotation_x -= mouse.velocity[1] * (float(getattr(self, "mouse_sens", 140) or 140) * 0.57)
+            car.cam_pivot.rotation_x = max(-20, min(25, car.cam_pivot.rotation_x))
+
+        dmg = float(getattr(car, 'damage', 0.0) or 0.0)
+        dmg_mul = max(0.15, 1.0 - 0.5 * (dmg / 100.0))
+        base_vmax, base_accel = 24.0, 16.0
+        vmax = base_vmax * dmg_mul
+        accel_force = base_accel * dmg_mul
+        brake_force = 0.0
+        accel = 0.0
+
+        fuel = float(getattr(car, 'fuel', 100.0) or 0.0)
+        out_of_gas = fuel <= 0.0 or getattr(car, 'disabled', False)
+
+        if out_of_gas:
+            # Speed decays to 0; no throttle / reverse
+            brake_force = 14.0
+            if not getattr(car, 'out_of_gas_toasted', False) and fuel <= 0.0 and not getattr(car, 'disabled', False):
+                car.out_of_gas_toasted = True
+                self.toast('Out of gas. Find a pump.')
+        else:
+            if held_keys['w']:
+                accel = accel_force
+            elif held_keys['s']:
+                # S brakes if moving forward; hold for reverse when nearly stopped
+                if car.speed > 0.55:
+                    brake_force = 32.0
+                else:
+                    accel = -accel_force * 0.55
+            if held_keys['space']:
+                # Stronger handbrake
+                brake_force = max(brake_force, 52.0)
+
+        steer = float(held_keys['a'] - held_keys['d'])
+        # Higher grip: less drag accelerating, more coasting
+        nx, nz, nyaw, nspd = bicycle_step(
+            car.x, car.z, car.rotation_y, car.speed,
+            steer, accel, dt,
+            vmax=vmax, wheelbase=2.6, drag=2.4,
+            steer_gain=1.05, brake_force=brake_force,
+            coast_drag=3.2, accel_drag=0.55,
+        )
+
+        # Fuel burn ~ full tank lasts a few minutes of continuous drive
+        # k_speed=0.028, k_accel=0.045  → cruise ~3 min; floored ~1–1.5 min
+        if not getattr(car, 'traffic', False) and not out_of_gas:
+            burn = (0.028 * abs(nspd) + 0.045 * max(0.0, accel)) * dt
+            fuel = max(0.0, fuel - burn)
+            car.fuel = fuel
+            if fuel <= 0.0 and not getattr(car, 'out_of_gas_toasted', False):
+                car.out_of_gas_toasted = True
+                self.toast('Out of gas. Find a pump.')
+
+        # Collision: buildings via raycast (do not ignore other cars); traffic via proximity
+        proposed = Vec3(nx - car.x, 0, nz - car.z)
+        hit_something = False
+        impact_speed = abs(nspd)
+        if proposed.length() > 0.001:
+            origin = car.world_position + Vec3(0, 0.7, 0)
+            ign = [self.player, self.visual, self.cam_pivot, car, getattr(car, 'body', None)]
+            if self.gun_model:
+                ign.append(self.gun_model)
+            # Never destroy / count named NPC talk entities as crash targets
+            for npc in self.npcs:
+                if not npc:
+                    continue
+                kind = getattr(npc, 'kind', '')
+                named = getattr(npc, 'npc_id', '')
+                if kind in ('mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara') or named in (
+                    'mira', 'michelle', 'gage', 'lila', 'rosa', 'yara', 'rita', 'deb',
+                    'motel_clerk', 'barista', 'pharmacist', 'neighbor', 'lot_attendant',
+                    'amanda_friend', 'club27_host', 'quiet_spa_tech', 'citrus_guide', 'park_ranger',
+                ):
+                    ign.append(npc)
+            ign = [e for e in ign if e]
+            direction = proposed.normalized()
+            hit = raycast(origin, direction, distance=max(2.0, proposed.length() + 1.2), ignore=ign, debug=False)
+            if hit.hit:
+                hit_something = True
+
+        if not hit_something:
+            for other in self.cars:
+                if not other or other is car:
+                    continue
+                d = dist_xz((nx, 0, nz), (other.x, 0, other.z))
+                if d < 2.6:
+                    hit_something = True
+                    break
+
+        if hit_something:
+            self._car_take_damage(car, impact_speed)
+            nspd *= -0.25
+            # stay put on impact
+            nx, nz = car.x, car.z
+        else:
+            car.x, car.z = nx, nz
+            car.rotation_y = nyaw
+
+        car.speed = nspd
+        car.y = 0
+        car.x = max(-48, min(52, car.x))
+        car.z = max(-52, min(22, car.z))
+
+        self._update_car_damage_visual(car, dt)
+
+        # Slight camera follow lag (lerp cam_pivot local z toward target)
+        try:
+            target_z = -0.15 if abs(car.speed) > 8 else 0.2
+            cur = float(getattr(car.cam_pivot, 'z', 0.2) or 0.2)
+            car.cam_pivot.z = cur + (target_z - cur) * min(1.0, 3.5 * dt)
+        except Exception:
+            pass
+
+        self.player.position = car.position
+        self.player.y = 0
+        self.player.rotation_y = car.rotation_y
+        if self.visual.enabled:
+            self.visual.enabled = False
+        if not self.cam_in_car:
+            self._set_camera_follow(True)
+
+    def _car_take_damage(self, car, impact_speed):
+        if getattr(car, 'traffic', False) and self.in_car is not car:
             return
-        if gas:
-            near_car, _ncd = self._nearest_car(pos, 5.0)
-            # Prefer parked/player car near pump; traffic ignored for service
-            service = None
-            if near_car and not getattr(near_car, 'traffic', False):
-                service = near_car
-            if service is not None:
-                self.open_gas_station(gas, service)
-                return
-            # No car: allow NPC talk (e.g. Rita); otherwise nudge
-            npc_chk, nd_chk = self._nearest_npc(pos, 3.0)
-            if not (npc_chk and nd_chk <= 3.0):
-                self.toast('Bring a car.')
-                return
-        car, cd = self._nearest_car(pos, 3.2)
-        npc, nd = self._nearest_npc(pos, 3.0)
-        stall, sd = self._nearest_stall(pos, 3.6)
+        add = min(42.0, max(3.0, abs(float(impact_speed)) * 2.4))
+        car.damage = min(100.0, float(getattr(car, 'damage', 0.0) or 0.0) + add)
+        if car.damage >= 100.0 and not getattr(car, 'disabled', False):
+            car.disabled = True
+            car.speed = 0.0
+            self.toast('Car totaled.')
+            if self.in_car is car:
+                # stall — force exit shortly via disabled flag in enter check
+                pass
 
-        # prefer NPC / stall over car if closer
-        if npc and nd <= 3.0 and (car is None or nd <= cd + 0.15):
-            kind = getattr(npc, 'kind', '')
-            if kind == 'mira':
-                self.open_mira('start')
-                return
-            if kind == 'michelle':
-                nid = 'door' if not self.michelle_seen else (self.michelle_node or 'door')
-                self.michelle_seen = True
-                self.michelle_auto_opened = True
-                self.open_michelle(nid)
+    def _update_car_damage_visual(self, car, dt=0.016):
+        dmg = float(getattr(car, 'damage', 0.0) or 0.0)
+        base = getattr(car, 'base_paint', None) or getattr(car, 'paint', None)
+        if base is not None and getattr(car, 'body', None):
+            t = min(1.0, dmg / 100.0)
+            try:
+                # darker / redder as damage rises
+                if hasattr(base, 'r'):
+                    r = int(base.r * 255 * (1 - 0.55 * t) + 180 * t)
+                    g = int(base.g * 255 * (1 - 0.75 * t) + 30 * t)
+                    b = int(base.b * 255 * (1 - 0.75 * t) + 25 * t)
+                    col = self.color.rgb32(max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b)))
+                else:
+                    col = base.tint(-0.55 * t) if hasattr(base, 'tint') else base
+                car.body.color = col
+                cabin = getattr(car, 'cabin', None)
+                if cabin is not None:
