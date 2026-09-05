@@ -1,3 +1,36 @@
+            self.hud_heat.text = f'HEAT  {self.heat:.1f}'
+        if getattr(self, 'hud_breed', None):
+            flag = '  PREG' if self.preg else ''
+            self.hud_breed.text = f'Breed  {int(self.breed)}%{flag}'
+        if self.hud_ammo:
+            if not self.owned_pistol:
+                self.hud_ammo.text = 'Pistol  not owned'
+            elif self.pistol_drawn:
+                self.hud_ammo.text = f'Pistol  DRAWN   ammo {self.ammo}'
+            else:
+                self.hud_ammo.text = f'Pistol  holstered   ammo {self.ammo}'
+        if self.hud_pack:
+            self.hud_pack.text = f'Pack  {len(self.pack)}'
+        if getattr(self, 'hud_quest', None):
+            self.hud_quest.text = self._quest_hud_line()
+        if getattr(self, 'hud_mode', None):
+            if self.in_car:
+                fuel = int(getattr(self.in_car, 'fuel', 0) or 0)
+                dmg = int(getattr(self.in_car, 'damage', 0) or 0)
+                self.hud_mode.text = f'DRIVE   FUEL {fuel}%   DMG {dmg}%'
+            else:
+                self.hud_mode.text = 'WALK'
+        if self.gun_model:
+            self.gun_model.enabled = bool(self.pistol_drawn and self.owned_pistol and not self.in_car)
+        if self.ui_open:
+            if self.hud_prompt:
+                self.hud_prompt.text = '1-4 choose    ESC close'
+            return
+        prompt = self._nearest_prompt()
+        if self.hud_prompt:
+            self.hud_prompt.text = prompt
+
+    def _nearest_prompt(self):
         pos = self._actor_pos()
         gas = self._nearest_gas(pos)
         if self.in_car:
@@ -156,7 +189,10 @@
                 self._shoot()
             return
         if key == 'tab':
-            self._lock_mouse(not bool(getattr(mouse, 'locked', True)))
+            self.mouse_free = not getattr(self, 'mouse_free', False)
+            self._lock_mouse(not self.mouse_free)
+            self.toast('Cursor free (Tab to recapture)' if self.mouse_free else 'Mouse locked. WASD to walk.')
+            return
 
     def _toggle_pistol(self):
         if not self.owned_pistol:
@@ -209,46 +245,3 @@
                 self.michelle_seen = True
                 self.michelle_auto_opened = True
                 self.open_michelle(nid)
-                self._quest_event('talk', npc_id='michelle')
-                self._tutorial_note('talk')
-                return
-            if kind == 'gun':
-                self.open_gun_shop()
-                return
-            named = getattr(npc, 'npc_id', '')
-            if kind in ('lila', 'rosa', 'yara') or named in ('lila', 'rosa', 'yara'):
-                self.open_vn(kind if kind in ('lila', 'rosa', 'yara') else named)
-                return
-            if kind == 'talk':
-                self.open_talk(
-                    getattr(npc, 'npc_name', 'NPC'),
-                    getattr(npc, 'line', '...'),
-                    getattr(npc, 'portrait_tex', None),
-                )
-                self._quest_event('talk', npc_id=getattr(npc, 'npc_id', ''))
-                return
-        if self.michelle_seen and self.house_rooms:
-            best_room, best_rd = None, 2.8
-            for rname in ('guest', 'garage', 'shower', 'lawn'):
-                xz = self.house_rooms.get(rname)
-                if not xz:
-                    continue
-                d = dist_xz(pos, (xz[0], 0, xz[1]))
-                if d < best_rd:
-                    best_room, best_rd = rname, d
-            if best_room and (car is None or best_rd <= cd + 0.1):
-                self.open_michelle(best_room)
-                self._quest_event('michelle_room', room=best_room)
-                return
-        if stall and sd <= 3.6 and (car is None or sd < cd):
-            if stall['kind'] == 'gun':
-                self.open_gun_shop()
-                return
-            self._buy_first_stock(stall)
-            return
-        if car:
-            self._enter_car(car)
-            return
-        self.toast('Nothing in range. Cars in the median. Mira at The Shake Bar.')
-
-    def _enter_car(self, car):
