@@ -1,16 +1,3 @@
-            self.gun_model.enabled = bool(self.pistol_drawn and self.owned_pistol and not self.in_car)
-        if self.ui_open:
-            if self.hud_prompt:
-                self.hud_prompt.text = '1-4 choose    ESC close'
-            return
-        prompt = self._nearest_prompt()
-        if self.hud_prompt:
-            self.hud_prompt.text = prompt
-
-    def _nearest_prompt(self):
-        pos = self._actor_pos()
-        if self.in_car:
-            return 'E  exit car'
         car, cd = self._nearest_car(pos, 3.2)
         npc, nd = self._nearest_npc(pos, 3.0)
         stall, sd = self._nearest_stall(pos, 3.6)
@@ -272,3 +259,18 @@
             slot.enabled = False
 
     def _pick_choice(self, index):
+        if index < 0 or index >= len(self.ui_choices):
+            return
+        _label, cb = self.ui_choices[index]
+        if cb:
+            cb()
+
+    def open_mira(self, node_id='start'):
+        nodes = (self.mira_dlg or {}).get('nodes') or {}
+        node = nodes.get(node_id) or nodes.get('start')
+        if not node:
+            self.open_talk(
+                'Mama Mira',
+                "Welcome in, sugar. Cool Down's the one everyone off 50 asks for.",
+            )
+            return
