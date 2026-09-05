@@ -1,6 +1,13 @@
-"""Shared texture/color helpers for models3d."""
+"""Composed Ursina meshes for Rune Mommy — houses, stalls, humanoids, cars, POIs.
+
+Prefer primitives (cube/sphere/cylinder/quad). Keeps draw cost modest.
+"""
 from __future__ import annotations
 
+import math
+import random
+
+# Optional world textures set by game.load_tex / set_world_textures (tint + texture).
 _WORLD_TEX = {}
 
 
