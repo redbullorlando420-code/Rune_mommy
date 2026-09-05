@@ -1,3 +1,20 @@
+            if self.tutorial_overlay:
+                self.tutorial_overlay.enabled = False
+            if self.tutorial_text:
+                self.tutorial_text.enabled = False
+                self.tutorial_text.text = ''
+        except Exception:
+            pass
+        flags = self._load_flags()
+        flags['tutorial_done'] = True
+        self._save_flags(flags)
+        self.toast('Tutorial done. Explore Hwy 50.')
+
+    def toast(self, msg):
+        self.toast_timer = 2.6
+        if self.hud_toast:
+            self.hud_toast.text = msg
+        print(f'[Rune Mommy] {msg}')
 
 
 def update():
