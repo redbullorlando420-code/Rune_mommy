@@ -1,3 +1,15 @@
+        self.cam_pivot = Entity(parent=self.player, y=1.35)
+        camera.parent = self.cam_pivot
+        camera.position = Vec3(0, 1.65, -8.8)
+        camera.rotation = Vec3(12, 0, 0)
+        camera.fov = 80
+
+    def _build_hud(self):
+        Entity = self.Entity
+        Text = self.Text
+        color = self.color
+        camera = self.camera
+
         Text(text='RUNE MOMMY', position=(-0.86, 0.48), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 210))
         Text(text='Clermont / Hwy 50', position=(-0.86, 0.445), origin=(-0.5, 0.5), color=color.rgb32(140, 230, 255), scale=0.75)
         self.hud_gold = Text(text='Gold  200', position=(-0.86, 0.40), origin=(-0.5, 0.5), color=color.rgb32(255, 220, 90))
@@ -89,8 +101,11 @@
         self._refresh_hud()
 
     def _walk(self, dt):
-        from ursina import held_keys, mouse, raycast, Vec3, time
+        from ursina import held_keys, mouse, raycast, Vec3
         player = self.player
+        # Re-lock every frame so WASD works after click/focus (unless panel or Tab-free).
+        if not self.ui_open and not getattr(self, 'mouse_free', False):
+            self._lock_mouse(True)
         if getattr(mouse, 'locked', False):
             player.rotation_y += mouse.velocity[0] * 140
             self.cam_pivot.rotation_x -= mouse.velocity[1] * 140
@@ -103,13 +118,27 @@
         )
         if wish.length() > 0:
             wish = wish.normalized()
-            move = (player.forward * wish.z + player.right * wish.x) * 7.2 * dt
+            speed = 8.5
+            move = (player.forward * wish.z + player.right * wish.x) * speed * dt
             origin = player.world_position + Vec3(0, 0.9, 0)
-            hit = raycast(origin, move.normalized(), distance=0.7 + move.length(), ignore=self.ignore, debug=False)
+            ign = list(self.ignore)
+            # Try full move, then axis slides so a curb never hard-locks you.
+            hit = raycast(origin, move.normalized(), distance=0.55 + move.length(), ignore=ign, debug=False)
             if not hit.hit:
                 player.position += move
-            player.x = max(-48, min(52, player.x))
-            player.z = max(-52, min(22, player.z))
+            else:
+                mx = Vec3(move.x, 0, 0)
+                mz = Vec3(0, 0, move.z)
+                if mx.length() > 1e-5:
+                    hx = raycast(origin, mx.normalized(), distance=0.55 + mx.length(), ignore=ign, debug=False)
+                    if not hx.hit:
+                        player.x += mx.x
+                if mz.length() > 1e-5:
+                    hz = raycast(origin, mz.normalized(), distance=0.55 + mz.length(), ignore=ign, debug=False)
+                    if not hz.hit:
+                        player.z += mz.z
+            player.x = max(-55, min(58, player.x))
+            player.z = max(-55, min(28, player.z))
 
         self.y_vel -= 32 * dt
         player.y += self.y_vel * dt
@@ -195,32 +224,3 @@
         if proposed.length() > 0.001:
             origin = car.world_position + Vec3(0, 0.7, 0)
             ign = [self.player, self.visual, self.cam_pivot, car, getattr(car, 'body', None)]
-            if self.gun_model:
-                ign.append(self.gun_model)
-            # Never destroy / count named NPC talk entities as crash targets
-            for npc in self.npcs:
-                if not npc:
-                    continue
-                kind = getattr(npc, 'kind', '')
-                named = getattr(npc, 'npc_id', '')
-                if kind in ('mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara') or named in (
-                    'mira', 'michelle', 'gage', 'lila', 'rosa', 'yara', 'rita', 'deb',
-                    'motel_clerk', 'barista', 'pharmacist', 'neighbor', 'lot_attendant',
-                    'amanda_friend', 'club27_host', 'quiet_spa_tech', 'citrus_guide', 'park_ranger',
-                ):
-                    ign.append(npc)
-            ign = [e for e in ign if e]
-            direction = proposed.normalized()
-            hit = raycast(origin, direction, distance=max(2.0, proposed.length() + 1.2), ignore=ign, debug=False)
-            if hit.hit:
-                hit_something = True
-
-        if not hit_something:
-            for other in self.cars:
-                if not other or other is car:
-                    continue
-                d = dist_xz((nx, 0, nz), (other.x, 0, other.z))
-                if d < 2.6:
-                    hit_something = True
-                    break
-
