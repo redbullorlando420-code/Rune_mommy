@@ -1,5 +1,1 @@
-#!/usr/bin/env python3
-# probe
-def open_vn():
-    pass
-rosa_dlg = {}
+PLACEHOLDER_REPLACE_WITH_FULL_FILE
