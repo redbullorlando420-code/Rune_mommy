@@ -70,7 +70,7 @@
             p = self.in_car.world_position
             return (p.x, p.y, p.z)
         p = self.player.world_position
-            return (p.x, p.y, p.z)
+        return (p.x, p.y, p.z)
 
     def _nearest_car(self, pos, radius):
         best, best_d = None, radius
