@@ -1,3 +1,46 @@
+                self._quest_event('talk', npc_id='michelle')
+                self._tutorial_note('talk')
+                return
+            if kind == 'gun':
+                self.open_gun_shop()
+                return
+            named = getattr(npc, 'npc_id', '')
+            if kind in ('lila', 'rosa', 'yara') or named in ('lila', 'rosa', 'yara'):
+                self.open_vn(kind if kind in ('lila', 'rosa', 'yara') else named)
+                return
+            if kind == 'talk':
+                self.open_talk(
+                    getattr(npc, 'npc_name', 'NPC'),
+                    getattr(npc, 'line', '...'),
+                    getattr(npc, 'portrait_tex', None),
+                )
+                self._quest_event('talk', npc_id=getattr(npc, 'npc_id', ''))
+                return
+        if self.michelle_seen and self.house_rooms:
+            best_room, best_rd = None, 2.8
+            for rname in ('guest', 'garage', 'shower', 'lawn'):
+                xz = self.house_rooms.get(rname)
+                if not xz:
+                    continue
+                d = dist_xz(pos, (xz[0], 0, xz[1]))
+                if d < best_rd:
+                    best_room, best_rd = rname, d
+            if best_room and (car is None or best_rd <= cd + 0.1):
+                self.open_michelle(best_room)
+                self._quest_event('michelle_room', room=best_room)
+                return
+        if stall and sd <= 3.6 and (car is None or sd < cd):
+            if stall['kind'] == 'gun':
+                self.open_gun_shop()
+                return
+            self._buy_first_stock(stall)
+            return
+        if car:
+            self._enter_car(car)
+            return
+        self.toast('Nothing in range. Cars in the median. Mira at The Shake Bar.')
+
+    def _enter_car(self, car):
         from ursina import camera, Vec3
         if getattr(car, 'disabled', False) or float(getattr(car, 'damage', 0) or 0) >= 100:
             self.toast('Car totaled.')
@@ -190,7 +233,6 @@
             'yara': self.yara_dlg,
             'michelle': self.michelle_dlg,
         }
-        dlg = dlg_map.get(who)
         titles = {
             'lila': 'Lila',
             'rosa': 'Rosa',
@@ -225,52 +267,3 @@
                 return cb
 
             choices.append((label, make()))
-        if not choices:
-            choices = [('Walk away.', self.close_panel)]
-        expr = node.get('expression') or 'default'
-        por = node.get('portrait') or who
-        tex = self._tex_for(por, expr)
-        if tex is None:
-            pp = portrait_texture_path(por, expr)
-            tex = str(pp) if pp else None
-        self.open_panel(title, node.get('text', ''), choices, portrait=True, portrait_tex=tex)
-
-    def open_talk(self, name, line, portrait_tex=None):
-        self.open_panel(name, line, [('Later.', self.close_panel)], portrait=bool(portrait_tex), portrait_tex=portrait_tex)
-
-    def open_gun_shop(self):
-        pistol = self.items.get('pistol', {})
-        ammo = self.items.get('ammo', {})
-        p_name = pistol.get('name', 'Lot Pistol')
-        a_name = ammo.get('name', 'Pistol Ammo')
-        body = "Cash on the plank. Pistol if you want polite. Ammo is not a suggestion."
-        choices = [
-            (f'{p_name}   -   70g', self._buy_pistol),
-            (f'{a_name} x12   -   48g', self._buy_ammo),
-            ('Leave.', self.close_panel),
-        ]
-        self.open_panel('Gage   ·   Hancock Gun Hut', body, choices)
-
-    def _buy_pistol(self):
-        if self.owned_pistol:
-            self.toast('You already have the lot pistol.')
-            self.open_gun_shop()
-            return
-        if self.gold < 70:
-            self.toast('Not enough gold.')
-            self.open_gun_shop()
-            return
-        self.gold -= 70
-        self.owned_pistol = True
-        self.ammo += 6
-        self.toast('Lot Pistol bought. 1 to draw, LMB to shoot. +6 rounds.')
-        self._quest_event('buy_pistol')
-        self._tutorial_note('gun')
-        self.open_gun_shop()
-
-    def _buy_ammo(self):
-        if self.gold < 48:
-            self.toast('Not enough gold.')
-            self.open_gun_shop()
-            return
-        self.gold -= 48
