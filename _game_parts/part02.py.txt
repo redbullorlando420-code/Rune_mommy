@@ -1,3 +1,7 @@
+        self._build_town_slice()
+        self._build_pois()
+        self._build_house()
+        self._build_stalls()
         self._build_npcs()
         self._build_cars()
         self._build_targets()
@@ -203,10 +207,3 @@
             self.pois.append({
                 'id': kind,
                 'name': label,
-                'pos': (interact[0], 0, interact[2]),
-                'npc_id': npc_id,
-                'line': None,
-                'is_gas': is_gas,
-                'pump_r': 4.2 if is_gas else 3.4,
-            })
-
