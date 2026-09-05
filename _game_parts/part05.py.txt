@@ -1,3 +1,112 @@
+        from ursina import time, held_keys, mouse, raycast, Vec3, destroy, color
+        dt = min(time.dt, 0.05)
+        self.shoot_cd = max(0.0, self.shoot_cd - dt)
+        if self.toast_timer > 0:
+            self.toast_timer -= dt
+            if self.toast_timer <= 0 and self.hud_toast:
+                self.hud_toast.text = ''
+
+        self.panic_t = max(0.0, getattr(self, 'panic_t', 0.0) - dt)
+        self._wander_targets(dt)
+        tick_crowd(self, dt)
+        tick_traffic(self, dt)
+        self._tick_heat(dt)
+
+        self._tick_tutorial(dt)
+
+        if self.ui_open:
+            self._refresh_hud()
+            return
+
+        if self.in_car:
+            self._drive(dt)
+        else:
+            self._walk(dt)
+
+        self._maybe_auto_michelle()
+        self._tick_visit_quests()
+
+        if self.pistol_drawn and self.owned_pistol and held_keys['left mouse'] and self.shoot_cd <= 0:
+            self._shoot()
+
+        self._refresh_hud()
+
+    def _walk(self, dt):
+        from ursina import held_keys, mouse, raycast, Vec3, time
+        player = self.player
+        if getattr(mouse, 'locked', False):
+            player.rotation_y += mouse.velocity[0] * 140
+            self.cam_pivot.rotation_x -= mouse.velocity[1] * 140
+            self.cam_pivot.rotation_x = max(-35, min(40, self.cam_pivot.rotation_x))
+
+        wish = Vec3(
+            held_keys['d'] - held_keys['a'],
+            0,
+            held_keys['w'] - held_keys['s'],
+        )
+        if wish.length() > 0:
+            wish = wish.normalized()
+            move = (player.forward * wish.z + player.right * wish.x) * 7.2 * dt
+            origin = player.world_position + Vec3(0, 0.9, 0)
+            hit = raycast(origin, move.normalized(), distance=0.7 + move.length(), ignore=self.ignore, debug=False)
+            if not hit.hit:
+                player.position += move
+            player.x = max(-48, min(52, player.x))
+            player.z = max(-52, min(22, player.z))
+
+        self.y_vel -= 32 * dt
+        player.y += self.y_vel * dt
+        if player.y <= 0:
+            player.y = 0
+            self.y_vel = 0
+            self.grounded = True
+        else:
+            self.grounded = False
+
+        if held_keys['space'] and self.grounded:
+            self.y_vel = 8.2
+            self.grounded = False
+
+        if not self.visual.enabled:
+            self.visual.enabled = True
+        if self.cam_in_car:
+            self._set_camera_follow(False)
+
+    def _drive(self, dt):
+        from ursina import held_keys, mouse, raycast, Vec3
+        car = self.in_car
+        if getattr(mouse, 'locked', False):
+            car.cam_pivot.rotation_x -= mouse.velocity[1] * 80
+            car.cam_pivot.rotation_x = max(-20, min(25, car.cam_pivot.rotation_x))
+
+        accel, brake, vmax = 16.0, 28.0, 24.0
+        if held_keys['w']:
+            car.speed += accel * dt
+        elif held_keys['s']:
+            if car.speed > 0.6:
+                car.speed -= brake * dt
+            else:
+                car.speed -= accel * 0.55 * dt
+        else:
+            if abs(car.speed) < 0.4:
+                car.speed = 0
+            else:
+                car.speed -= math.copysign(8.0 * dt, car.speed)
+        if held_keys['space']:
+            car.speed *= max(0.0, 1 - 3.5 * dt)
+        car.speed = max(-9.0, min(vmax, car.speed))
+
+        steer = (held_keys['a'] - held_keys['d'])
+        if abs(car.speed) > 0.25:
+            turn = steer * 95 * (abs(car.speed) / vmax) * dt
+            if car.speed < 0:
+                turn = -turn
+            car.rotation_y += turn
+
+        move = car.forward * car.speed * dt
+        origin = car.world_position + Vec3(0, 0.7, 0)
+        ign = list(self.ignore) + [car, car.body]
+        hit = raycast(origin, move.normalized() if move.length() else car.forward, distance=2.0, ignore=ign, debug=False)
         if hit.hit and move.length() > 0:
             car.speed *= -0.25
         else:
@@ -97,7 +206,7 @@
             if tagged is not None:
                 kind = getattr(tagged, 'kind', '')
                 named = getattr(tagged, 'npc_id', '')
-                if kind in ('mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara') or named in ('mira', 'michelle', 'gage', 'lila', 'rosa', 'yara', 'rita', 'deb'):
+                if kind in ('mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara') or named in ('mira', 'michelle', 'gage', 'lila', 'rosa', 'yara', 'rita', 'deb', 'motel_clerk', 'barista', 'pharmacist', 'neighbor', 'lot_attendant', 'amanda_friend'):
                     self.toast('Not a target.')
                     return
                 tagged.hp = getattr(tagged, 'hp', 10) - 18
@@ -122,6 +231,7 @@
                             pass
                     extra = f' +{xp}xp' if xp else ''
                     self.toast(f'{name} down. +{loot}g{extra}')
+                    self._quest_event('kill', kind=kind, mob_id=getattr(tagged, 'mob_id', ''))
 
     def _refresh_hud(self):
         if self.hud_gold:
@@ -142,123 +252,6 @@
                 self.hud_ammo.text = f'Pistol  holstered   ammo {self.ammo}'
         if self.hud_pack:
             self.hud_pack.text = f'Pack  {len(self.pack)}'
+        if getattr(self, 'hud_quest', None):
+            self.hud_quest.text = self._quest_hud_line()
         if self.gun_model:
-            self.gun_model.enabled = bool(self.pistol_drawn and self.owned_pistol and not self.in_car)
-        if self.ui_open:
-            if self.hud_prompt:
-                self.hud_prompt.text = '1-4 choose    ESC close'
-            return
-        prompt = self._nearest_prompt()
-        if self.hud_prompt:
-            self.hud_prompt.text = prompt
-
-    def _nearest_prompt(self):
-        pos = self._actor_pos()
-        if self.in_car:
-            return 'E  exit car'
-        car, cd = self._nearest_car(pos, 3.2)
-        npc, nd = self._nearest_npc(pos, 3.0)
-        stall, sd = self._nearest_stall(pos, 3.6)
-        options = []
-        if car:
-            options.append((cd, f'E  enter car'))
-        if npc:
-            kind = getattr(npc, 'kind', '')
-            if kind == 'mira':
-                options.append((nd, 'E  talk to Mama Mira'))
-            elif kind == 'michelle':
-                options.append((nd, 'E  talk to Michelle'))
-            elif kind == 'gun':
-                options.append((nd, 'E  Hancock Gun Hut (Gage)'))
-            elif kind not in ('target', 'mob'):
-                options.append((nd, f'E  talk to {getattr(npc, "npc_name", "NPC")}'))
-        if stall and (not npc or sd + 0.4 < nd):
-            if stall['kind'] == 'gun':
-                options.append((sd, 'E  Hancock Gun Hut'))
-            else:
-                options.append((sd, f'E  {stall["name"]}'))
-        door_xz = (self.house_rooms or {}).get('door')
-        if door_xz and not self.michelle_seen:
-            dd = dist_xz(pos, (door_xz[0], 0, door_xz[1]))
-            if dd < 3.0:
-                options.append((dd, 'E  Sanctuary Drive'))
-        if not options:
-            return ''
-        options.sort(key=lambda x: x[0])
-        return options[0][1]
-
-    def _actor_pos(self):
-        if self.in_car:
-            p = self.in_car.world_position
-            return (p.x, p.y, p.z)
-        p = self.player.world_position
-        return (p.x, p.y, p.z)
-
-    def _nearest_car(self, pos, radius):
-        best, best_d = None, radius
-        for car in self.cars:
-            if not car:
-                continue
-            d = dist_xz(pos, (car.x, 0, car.z))
-            if d < best_d:
-                best, best_d = car, d
-        return best, best_d
-
-    def _nearest_npc(self, pos, radius):
-        best, best_d = None, radius
-        for npc in self.npcs:
-            if not npc:
-                continue
-            kind = getattr(npc, 'kind', '')
-            if kind in ('target', 'mob', 'civilian', 'lot_rat', 'walker', 'thug', 'heat_hunter', 'barrel'):
-                continue
-            if getattr(npc, 'hittable', False):
-                continue
-            if getattr(npc, 'enabled', True) is False:
-                continue
-            d = dist_xz(pos, (npc.x, 0, npc.z))
-            if d < best_d:
-                best, best_d = npc, d
-        return best, best_d
-
-    def _nearest_stall(self, pos, radius):
-        best, best_d = None, radius
-        for st in self.stalls:
-            d = dist_xz(pos, st['pos'])
-            if d < best_d:
-                best, best_d = st, d
-        return best, best_d
-
-    # ----- input ----------------------------------------------------------
-
-    def on_input(self, key):
-        from ursina import application, mouse
-        if key == 'escape':
-            if self.ui_open:
-                self.close_panel()
-                return
-            application.quit()
-            return
-        if self.ui_open:
-            if key in ('1', '2', '3', '4'):
-                self._pick_choice(int(key) - 1)
-            return
-        if key == 'e':
-            self._interact()
-            return
-        if key == '1':
-            self._toggle_pistol()
-            return
-        if key in ('h', 'H'):
-            self._eat_food()
-            return
-        if key == 'left mouse down':
-            if self.pistol_drawn:
-                self._shoot()
-            return
-        if key == 'tab':
-            self._lock_mouse(not bool(getattr(mouse, 'locked', True)))
-
-    def _toggle_pistol(self):
-        if not self.owned_pistol:
-            self.toast('No pistol. Buy one from Gage at Hancock Gun Hut (east).')
