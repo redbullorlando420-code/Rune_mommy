@@ -230,6 +230,7 @@ class Game:
         self.panic_t = 0.0
         self.heat_spawn_cd = 0.0
         self.michelle_auto_opened = False
+        self.mouse_free = False
         self.michelle_node = 'door'
         self.talk_npcs = []
         self.house_vols = []
@@ -330,7 +331,3 @@ class Game:
         self._build_ground()
         self._build_highway()
         self._build_skyline()
-        self._build_town_slice()
-        self._build_pois()
-        self._build_house()
-        self._build_stalls()
