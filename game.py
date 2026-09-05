@@ -1,1 +1,1 @@
-@/workspace/Rune_mommy/game.py
+file:///workspace/Rune_mommy/game.py
