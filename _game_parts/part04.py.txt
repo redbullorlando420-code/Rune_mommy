@@ -1,3 +1,8 @@
+        mira = self._humanoid(mx, mz, shirt=color.rgb32(255, 70, 180), pants=color.rgb32(40, 12, 40), skin=color.rgb32(255, 206, 166), detail='named')
+        mira.npc_id = 'mira'
+        mira.npc_name = 'Mama Mira'
+        mira.kind = 'mira'
+        mira.hittable = False
         self.talk_npcs.append({'ent': mira, 'name': 'Mama Mira', 'talk': 'Neons loud tonight.', 'killable': False})
         if portrait:
             bill = Entity(
@@ -213,7 +218,7 @@
         camera = self.camera
         Vec3 = self.Vec3
 
-        self.player = Entity(position=(-24.6, 0, 12.0), rotation_y=-90)
+        self.player = Entity(position=(-8.0, 0, 6.0), rotation_y=-90)
         self.visual = Entity(parent=self.player)
         Entity(parent=self.visual, model='cube', color=color.rgb32(30, 40, 55), scale=(0.44, 0.55, 0.3), y=0.28)
         Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.52, 0.62, 0.34), y=0.82)
@@ -229,16 +234,4 @@
             enabled=False,
         )
         Entity(parent=self.gun_model, model='cube', color=color.rgb32(30, 30, 32), scale=(0.7, 0.45, 0.35), position=(0, -0.4, -0.15))
-
-        self.cam_pivot = Entity(parent=self.player, y=1.35)
-        camera.parent = self.cam_pivot
-        camera.position = Vec3(0, 1.65, -8.8)
-        camera.rotation = Vec3(12, 0, 0)
-        camera.fov = 80
-
-    def _build_hud(self):
-        Entity = self.Entity
-        Text = self.Text
-        color = self.color
-        camera = self.camera
 
