@@ -336,3 +336,4 @@ class Game:
             texture_scale=(70, 55),
             collider=None,
             y=0,
+        )
