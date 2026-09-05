@@ -1,4 +1,43 @@
-        Entity(model='cube', scale=(5.4, 2.5, 4.6), position=(hx + 0.2, 1.25, hz - 5.4), color=color.rgb32(210, 196, 176), collider='box')
+    def _build_house(self):
+        """Suburban cubes at about (-32, 0, 12). Body, teal roof, garage, door, back lawn, Sanctuary Drive."""
+        Entity = self.Entity
+        color = self.color
+        Text = self.Text
+        teal = color.rgb32(46, 196, 182)
+        body_col = color.rgb32(232, 214, 188)
+        wood = color.rgb32(90, 55, 40)
+        hx, hz = -32.0, 12.0
+        self.house_vols = []
+        self.sanctuary_pos = (hx, 0.0, hz)
+
+        # lot grass + darker back-lawn swamp strip (west) + driveway (east)
+        grass = load_tex('grass')
+        asphalt = load_tex('asphalt')
+        stucco = load_tex('stucco')
+        concrete = load_tex('concrete')
+        Entity(model='cube', scale=(16, 0.05, 14), position=(hx - 1.0, 0.025, hz),
+               color=color.rgb32(34, 88, 46), texture=grass, texture_scale=(8, 7))
+        Entity(model='cube', scale=(7.5, 0.06, 12), position=(hx - 7.2, 0.03, hz),
+               color=color.rgb32(16, 42, 28), texture=grass, texture_scale=(4, 6))
+        Entity(model='cube', scale=(6.2, 0.07, 5.6), position=(hx + 6.4, 0.035, hz),
+               color=color.rgb32(48, 44, 50), texture=asphalt or concrete, texture_scale=(3, 2.5))
+
+        # body + porch + windows + AC (composed, not a lone cube)
+        Entity(model='cube', scale=(8.0, 3.2, 6.4), position=(hx, 1.6, hz), color=body_col,
+               texture=stucco, texture_scale=(2.5, 1.6), collider='box')
+        Entity(model='cube', scale=(8.6, 0.35, 3.6), position=(hx - 1.2, 3.55, hz), color=teal, rotation_z=18)
+        Entity(model='cube', scale=(8.6, 0.35, 3.6), position=(hx + 1.2, 3.55, hz), color=teal, rotation_z=-18)
+        Entity(model='cube', scale=(0.3, 0.25, 7.0), position=(hx, 3.95, hz), color=color.rgb32(245, 248, 252))
+        for wz in (-1.6, 1.6):
+            Entity(model='cube', scale=(0.08, 0.7, 0.7), position=(hx + 4.05, 1.7, hz + wz), color=color.rgb32(120, 200, 230))
+        Entity(model='cube', scale=(2.8, 0.14, 2.2), position=(hx + 5.2, 0.1, hz),
+               color=color.rgb32(170, 160, 140), texture=concrete, texture_scale=(2, 1.5))
+        Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz + 0.9), color=wood)
+        Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz - 0.9), color=wood)
+        Entity(model='cube', scale=(0.7, 0.5, 0.55), position=(hx - 4.3, 0.4, hz + 2.2), color=color.rgb32(70, 78, 90))
+        # garage south of body
+        Entity(model='cube', scale=(5.4, 2.5, 4.6), position=(hx + 0.2, 1.25, hz - 5.4),
+               color=color.rgb32(210, 196, 176), texture=stucco, texture_scale=(2, 1.4), collider='box')
         Entity(model='cube', scale=(5.6, 0.28, 4.8), position=(hx + 0.2, 2.62, hz - 5.4), color=teal)
         Entity(model='cube', scale=(3.4, 1.9, 0.12), position=(hx + 2.7, 1.0, hz - 5.4), color=color.rgb32(70, 78, 90))
         door = Entity(model='cube', scale=(0.16, 2.15, 1.05), position=(hx + 4.08, 1.12, hz), color=wood)
@@ -171,62 +210,3 @@
         mira.npc_name = 'Mama Mira'
         mira.kind = 'mira'
         mira.hittable = False
-        self.talk_npcs.append({'ent': mira, 'name': 'Mama Mira', 'talk': 'Neons loud tonight.', 'killable': False})
-        if portrait:
-            bill = Entity(
-                parent=mira,
-                model='quad',
-                texture=portrait,
-                scale=(1.15, 1.55),
-                position=(0, 1.45, -0.55),
-                double_sided=True,
-            )
-            try:
-                bill.billboard = True
-            except Exception:
-                pass
-        self.npcs.append(mira)
-
-        gun = next((s for s in self.stalls if s['kind'] == 'gun'), None)
-        gx, gz = (36.0, 2.2)
-        if gun:
-            gx, gz = gun['pos'][0], gun['pos'][2] - 2.3
-        gage = self._humanoid(gx, gz, shirt=color.rgb32(90, 55, 30), pants=color.rgb32(30, 24, 20), skin=color.rgb32(210, 170, 130), detail='named')
-        gage.npc_id = 'gage'
-        gage.npc_name = 'Gage'
-        gage.kind = 'gun'
-        gage.hittable = False
-        self.npcs.append(gage)
-        self.talk_npcs.append({'ent': gage, 'name': 'Gage', 'talk': 'Cash on the plank.', 'killable': False})
-
-        steak = next((s for s in self.stalls if s['id'] == 'steak_n_shake'), None)
-        if steak:
-            deb = self._humanoid(steak['pos'][0], steak['pos'][2] - 2.2, shirt=color.rgb32(245, 210, 50), pants=color.rgb32(20, 20, 20), detail='named')
-            deb.npc_id = 'deb'
-            deb.npc_name = 'Diner Deb'
-            deb.kind = 'talk'
-            deb.line = 'Same lot as Mira. Vanilla, chocolate, strawberry, or the black-and-white.'
-            self.npcs.append(deb)
-
-        # Extra talkable Clermont NPCs from npcs.json. Keep them off Mira.
-        talk_spots = {
-            'lila': (-14.0, 5.5),
-            'yara': (8.0, -26.5),
-            'rosa': (mx - 3.2, mz + 0.4),
-            'tavi': (-24.0, -20.0),
-            'rook': (26.0, 7.0),
-            'rita': (18.0, -13.0),
-            'motel_clerk': (-8.0, 4.2),
-            'barista': (-20.0, -12.8),
-            'pharmacist': (30.0, -30.2),
-            'neighbor': (-40.0, 10.5),
-            'lot_attendant': (8.0, 2.8),
-            'amanda_friend': (-14.0, -30.0),
-        }
-        # place POI NPCs from self.pois (adds new ids + refreshes positions)
-        for poi in getattr(self, 'pois', []) or []:
-            nid = poi.get('npc_id')
-            if nid:
-                talk_spots[nid] = (poi['pos'][0], poi['pos'][2])
-        for nid, (nx, nz) in talk_spots.items():
-            spec = (self.npcs_data or {}).get(nid) or {'id': nid, 'name': nid.title(), 'greet': '...'}
