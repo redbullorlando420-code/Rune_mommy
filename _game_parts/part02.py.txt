@@ -1,3 +1,26 @@
+                AmbientLight=AmbientLight,
+                PointLight=PointLight,
+            )
+        except Exception:
+            self.Sky(color=color.rgb32(20, 8, 34))
+
+        self._lock_mouse(False)  # boot unlocked; menu owns cursor
+
+        # CC0 / procedural ground + building textures
+        tex_map = {
+            'grass': load_tex('grass'),
+            'asphalt': load_tex('asphalt'),
+            'concrete': load_tex('concrete'),
+            'brick': load_tex('brick'),
+            'stucco': load_tex('stucco'),
+            'water': load_tex('water'),
+        }
+        set_world_textures(tex_map)
+        self.world_textures = tex_map
+
+        self._build_ground()
+        self._build_highway()
+        self._build_skyline()
         self._build_town_slice()
         self._build_pois()
         self._build_house()
@@ -7,8 +30,10 @@
         self._build_targets()
         self._build_crowd()
         self._build_traffic()
+        self._build_safe_yard()
         self._build_player()
         self._build_hud()
+        self._build_menu()
         self._init_quests()
         self._init_tutorial()
         self._rebuild_ignore()
@@ -16,7 +41,7 @@
         tut = 'on' if self.tutorial_active else 'off'
         print('  buildings=%d quests=%d tutorial=%s' % (
             self.building_count, len(self.quest_defs), tut))
-        self.toast("Click the window, then WASD. E talks to Michelle at the door.")
+        self._show_menu()
 
     def _lock_mouse(self, locked):
         mouse = self.mouse
@@ -29,181 +54,214 @@
             except Exception:
                 pass
 
-    # ----- world ----------------------------------------------------------
+    # ----- title / safe yard ----------------------------------------------
 
-    def _build_ground(self):
+    def _build_safe_yard(self):
+        """Fenced practice yard NE of map — WASD/look test; E at gate enters Clermont."""
         Entity = self.Entity
         color = self.color
+        Text = self.Text
+        cx, cy, cz = self.safe_yard_center
         grass = load_tex('grass')
-        asphalt = load_tex('asphalt')
+        # grass pad
         Entity(
-            model='plane',
-            scale=(160, 1, 130),
-            color=color.rgb32(48, 90, 42) if grass else color.rgb32(32, 24, 36),
+            model='cube',
+            scale=(28, 0.06, 28),
+            position=(cx, 0.03, cz),
+            color=color.rgb32(55, 120, 55) if grass else color.rgb32(40, 80, 40),
             texture=grass or 'white_cube',
-            texture_scale=(70, 55),
-            collider=None,
-            y=0,
+            texture_scale=(12, 12),
         )
-        # lot asphalt patch
-        Entity(
+        half = 13.0
+        post_c = color.rgb32(90, 70, 50)
+        rail_c = color.rgb32(70, 55, 40)
+        gate_gap = 1.6  # half-width of west gate opening
+        # east / west posts + rails (west leaves gate gap at cz)
+        for dx in (-half, half):
+            for zi in range(int(cz - half), int(cz + half) + 1, 3):
+                if dx < 0 and abs(zi - cz) < gate_gap + 0.5:
+                    continue
+                Entity(model='cube', scale=(0.18, 1.6, 0.18), position=(cx + dx, 0.8, zi), color=post_c, collider='box')
+            if dx > 0:
+                Entity(model='cube', scale=(0.12, 0.12, half * 2), position=(cx + dx, 1.15, cz), color=rail_c)
+            else:
+                # two rail segments around gate
+                Entity(model='cube', scale=(0.12, 0.12, half - gate_gap), position=(cx + dx, 1.15, cz - (half + gate_gap) / 2), color=rail_c)
+                Entity(model='cube', scale=(0.12, 0.12, half - gate_gap), position=(cx + dx, 1.15, cz + (half + gate_gap) / 2), color=rail_c)
+        # north / south full rails
+        for dz in (-half, half):
+            for xi in range(int(cx - half), int(cx + half) + 1, 3):
+                Entity(model='cube', scale=(0.18, 1.6, 0.18), position=(xi, 0.8, cz + dz), color=post_c, collider='box')
+            Entity(model='cube', scale=(half * 2, 0.12, 0.12), position=(cx, 1.15, cz + dz), color=rail_c)
+        # pink gate (west)
+        gate_x, gate_z = cx - half, cz
+        self.safe_gate = Entity(
             model='cube',
-            scale=(78, 0.04, 52),
-            position=(2, 0.02, -14),
-            color=color.rgb32(36, 34, 38) if asphalt else color.rgb32(24, 18, 28),
-            texture=asphalt or 'white_cube',
-            texture_scale=(24, 16),
+            scale=(0.35, 2.2, 2.4),
+            position=(gate_x, 1.1, gate_z),
+            color=color.rgb32(255, 90, 200),
+            collider='box',
         )
-
-    def _build_highway(self):
-        Entity = self.Entity
-        color = self.color
-        # Hwy 50 east-west between the two stall rows
-        asphalt = load_tex('asphalt')
-        concrete = load_tex('concrete')
-        Entity(
-            model='cube',
-            scale=(88, 0.08, 9.5),
-            position=(2, 0.05, -16),
-            color=color.rgb32(28, 26, 30) if asphalt else color.rgb32(18, 16, 20),
-            texture=asphalt,
-            texture_scale=(28, 3),
+        self.safe_gate.kind = 'safe_gate'
+        # practice props
+        cone_c = color.rgb32(255, 120, 40)
+        for ox, oz in ((-4, -3), (-2, -5), (3, -4), (5, 2), (-5, 4)):
+            Entity(model='cube', scale=(0.35, 0.7, 0.35), position=(cx + ox, 0.35, cz + oz), color=cone_c)
+            Entity(model='cube', scale=(0.15, 0.15, 0.15), position=(cx + ox, 0.75, cz + oz), color=color.rgb32(255, 255, 255))
+        try:
+            dummy = make_car(Entity, color, (cx + 5.5, 0, cz + 5.0), yaw=40, paint=color.rgb32(80, 90, 110))
+            if dummy:
+                dummy.parked = True
+                dummy.traffic = False
+                dummy.fuel = 0
+                dummy.safe_yard = True
+                self.cars.append(dummy)
+        except Exception:
+            Entity(model='cube', scale=(2.2, 1.0, 4.0), position=(cx + 5.5, 0.55, cz + 5.0), color=color.rgb32(80, 90, 110), collider='box')
+        barrel = Entity(model='cube', scale=(0.85, 1.15, 0.85), position=(cx + 4, 0.55, cz - 6), color=color.rgb32(160, 70, 40), collider='box')
+        barrel.kind = 'barrel'
+        barrel.hittable = True
+        barrel.hp = 30
+        barrel.npc_name = 'barrel'
+        self.targets.append(barrel)
+        # labels / billboard controls
+        make_billboard(Entity, color, Text, self._scene(), cx, cz + half - 1.0, 'SAFE YARD', face_yaw=0)
+        make_billboard(
+            Entity, color, Text, self._scene(),
+            cx, cz - 2.0,
+            'WASD move · mouse look · E gate · Tab cursor',
+            face_yaw=0,
         )
-        for x in range(-40, 44, 5):
-            Entity(
-                model='cube',
-                scale=(2.2, 0.09, 0.18),
-                position=(x, 0.1, -16),
-                color=color.rgb32(230, 200, 60),
-            )
-        # sidewalks
-        Entity(model='cube', scale=(88, 0.07, 1.6), position=(2, 0.06, -10.4),
-               color=color.rgb32(120, 115, 110) if concrete else color.rgb32(48, 38, 52),
-               texture=concrete, texture_scale=(40, 1))
-        Entity(model='cube', scale=(88, 0.07, 1.6), position=(2, 0.06, -21.6),
-               color=color.rgb32(120, 115, 110) if concrete else color.rgb32(48, 38, 52),
-               texture=concrete, texture_scale=(40, 1))
-        # street lamps
-        for x in (-28, -12, 0, 14, 28):
-            for z in (-10.2, -21.8):
-                Entity(model='cube', scale=(0.12, 3.2, 0.12), position=(x, 1.6, z), color=color.rgb32(40, 30, 50))
-                Entity(model='sphere', scale=0.35, position=(x, 3.3, z), color=color.rgb32(255, 90, 200))
+        make_street_sign(Entity, color, Text, self._scene(), gate_x - 0.8, gate_z, 'LEAVE ->')
 
-    def _build_skyline(self):
+    def _build_menu(self):
         Entity = self.Entity
-        color = self.color
         Text = self.Text
-        rng = random.Random(50)
-        # denser background strip-mall / midrise — composed, not single cubes
-        for i in range(12):
-            w, h, d = rng.uniform(3.2, 6.5), rng.uniform(4.5, 11.0), rng.uniform(3.0, 5.5)
-            x = -42 + i * 7.8 + rng.uniform(-0.6, 0.6)
-            z = 18 + rng.uniform(0, 3)
-            if math.hypot(x + 32.0, z - 12.0) < 14.0:
-                continue
-            body = color.rgb32(rng.randint(28, 55), rng.randint(16, 40), rng.randint(40, 70))
-            Entity(model='cube', scale=(w, h, d), position=(x, h / 2, z), color=body,
-                   texture=load_tex('brick') or load_tex('stucco'), texture_scale=(2.5, 2.0), collider='box')
-            Entity(model='cube', scale=(w + 0.3, 0.2, d + 0.3), position=(x, h + 0.1, z), color=body.tint(0.15) if hasattr(body, 'tint') else body)
-            # window grid
-            for wy in (0.35, 0.55, 0.75):
-                Entity(model='cube', scale=(w * 0.7, 0.18, 0.06), position=(x, h * wy, z - d / 2 - 0.02),
-                       color=color.rgb32(80, 160, 220))
-            self.building_count += 1
-        for i in range(8):
-            w, h, d = rng.uniform(3, 5.5), rng.uniform(3.2, 8.0), rng.uniform(3, 5)
-            x = -34 + i * 10
-            z = -50
-            Entity(model='cube', scale=(w, h, d), position=(x, h / 2, z),
-                   color=color.rgb32(rng.randint(30, 60), rng.randint(18, 36), rng.randint(28, 50)),
-                   texture=load_tex('stucco') or load_tex('brick'), texture_scale=(2.2, 1.8), collider='box')
-            Entity(model='cube', scale=(w + 0.2, 0.15, d + 0.2), position=(x, h + 0.08, z), color=color.rgb32(60, 40, 80))
-            self.building_count += 1
-        for x, z in ((-30, 6), (26, 8), (-22, -38), (24, -38), (40, -10), (-36, -8), (8, 10), (-8, -42)):
-            if math.hypot(x + 32.0, z - 12.0) < 12.0:
-                continue
-            Entity(model='cube', scale=(0.28, 2.4, 0.28), position=(x, 1.2, z), color=color.rgb32(70, 42, 28), collider='box')
-            Entity(model='sphere', scale=1.6, position=(x, 2.8, z), color=color.rgb32(30, 110, 55))
-
-    def _build_town_slice(self):
-        """Residential south of Hwy 50 + Sanctuary Drive row (~12 labeled houses)."""
-        Entity = self.Entity
         color = self.color
-        Text = self.Text
-        rng = random.Random(77)
-        # older south row
-        houses = (
-            (-28, -34, 'Maple Ct'), (-18, -38, 'Oak Lane'), (-6, -36, 'Cypress'),
-            (8, -39, 'Pine Row'), (20, -35, 'Bay St'), (32, -37, 'Lakeview'),
-            (-32, -42, 'Hickory'), (12, -44, 'Magnolia'),
+        camera = self.camera
+        self.menu_ents = []
+        self.menu_backdrop = Entity(
+            parent=camera.ui,
+            model='quad',
+            color=color.rgba32(6, 2, 14, 220),
+            scale=(2.2, 1.4),
+            position=(0, 0),
+            z=2,
+            enabled=False,
         )
-        for x, z, label in houses:
-            w, h, d = rng.uniform(2.8, 4.0), rng.uniform(2.4, 3.4), rng.uniform(2.6, 3.4)
-            make_house(
-                Entity, color, Text, self._scene(), x, z,
-                w=w, h=h, d=d, label=label, porch=True, garage=(rng.random() < 0.4), rng=rng,
-            )
-            self.building_count += 1
-        # Sanctuary Drive neighborhood — 10 more houses west/north of Michelle
-        sanctuary_row = (
-            (-40, 8, '412 Sanctuary'), (-40, 16, '418 Sanctuary'),
-            (-36, 20, '422 Sanctuary'), (-28, 20, '428 Sanctuary'),
-            (-24, 18, '430 Sanctuary'), (-20, 14, '434 Sanctuary'),
-            (-44, 12, '408 Sanctuary'), (-38, 4, '410 Sanctuary'),
-            (-26, 8, '436 Sanctuary'), (-22, 6, '438 Sanctuary'),
+        self.menu_ents.append(self.menu_backdrop)
+        neon = Entity(
+            parent=camera.ui,
+            model='quad',
+            color=color.rgba32(255, 40, 180, 40),
+            scale=(1.1, 0.02),
+            position=(0, 0.22),
+            z=1.9,
+            enabled=False,
         )
-        teal = color.rgb32(46, 196, 182)
-        for i, (x, z, label) in enumerate(sanctuary_row):
-            if math.hypot(x + 32.0, z - 12.0) < 9.0:
-                continue
-            roof = teal if i % 3 == 0 else color.rgb32(rng.randint(50, 100), rng.randint(80, 140), rng.randint(100, 160))
-            make_house(
-                Entity, color, Text, self._scene(), x, z,
-                w=rng.uniform(3.2, 4.2), h=rng.uniform(2.5, 3.3), d=rng.uniform(2.8, 3.6),
-                roof_col=roof, label=label, porch=True, garage=(i % 2 == 0), rng=rng,
+        self.menu_ents.append(neon)
+        self.menu_title = Text(
+            text='RUNE MOMMY',
+            position=(0, 0.28),
+            origin=(0, 0),
+            color=color.rgb32(255, 90, 210),
+            scale=2.0,
+            enabled=False,
+        )
+        self.menu_ents.append(self.menu_title)
+        sub = Text(
+            text='Clermont',
+            position=(0, 0.20),
+            origin=(0, 0),
+            color=color.rgb32(140, 230, 255),
+            scale=1.1,
+            enabled=False,
+        )
+        self.menu_ents.append(sub)
+        self.menu_lines = []
+        lines = [
+            '1   Start',
+            '2   Load',
+            '3   Settings',
+            'Esc quit',
+        ]
+        for i, line in enumerate(lines):
+            t = Text(
+                text=line,
+                position=(0, 0.06 - i * 0.07),
+                origin=(0, 0),
+                color=color.rgb32(255, 230, 255) if i < 3 else color.rgb32(160, 140, 180),
+                scale=1.15 if i < 3 else 0.85,
+                enabled=False,
             )
-            self.building_count += 1
-        for x in (-32, -16, 4, 18, 34):
-            z = -32.0
-            Entity(model='cube', scale=(0.12, 3.0, 0.12), position=(x, 1.5, z), color=color.rgb32(40, 30, 50))
-            Entity(model='sphere', scale=0.32, position=(x, 3.15, z), color=color.rgb32(255, 90, 200))
-        make_street_sign(Entity, color, Text, self._scene(), -30.0, 10.5, 'Sanctuary Dr')
-        make_street_sign(Entity, color, Text, self._scene(), 2.0, -22.5, 'E Hwy 50')
-        make_billboard(Entity, color, Text, self._scene(), -10.0, -8.5, 'COOL DOWN\n@ MIRA', face_yaw=0)
-        make_billboard(Entity, color, Text, self._scene(), 28.0, -20.5, 'HANCOCK\nGUN HUT', face_yaw=0)
-        self.building_count += 4
+            self.menu_lines.append(t)
+            self.menu_ents.append(t)
+        self.settings_lines = []
+        for i in range(5):
+            t = Text(
+                text='',
+                position=(0, 0.08 - i * 0.07),
+                origin=(0, 0),
+                color=color.rgb32(200, 230, 255),
+                scale=1.0,
+                enabled=False,
+            )
+            self.settings_lines.append(t)
+            self.menu_ents.append(t)
 
-    def _build_pois(self):
-        """Gas, motel, laundry, Starbucks-ish, pharmacy, park + Clermont landmarks."""
-        Entity = self.Entity
-        color = self.color
-        Text = self.Text
-        self.pois = []
-        specs = (
-            ('gas', 18.0, -8.0, 'rita'),
-            # Hwy 27 Fuel — US-27 near Club 27 / east
-            ('gas_hwy27', 38.0, -14.0, None),
-            ('motel', -8.0, 6.5, 'motel_clerk'),
-            ('laundromat', 8.0, 5.0, 'lot_attendant'),
-            ('starbucks', -20.0, -10.5, 'barista'),
-            ('pharmacy', 30.0, -28.0, 'pharmacist'),
-            ('park', -14.0, -28.0, 'amanda_friend'),
-            # Club 27 Cabaret — 215 US Hwy 27, Clermont FL 34714 (east/south of Hwy 50)
-            ('club27', 40.0, -20.0, 'club27_host'),
-            # Quiet Spa — Hwy 50 west of shake row
-            ('quiet_spa', -36.0, -16.0, 'quiet_spa_tech'),
-            # Citrus Tower — US-27 north of Hwy 50
-            ('citrus_tower', 36.0, 6.0, 'citrus_guide'),
-            # Waterfront Park / Lake Minneola — SE of downtown slice
-            ('waterfront', 16.0, -42.0, 'park_ranger'),
-            # roadside kitsch density (buildings only — no shared NPC overwrite)
-            ('showcase_citrus', 28.0, -6.0, None),
-            ('presidents_hall', 44.0, -8.0, None),
-        )
-        for kind, x, z, npc_id in specs:
-            parts, interact, label = make_poi_building(Entity, color, Text, self._scene(), kind, x, z)
-            self.building_count += 1
-            is_gas = kind in ('gas', 'gas_hwy27') or (label or '').lower().find('gas') >= 0 or (label or '').lower().find('fuel') >= 0
-            self.pois.append({
-                'id': kind,
-                'name': label,
+    def _set_menu_visible(self, visible):
+        for e in getattr(self, 'menu_ents', []) or []:
+            try:
+                e.enabled = bool(visible)
+            except Exception:
+                pass
+        if visible:
+            self._refresh_menu_labels()
+
+    def _refresh_menu_labels(self):
+        if self.mode == 'settings':
+            for t in self.menu_lines:
+                t.enabled = False
+            sens = int(self.mouse_sens)
+            fs = 'ON' if getattr(self, 'fullscreen_stub', False) else 'OFF'
+            specs = [
+                'SETTINGS',
+                f'1  Mouse sensitivity  {sens}',
+                f'2  Fullscreen (stub)  {fs}',
+                '3  Back',
+                'Esc back',
+            ]
+            for i, t in enumerate(self.settings_lines):
+                t.text = specs[i] if i < len(specs) else ''
+                t.enabled = True
+                if i == 0:
+                    t.color = self.color.rgb32(255, 90, 210)
+            if self.menu_title:
+                self.menu_title.enabled = False
+        else:
+            for t in self.settings_lines:
+                t.enabled = False
+                t.text = ''
+            for t in self.menu_lines:
+                t.enabled = True
+            if self.menu_title:
+                self.menu_title.enabled = True
+
+    def _hide_play_hud(self, hide):
+        bits = [
+            self.hud_gold, self.hud_hp, self.hud_heat, self.hud_ammo,
+            self.hud_pack, self.hud_breed, self.hud_quest, self.hud_mode,
+            self.hud_prompt, self.crosshair,
+        ]
+        for b in bits:
+            if b is None:
+                continue
+            try:
+                b.enabled = not hide
+            except Exception:
+                pass
+        # tutorial overlay stays off until play
+        if hide:
+            try:
+                if self.tutorial_overlay:
+                    self.tutorial_overlay.enabled = False
