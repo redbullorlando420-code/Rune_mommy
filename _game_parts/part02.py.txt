@@ -1,3 +1,6 @@
+            collider=None,
+            y=0,
+        )
         # lot asphalt patch
         Entity(
             model='cube',
@@ -39,7 +42,7 @@
         color = self.color
         Text = self.Text
         rng = random.Random(50)
-        # denser background strip-mall / midrise - composed, not single cubes
+        # denser background strip-mall / midrise — composed, not single cubes
         for i in range(12):
             w, h, d = rng.uniform(3.2, 6.5), rng.uniform(4.5, 11.0), rng.uniform(3.0, 5.5)
             x = -42 + i * 7.8 + rng.uniform(-0.6, 0.6)
@@ -86,7 +89,7 @@
                 w=w, h=h, d=d, label=label, porch=True, garage=(rng.random() < 0.4), rng=rng,
             )
             self.building_count += 1
-        # Sanctuary Drive neighborhood - 10 more houses west/north of Michelle
+        # Sanctuary Drive neighborhood — 10 more houses west/north of Michelle
         sanctuary_row = (
             (-40, 8, '412 Sanctuary'), (-40, 16, '418 Sanctuary'),
             (-36, 20, '422 Sanctuary'), (-28, 20, '428 Sanctuary'),
@@ -123,32 +126,37 @@
         self.pois = []
         specs = (
             ('gas', 18.0, -8.0, 'rita'),
+            # Hwy 27 Fuel — US-27 near Club 27 / east
+            ('gas_hwy27', 38.0, -14.0, None),
             ('motel', -8.0, 6.5, 'motel_clerk'),
             ('laundromat', 8.0, 5.0, 'lot_attendant'),
             ('starbucks', -20.0, -10.5, 'barista'),
             ('pharmacy', 30.0, -28.0, 'pharmacist'),
             ('park', -14.0, -28.0, 'amanda_friend'),
-            # Club 27 Cabaret - 215 US Hwy 27, Clermont FL 34714 (east/south of Hwy 50)
+            # Club 27 Cabaret — 215 US Hwy 27, Clermont FL 34714 (east/south of Hwy 50)
             ('club27', 40.0, -20.0, 'club27_host'),
-            # Quiet Spa - Hwy 50 west of shake row
+            # Quiet Spa — Hwy 50 west of shake row
             ('quiet_spa', -36.0, -16.0, 'quiet_spa_tech'),
-            # Citrus Tower - US-27 north of Hwy 50
+            # Citrus Tower — US-27 north of Hwy 50
             ('citrus_tower', 36.0, 6.0, 'citrus_guide'),
-            # Waterfront Park / Lake Minneola - SE of downtown slice
+            # Waterfront Park / Lake Minneola — SE of downtown slice
             ('waterfront', 16.0, -42.0, 'park_ranger'),
-            # roadside kitsch density (buildings only - no shared NPC overwrite)
+            # roadside kitsch density (buildings only — no shared NPC overwrite)
             ('showcase_citrus', 28.0, -6.0, None),
             ('presidents_hall', 44.0, -8.0, None),
         )
         for kind, x, z, npc_id in specs:
             parts, interact, label = make_poi_building(Entity, color, Text, self._scene(), kind, x, z)
             self.building_count += 1
+            is_gas = kind in ('gas', 'gas_hwy27') or (label or '').lower().find('gas') >= 0 or (label or '').lower().find('fuel') >= 0
             self.pois.append({
                 'id': kind,
                 'name': label,
                 'pos': (interact[0], 0, interact[2]),
                 'npc_id': npc_id,
                 'line': None,
+                'is_gas': is_gas,
+                'pump_r': 4.2 if is_gas else 3.4,
             })
 
     def _build_house(self):
@@ -180,7 +188,3 @@
         Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz - 0.9), color=wood)
         Entity(model='cube', scale=(0.7, 0.5, 0.55), position=(hx - 4.3, 0.4, hz + 2.2), color=color.rgb32(70, 78, 90))
         # garage south of body
-        Entity(model='cube', scale=(5.4, 2.5, 4.6), position=(hx + 0.2, 1.25, hz - 5.4), color=color.rgb32(210, 196, 176), collider='box')
-        Entity(model='cube', scale=(5.6, 0.28, 4.8), position=(hx + 0.2, 2.62, hz - 5.4), color=teal)
-        Entity(model='cube', scale=(3.4, 1.9, 0.12), position=(hx + 2.7, 1.0, hz - 5.4), color=color.rgb32(70, 78, 90))
-        door = Entity(model='cube', scale=(0.16, 2.15, 1.05), position=(hx + 4.08, 1.12, hz), color=wood)
