@@ -77,3 +77,5 @@ Do not empty `data/shops.json`. Michelle first name only.
 ## Data
 
 Do not empty `data/shops.json`. Keep all ten shake stalls.
+
+Portraits: `client/portraits/<npc>/<expr>.png`
