@@ -1,176 +1,237 @@
-                   color=color.rgb32(rng.randint(30, 60), rng.randint(18, 36), rng.randint(28, 50)),
-                   texture=load_tex('stucco') or load_tex('brick'), texture_scale=(2.2, 1.8), collider='box')
-            Entity(model='cube', scale=(w + 0.2, 0.15, d + 0.2), position=(x, h + 0.08, z), color=color.rgb32(60, 40, 80))
-            self.building_count += 1
-        for x, z in ((-30, 6), (26, 8), (-22, -38), (24, -38), (40, -10), (-36, -8), (8, 10), (-8, -42)):
-            if math.hypot(x + 32.0, z - 12.0) < 12.0:
-                continue
-            Entity(model='cube', scale=(0.28, 2.4, 0.28), position=(x, 1.2, z), color=color.rgb32(70, 42, 28), collider='box')
-            Entity(model='sphere', scale=1.6, position=(x, 2.8, z), color=color.rgb32(30, 110, 55))
-
-    def _build_town_slice(self):
-        """Residential south of Hwy 50 + Sanctuary Drive row (~12 labeled houses)."""
-        Entity = self.Entity
-        color = self.color
-        Text = self.Text
-        rng = random.Random(77)
-        # older south row
-        houses = (
-            (-28, -34, 'Maple Ct'), (-18, -38, 'Oak Lane'), (-6, -36, 'Cypress'),
-            (8, -39, 'Pine Row'), (20, -35, 'Bay St'), (32, -37, 'Lakeview'),
-            (-32, -42, 'Hickory'), (12, -44, 'Magnolia'),
-        )
-        for x, z, label in houses:
-            w, h, d = rng.uniform(2.8, 4.0), rng.uniform(2.4, 3.4), rng.uniform(2.6, 3.4)
-            make_house(
-                Entity, color, Text, self._scene(), x, z,
-                w=w, h=h, d=d, label=label, porch=True, garage=(rng.random() < 0.4), rng=rng,
+        mira = self._humanoid(mx, mz, shirt=color.rgb32(255, 70, 180), pants=color.rgb32(40, 12, 40), skin=color.rgb32(255, 206, 166), detail='named')
+        mira.npc_id = 'mira'
+        mira.npc_name = 'Mama Mira'
+        mira.kind = 'mira'
+        mira.hittable = False
+        self.talk_npcs.append({'ent': mira, 'name': 'Mama Mira', 'talk': 'Neons loud tonight.', 'killable': False})
+        if portrait:
+            bill = Entity(
+                parent=mira,
+                model='quad',
+                texture=portrait,
+                scale=(1.15, 1.55),
+                position=(0, 1.45, -0.55),
+                double_sided=True,
             )
-            self.building_count += 1
-        # Sanctuary Drive neighborhood — 10 more houses west/north of Michelle
-        sanctuary_row = (
-            (-40, 8, '412 Sanctuary'), (-40, 16, '418 Sanctuary'),
-            (-36, 20, '422 Sanctuary'), (-28, 20, '428 Sanctuary'),
-            (-24, 18, '430 Sanctuary'), (-20, 14, '434 Sanctuary'),
-            (-44, 12, '408 Sanctuary'), (-38, 4, '410 Sanctuary'),
-            (-26, 8, '436 Sanctuary'), (-22, 6, '438 Sanctuary'),
-        )
-        teal = color.rgb32(46, 196, 182)
-        for i, (x, z, label) in enumerate(sanctuary_row):
-            if math.hypot(x + 32.0, z - 12.0) < 9.0:
-                continue
-            roof = teal if i % 3 == 0 else color.rgb32(rng.randint(50, 100), rng.randint(80, 140), rng.randint(100, 160))
-            make_house(
-                Entity, color, Text, self._scene(), x, z,
-                w=rng.uniform(3.2, 4.2), h=rng.uniform(2.5, 3.3), d=rng.uniform(2.8, 3.6),
-                roof_col=roof, label=label, porch=True, garage=(i % 2 == 0), rng=rng,
-            )
-            self.building_count += 1
-        for x in (-32, -16, 4, 18, 34):
-            z = -32.0
-            Entity(model='cube', scale=(0.12, 3.0, 0.12), position=(x, 1.5, z), color=color.rgb32(40, 30, 50))
-            Entity(model='sphere', scale=0.32, position=(x, 3.15, z), color=color.rgb32(255, 90, 200))
-        make_street_sign(Entity, color, Text, self._scene(), -30.0, 10.5, 'Sanctuary Dr')
-        make_street_sign(Entity, color, Text, self._scene(), 2.0, -22.5, 'E Hwy 50')
-        make_billboard(Entity, color, Text, self._scene(), -10.0, -8.5, 'COOL DOWN\n@ MIRA', face_yaw=0)
-        make_billboard(Entity, color, Text, self._scene(), 28.0, -20.5, 'HANCOCK\nGUN HUT', face_yaw=0)
-        self.building_count += 4
+            try:
+                bill.billboard = True
+            except Exception:
+                pass
+        self.npcs.append(mira)
 
-    def _build_pois(self):
-        """Gas, motel, laundry, Starbucks-ish, pharmacy, park + Clermont landmarks."""
-        Entity = self.Entity
-        color = self.color
-        Text = self.Text
-        self.pois = []
-        specs = (
-            ('gas', 18.0, -8.0, 'rita'),
-            # Hwy 27 Fuel — US-27 near Club 27 / east
-            ('gas_hwy27', 38.0, -14.0, None),
-            ('motel', -8.0, 6.5, 'motel_clerk'),
-            ('laundromat', 8.0, 5.0, 'lot_attendant'),
-            ('starbucks', -20.0, -10.5, 'barista'),
-            ('pharmacy', 30.0, -28.0, 'pharmacist'),
-            ('park', -14.0, -28.0, 'amanda_friend'),
-            # Club 27 Cabaret — 215 US Hwy 27, Clermont FL 34714 (east/south of Hwy 50)
-            ('club27', 40.0, -20.0, 'club27_host'),
-            # Quiet Spa — Hwy 50 west of shake row
-            ('quiet_spa', -36.0, -16.0, 'quiet_spa_tech'),
-            # Citrus Tower — US-27 north of Hwy 50
-            ('citrus_tower', 36.0, 6.0, 'citrus_guide'),
-            # Waterfront Park / Lake Minneola — SE of downtown slice
-            ('waterfront', 16.0, -42.0, 'park_ranger'),
-            # roadside kitsch density (buildings only — no shared NPC overwrite)
-            ('showcase_citrus', 28.0, -6.0, None),
-            ('presidents_hall', 44.0, -8.0, None),
-        )
-        for kind, x, z, npc_id in specs:
-            parts, interact, label = make_poi_building(Entity, color, Text, self._scene(), kind, x, z)
-            self.building_count += 1
-            is_gas = kind in ('gas', 'gas_hwy27') or (label or '').lower().find('gas') >= 0 or (label or '').lower().find('fuel') >= 0
-            self.pois.append({
-                'id': kind,
-                'name': label,
-                'pos': (interact[0], 0, interact[2]),
-                'npc_id': npc_id,
-                'line': None,
-                'is_gas': is_gas,
-                'pump_r': 4.2 if is_gas else 3.4,
+        gun = next((s for s in self.stalls if s['kind'] == 'gun'), None)
+        gx, gz = (36.0, 2.2)
+        if gun:
+            gx, gz = gun['pos'][0], gun['pos'][2] - 2.3
+        gage = self._humanoid(gx, gz, shirt=color.rgb32(90, 55, 30), pants=color.rgb32(30, 24, 20), skin=color.rgb32(210, 170, 130), detail='named')
+        gage.npc_id = 'gage'
+        gage.npc_name = 'Gage'
+        gage.kind = 'gun'
+        gage.hittable = False
+        self.npcs.append(gage)
+        self.talk_npcs.append({'ent': gage, 'name': 'Gage', 'talk': 'Cash on the plank.', 'killable': False})
+
+        steak = next((s for s in self.stalls if s['id'] == 'steak_n_shake'), None)
+        if steak:
+            deb = self._humanoid(steak['pos'][0], steak['pos'][2] - 2.2, shirt=color.rgb32(245, 210, 50), pants=color.rgb32(20, 20, 20), detail='named')
+            deb.npc_id = 'deb'
+            deb.npc_name = 'Diner Deb'
+            deb.kind = 'talk'
+            deb.line = 'Same lot as Mira. Vanilla, chocolate, strawberry, or the black-and-white.'
+            self.npcs.append(deb)
+
+        # Extra talkable Clermont NPCs from npcs.json. Keep them off Mira.
+        talk_spots = {
+            'lila': (-14.0, 5.5),
+            'yara': (8.0, -26.5),
+            'rosa': (mx - 3.2, mz + 0.4),
+            'tavi': (-24.0, -20.0),
+            'rook': (26.0, 7.0),
+            'rita': (18.0, -13.0),
+            'motel_clerk': (-8.0, 4.2),
+            'barista': (-20.0, -12.8),
+            'pharmacist': (30.0, -30.2),
+            'neighbor': (-40.0, 10.5),
+            'lot_attendant': (8.0, 2.8),
+            'amanda_friend': (-14.0, -30.0),
+        }
+        # place POI NPCs from self.pois (adds new ids + refreshes positions)
+        for poi in getattr(self, 'pois', []) or []:
+            nid = poi.get('npc_id')
+            if nid:
+                talk_spots[nid] = (poi['pos'][0], poi['pos'][2])
+        for nid, (nx, nz) in talk_spots.items():
+            spec = (self.npcs_data or {}).get(nid) or {'id': nid, 'name': nid.title(), 'greet': '...'}
+            shirt = hex_color(spec.get('color') or '#ff8fab')
+            named = nid in ('lila', 'rosa', 'yara', 'rita', 'deb')
+            npc = self._humanoid(
+                nx, nz, shirt=shirt, pants=color.rgb32(36, 24, 40),
+                skin=color.rgb32(255, 200, 160), detail='named' if named else 'crowd',
+            )
+            npc.npc_id = nid
+            npc.npc_name = spec.get('name', nid.title())
+            npc.kind = nid if nid in ('lila', 'rosa', 'yara') else 'talk'
+            npc.line = spec.get('greet') or spec.get('lines', ['...'])[0]
+            npc.portrait_tex = None
+            rel = portrait_asset_path(nid)
+            if rel:
+                try:
+                    from ursina import load_texture
+                    tex = load_texture(rel)
+                except Exception:
+                    tex = str(pp)
+                npc.portrait_tex = tex
+                bill = Entity(
+                    parent=npc,
+                    model='quad',
+                    texture=tex,
+                    scale=(1.05, 1.4),
+                    position=(0, 1.45, -0.55),
+                    double_sided=True,
+                )
+                try:
+                    bill.billboard = True
+                except Exception:
+                    pass
+            self.npcs.append(npc)
+            self.talk_npcs.append({
+                'ent': npc,
+                'name': npc.npc_name,
+                'talk': npc.line,
+                'killable': False,
             })
 
-    def _build_house(self):
-        """Suburban cubes at about (-32, 0, 12). Body, teal roof, garage, door, back lawn, Sanctuary Drive."""
+    def _humanoid(self, x, z, shirt, pants, skin=None, hitbox=False, detail='crowd', style=None):
+        return make_humanoid(
+            self.Entity, self.color, x, z, shirt, pants,
+            skin=skin, hitbox=hitbox, detail=detail, style=style,
+        )
+
+    def _build_cars(self):
+        paints = [
+            self.color.rgb32(200, 30, 40),
+            self.color.rgb32(20, 20, 24),
+            self.color.rgb32(230, 230, 235),
+            self.color.rgb32(30, 170, 190),
+            self.color.rgb32(240, 190, 40),
+            self.color.rgb32(120, 40, 180),
+            self.color.rgb32(230, 90, 20),
+            self.color.rgb32(40, 90, 160),
+        ]
+        spots = [
+            (-8.0, -12.5, 90),
+            (-3.5, -12.6, 88),
+            (2.0, -12.4, 92),
+            (7.5, -12.7, 86),
+            (14.0, -19.5, 0),
+            (-14.0, -19.2, 8),
+            (22.0, -12.8, 90),
+            (30.5, -6.0, 10),
+        ]
+        for i, (x, z, yaw) in enumerate(spots[:8]):
+            car = self._make_car((x, 0, z), yaw, paints[i % len(paints)])
+            car.parked = True
+            car.traffic = False
+            car.fuel = float(random.uniform(35, 70))
+            car.damage = 0.0
+            car.disabled = False
+            self.cars.append(car)
+        self.parked_count = len(self.cars)
+
+    def _make_car(self, pos, yaw, paint):
+        car = make_car(self.Entity, self.color, pos, yaw, paint)
+        # Traffic cars ignore fuel; parked/enterable get a tank below in _build_cars.
+        if not getattr(car, 'traffic', False):
+            if not hasattr(car, 'fuel') or car.fuel is None:
+                car.fuel = float(random.uniform(35, 70))
+        return car
+
+    def _build_crowd(self):
+        spawn_crowd(self)
+        hx, hz = -32.0, 12.0
+        for ped in self.peds:
+            if not ped:
+                continue
+            if abs(getattr(ped, 'x', 0) - hx) < 14 and abs(getattr(ped, 'z', 0) - hz) < 10:
+                ped.x = min(46, ped.x + 18)
+
+    def _build_traffic(self):
+        spawn_traffic(self)
+
+    def _rebuild_ignore(self):
+        ign = [self.player, self.visual, self.cam_pivot]
+        if self.gun_model:
+            ign.append(self.gun_model)
+        for npc in self.npcs:
+            if npc:
+                ign.append(npc)
+        for car in self.cars:
+            if not car:
+                continue
+            ign.append(car)
+            body = getattr(car, 'body', None)
+            if body:
+                ign.append(body)
+        self.ignore = ign
+
+    def _build_targets(self):
+        color = self.color
+        # Six shootable hostiles from mobs.json, south of Hwy 50 (z < -16).
+        mix = ('dusk_walker', 'road_thug', 'cinder_hound', 'dusk_walker', 'road_thug', 'cinder_hound')
+        spots = [(-12, -32), (2, -34), (14, -31), (22, -36), (-22, -30), (6, -40)]
+        for i, (mid, (x, z)) in enumerate(zip(mix, spots)):
+            spec = (self.mobs_data or {}).get(mid) or {'id': mid, 'name': mid, 'hp': 30, 'xp': 10, 'color': '#6d6875'}
+            shirt = hex_color(spec.get('color') or '#6d6875')
+            skin = color.rgb32(170, 190, 150) if 'walker' in mid else color.rgb32(220, 160, 120)
+            t = self._humanoid(x, z, shirt=shirt, pants=color.rgb32(24, 24, 28), skin=skin, hitbox=True)
+            t.npc_id = f"{mid}_{i}"
+            t.mob_id = mid
+            t.npc_name = spec.get('name', mid)
+            t.kind = 'mob'
+            t.hp = int(spec.get('hp', 30))
+            t.max_hp = t.hp
+            t.xp = int(spec.get('xp', 10))
+            t.heading = random.uniform(0, 360)
+            t.wander_t = random.uniform(0, 2)
+            t.hittable = True
+            try:
+                sz = float(spec.get('size') or 1.0)
+                t.scale = sz
+            except Exception:
+                pass
+            self.targets.append(t)
+            self.npcs.append(t)
+        # barrels
+        Entity = self.Entity
+        for x, z in ((12, -8), (11.2, -8.6), (-6, -22)):
+            b = Entity(model='cube', color=color.rgb32(150, 70, 30), scale=(0.7, 1.0, 0.7), position=(x, 0.5, z), collider='box')
+            b.kind = 'barrel'
+            b.hittable = True
+            b.hp = 15
+            b.xp = 0
+            b.npc_name = 'barrel'
+            self.targets.append(b)
+
+    def _build_player(self):
         Entity = self.Entity
         color = self.color
-        Text = self.Text
-        teal = color.rgb32(46, 196, 182)
-        body_col = color.rgb32(232, 214, 188)
-        wood = color.rgb32(90, 55, 40)
-        hx, hz = -32.0, 12.0
-        self.house_vols = []
-        self.sanctuary_pos = (hx, 0.0, hz)
+        camera = self.camera
+        Vec3 = self.Vec3
 
-        # lot grass + darker back-lawn swamp strip (west) + driveway (east)
-        grass = load_tex('grass')
-        asphalt = load_tex('asphalt')
-        stucco = load_tex('stucco')
-        concrete = load_tex('concrete')
-        Entity(model='cube', scale=(16, 0.05, 14), position=(hx - 1.0, 0.025, hz),
-               color=color.rgb32(34, 88, 46), texture=grass, texture_scale=(8, 7))
-        Entity(model='cube', scale=(7.5, 0.06, 12), position=(hx - 7.2, 0.03, hz),
-               color=color.rgb32(16, 42, 28), texture=grass, texture_scale=(4, 6))
-        Entity(model='cube', scale=(6.2, 0.07, 5.6), position=(hx + 6.4, 0.035, hz),
-               color=color.rgb32(48, 44, 50), texture=asphalt or concrete, texture_scale=(3, 2.5))
+        self.player = Entity(position=(-8.0, 0, 6.0), rotation_y=-90)
+        self.visual = Entity(parent=self.player)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(30, 40, 55), scale=(0.44, 0.55, 0.3), y=0.28)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.52, 0.62, 0.34), y=0.82)
+        Entity(parent=self.visual, model='sphere', color=color.rgb32(255, 210, 175), scale=0.33, y=1.32)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.12, 0.5, 0.12), x=0.34, y=0.78)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.12, 0.5, 0.12), x=-0.34, y=0.78)
+        self.gun_model = Entity(
+            parent=self.visual,
+            model='cube',
+            color=color.rgb32(40, 42, 48),
+            scale=(0.08, 0.16, 0.42),
+            position=(0.38, 1.05, 0.28),
+            enabled=False,
+        )
+        Entity(parent=self.gun_model, model='cube', color=color.rgb32(30, 30, 32), scale=(0.7, 0.45, 0.35), position=(0, -0.4, -0.15))
 
-        # body + porch + windows + AC (composed, not a lone cube)
-        Entity(model='cube', scale=(8.0, 3.2, 6.4), position=(hx, 1.6, hz), color=body_col,
-               texture=stucco, texture_scale=(2.5, 1.6), collider='box')
-        Entity(model='cube', scale=(8.6, 0.35, 3.6), position=(hx - 1.2, 3.55, hz), color=teal, rotation_z=18)
-        Entity(model='cube', scale=(8.6, 0.35, 3.6), position=(hx + 1.2, 3.55, hz), color=teal, rotation_z=-18)
-        Entity(model='cube', scale=(0.3, 0.25, 7.0), position=(hx, 3.95, hz), color=color.rgb32(245, 248, 252))
-        for wz in (-1.6, 1.6):
-            Entity(model='cube', scale=(0.08, 0.7, 0.7), position=(hx + 4.05, 1.7, hz + wz), color=color.rgb32(120, 200, 230))
-        Entity(model='cube', scale=(2.8, 0.14, 2.2), position=(hx + 5.2, 0.1, hz),
-               color=color.rgb32(170, 160, 140), texture=concrete, texture_scale=(2, 1.5))
-        Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz + 0.9), color=wood)
-        Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz - 0.9), color=wood)
-        Entity(model='cube', scale=(0.7, 0.5, 0.55), position=(hx - 4.3, 0.4, hz + 2.2), color=color.rgb32(70, 78, 90))
-        # garage south of body
-        Entity(model='cube', scale=(5.4, 2.5, 4.6), position=(hx + 0.2, 1.25, hz - 5.4),
-               color=color.rgb32(210, 196, 176), texture=stucco, texture_scale=(2, 1.4), collider='box')
-        Entity(model='cube', scale=(5.6, 0.28, 4.8), position=(hx + 0.2, 2.62, hz - 5.4), color=teal)
-        Entity(model='cube', scale=(3.4, 1.9, 0.12), position=(hx + 2.7, 1.0, hz - 5.4), color=color.rgb32(70, 78, 90))
-        door = Entity(model='cube', scale=(0.16, 2.15, 1.05), position=(hx + 4.08, 1.12, hz), color=wood)
-        self.sanctuary_door = door
-        Entity(model='cube', scale=(1.5, 0.16, 1.7), position=(hx + 4.9, 0.1, hz), color=color.rgb32(180, 180, 175))
-        self.building_count += 2
-
-        # guest bed + shower markers inside
-        Entity(model='cube', scale=(2.2, 0.42, 1.5), position=(hx + 1.8, 0.45, hz + 1.5), color=color.rgb32(220, 210, 200))
-        Entity(model='cube', scale=(1.35, 1.9, 1.35), position=(hx - 2.1, 1.05, hz + 1.7), color=color.rgb32(180, 220, 215))
-
-        door_xz = (hx + 4.1, hz)
-        guest_xz = (hx + 1.8, hz + 1.5)
-        garage_xz = (hx + 0.2, hz - 5.4)
-        shower_xz = (hx - 2.1, hz + 1.7)
-        lawn_xz = (hx - 7.2, hz)
-        self.house_rooms = {
-            'door': door_xz,
-            'guest': guest_xz,
-            'garage': garage_xz,
-            'shower': shower_xz,
-            'lawn': lawn_xz,
-        }
-
-        def vol(xz, sx, sz, col, node):
-            e = Entity(model='cube', scale=(sx, 0.06, sz), position=(xz[0], 0.12, xz[1]), color=col)
-            e.room_node = node
-            self.house_vols.append(e)
-            return e
-
-        vol(guest_xz, 3.0, 2.4, color.rgb32(70, 180, 170), 'guest')
-        vol(garage_xz, 3.6, 3.2, color.rgb32(70, 70, 78), 'garage')
-        vol(shower_xz, 2.2, 2.2, color.rgb32(90, 200, 210), 'shower')
-        vol(lawn_xz, 4.2, 5.0, color.rgb32(22, 58, 32), 'lawn')
-        vol(door_xz, 2.2, 2.2, color.rgb32(90, 70, 55), 'door')
-
-        Entity(model='cube', scale=(0.14, 2.8, 0.14), position=(hx + 7.4, 1.4, hz + 3.4), color=color.rgb32(70, 60, 50))
