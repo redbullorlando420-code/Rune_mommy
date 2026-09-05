@@ -38,7 +38,7 @@ You spawn in the **Sanctuary Drive** driveway. Michelle is at the front door.
 
 ## Portraits
 
-`client/portraits/<name>/` (for example `client/portraits/michelle/sassy.jpg`). Full-size PNGs may live on disk and not on GitHub; small JPGs are on the repo so faces do not 404.
+Faces live on disk under `client/portraits/<name>/` (for example `michelle/sassy.png`). They are **local-only** — not shipped on GitHub (the connector cannot push image binaries cleanly). Keep that folder next to `game.py` when you play. Small jpg stand-ins also live in those folders on the box/RB24.
 
 ## Data
 
