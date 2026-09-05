@@ -1,275 +1,276 @@
-        who = node.get('portrait') or 'michelle'
-        expr = node.get('expression') or 'sassy'
-        tex = self._tex_for(who, expr)
-        self.open_panel('Michelle', node.get('text', ''), choices, portrait=True, portrait_tex=tex)
-
-    def _michelle_portrait(self):
-        if self.michelle is not None and getattr(self.michelle, 'portrait_tex', None):
-            return self.michelle.portrait_tex
-        return self._tex_for('michelle')
-
-    def _tick_heat(self, dt):
-        if self.heat > 0:
-            self.heat = max(0.0, self.heat - 0.07 * dt)
-        self.heat_spawn_cd = max(0.0, self.heat_spawn_cd - dt)
-        if self.heat >= 1.6 and self.heat_spawn_cd <= 0 and len(self.heat_hunters) < 4:
-            spawn_heat_hunter(self)
-            self.heat_spawn_cd = 2.8
-
-    def _hurt(self, dmg):
-        self.hp = max(0, self.hp - dmg)
-        if self.hp <= 0:
-            self.hp = self.max_hp
-            self.gold = self.gold // 2
-            self.heat = 0.0
-            if self.in_car:
-                self._exit_car()
-            self.player.position = (0, 0, -8.5)
-            self.player.rotation_y = 0
-            self.toast('Woke up on the lot. Gold halved.')
-
-    def _eat_food(self):
-        if not self.pack:
-            self.toast('No shakes. Mira sells Cool Downs.')
+        from ursina import camera, Vec3
+        if getattr(car, 'disabled', False) or float(getattr(car, 'damage', 0) or 0) >= 100:
+            self.toast('Car totaled.')
             return
-        name = self.pack.pop(0)
-        self.hp = min(self.max_hp, self.hp + 28)
-        self.toast(f'{name}  +28 HP')
+        self.in_car = car
+        car.speed = 0
+        was_traffic = bool(getattr(car, 'traffic', False))
+        car.traffic = False
+        car.parked = True
+        if was_traffic or not hasattr(car, 'fuel'):
+            car.fuel = float(random.uniform(35, 70))
+        car.out_of_gas_toasted = False
+        self.visual.enabled = False
+        self.pistol_drawn = False
+        if self.gun_model:
+            self.gun_model.enabled = False
+        self.player.position = car.position
+        self._set_camera_follow(True)
+        self.toast('W accel  S brake/rev  Space handbrake  E exit/pump')
 
-    def _apply_preg_look(self):
-        m = self.michelle
-        if not m:
+    def _exit_car(self):
+        from ursina import camera, Vec3
+        car = self.in_car
+        if not car:
             return
-        chest = getattr(m, 'chest', None)
-        if chest:
-            chest.scale = (0.78, 0.48, 0.52)
+        offset = car.right * 2.2
+        self.player.position = car.world_position + offset
+        self.player.y = 0
+        self.player.rotation_y = car.rotation_y
+        car.speed = 0
+        self.in_car = None
+        self.visual.enabled = True
+        self._set_camera_follow(False)
+        self.toast('On foot.')
 
-    def _init_quests(self):
-        self.quest_active = []
-        self.quest_completed = set()
-        self.quest_progress = {}
-        self.kill_quest_count = 0
-        for q in self.quest_defs:
-            if q.get('auto_start'):
-                self.quest_active.append(q['id'])
-                self.quest_progress[q['id']] = 0
-        self._quest_unlock_ready()
+    # ----- Gas stations ---------------------------------------------------
 
-    def _quest_def(self, qid):
-        for q in self.quest_defs:
-            if q.get('id') == qid:
-                return q
-        return None
+    def open_gas_station(self, poi, car):
+        name = (poi or {}).get('name') or 'Gas'
+        fuel = float(getattr(car, 'fuel', 0) or 0)
+        dmg = float(getattr(car, 'damage', 0) or 0)
+        need = max(0.0, 100.0 - fuel)
+        fill_cost = max(1, int(math.ceil(need / 2.0))) if need > 0.5 else 0
+        body = f'{name}\nFuel {int(fuel)}%   Damage {int(dmg)}%\n1g per 2% fuel · repair 50g'
+        choices = []
+        if fill_cost > 0:
+            choices.append((f'Fill tank ({fill_cost}g)', lambda c=car, cost=fill_cost: self._gas_fill(c, cost)))
+        else:
+            choices.append(('Tank is full.', self.close_panel))
+        if dmg >= 5:
+            choices.append(('Repair (50g)', lambda c=car: self._gas_repair(c)))
+        choices.append(('Leave.', self.close_panel))
+        self.open_panel(f'{name}   ·   pump', body, choices)
 
-    def _quest_unlock_ready(self):
-        for q in self.quest_defs:
-            qid = q.get('id')
-            if not qid or qid in self.quest_completed or qid in self.quest_active:
-                continue
-            reqs = q.get('requires') or []
-            if all(r in self.quest_completed for r in reqs):
-                self.quest_active.append(qid)
-                self.quest_progress[qid] = 0
-
-    def _quest_hud_line(self):
-        for qid in self.quest_active:
-            q = self._quest_def(qid)
-            if not q:
-                continue
-            hud = q.get('hud') or q.get('name') or qid
-            prog = self.quest_progress.get(qid, 0)
-            if '{progress}' in hud:
-                hud = hud.replace('{progress}', str(prog))
-            return f'QUEST  {hud}'
-        if self.quest_completed:
-            return 'QUEST  done for now'
-        return 'QUEST  -'
-
-    def _quest_complete(self, qid):
-        if qid in self.quest_completed:
+    def _gas_fill(self, car, cost):
+        if not car:
+            self.close_panel()
             return
-        q = self._quest_def(qid)
-        if not q:
+        cost = int(cost)
+        if self.gold < cost:
+            self.toast('Not enough gold.')
+            self.close_panel()
             return
-        if qid in self.quest_active:
-            self.quest_active.remove(qid)
-        self.quest_completed.add(qid)
-        gold = int(q.get('reward_gold') or 0)
-        if gold:
-            self.gold += gold
-        self.toast(f"Quest complete: {q.get('name', qid)}  +{gold}g")
-        self._quest_unlock_ready()
+        self.gold -= cost
+        car.fuel = 100.0
+        car.out_of_gas_toasted = False
+        self.toast(f'Tank filled. -{cost}g')
+        self._quest_event('refuel')
+        self.close_panel()
 
-    def _quest_event(self, etype, **kw):
-        for qid in list(self.quest_active):
-            q = self._quest_def(qid)
-            if not q:
-                continue
-            qtype = q.get('type')
-            if etype == 'talk' and qtype == 'talk':
-                if kw.get('npc_id') == q.get('npc'):
-                    self._quest_complete(qid)
-            elif etype == 'buy' and qtype == 'buy':
-                if kw.get('item_id') == q.get('item'):
-                    self._quest_complete(qid)
-            elif etype == 'buy_pistol' and qtype == 'buy_pistol':
-                self._quest_complete(qid)
-            elif etype == 'kill' and qtype == 'kill':
-                kinds = set(q.get('kinds') or [])
-                kind = kw.get('kind') or ''
-                mob = kw.get('mob_id') or ''
-                if kind in kinds or mob in kinds or any(k in (kind, mob) for k in kinds):
-                    self.quest_progress[qid] = self.quest_progress.get(qid, 0) + 1
-                    need = int(q.get('count') or 3)
-                    if self.quest_progress[qid] >= need:
-                        self._quest_complete(qid)
-            elif etype == 'michelle_room' and qtype == 'michelle_room':
-                rooms = set(q.get('rooms') or [])
-                if kw.get('room') in rooms:
-                    self._quest_complete(qid)
-            elif etype == 'visit' and qtype == 'visit':
-                poi = q.get('poi') or q.get('place')
-                if poi and kw.get('poi_id') == poi:
-                    self._quest_complete(qid)
+    def _gas_repair(self, car):
+        if not car:
+            self.close_panel()
+            return
+        if self.gold < 50:
+            self.toast('Not enough gold.')
+            self.close_panel()
+            return
+        self.gold -= 50
+        before = float(getattr(car, 'damage', 0) or 0)
+        car.damage = max(0.0, before - 60.0)
+        if car.damage < 100.0:
+            car.disabled = False
+        self._update_car_damage_visual(car, 0.016)
+        self.toast(f'Repaired. DMG {int(before)}→{int(car.damage)}  -50g')
+        self.close_panel()
 
-    def _flags_path(self):
-        return ROOT / 'data' / 'local_flags.json'
+    # ----- UI panels ------------------------------------------------------
 
-    def _load_flags(self):
-        path = self._flags_path()
-        if path.exists():
+    def open_panel(self, title, body, choices, portrait=False, portrait_tex=None):
+        from ursina import mouse
+        self.ui_open = True
+        self.ui_choices = choices
+        self._lock_mouse(False)
+        self.panel_bg.enabled = True
+        self.panel_name.enabled = True
+        self.panel_body.enabled = True
+        self.panel_name.text = title
+        self.panel_body.text = wrap_text(body, 62)
+        tex = portrait_tex or (self.mira_texture if portrait else None)
+        if tex:
             try:
-                return json.loads(path.read_text(encoding='utf-8')) or {}
+                self.panel_portrait.texture = tex
+                self.panel_portrait.color = self.color.white
             except Exception:
-                return {}
-        # also honor legacy save_flags.json
-        alt = ROOT / 'data' / 'save_flags.json'
-        if alt.exists():
+                pass
+            self.panel_portrait.enabled = True
+        else:
+            self.panel_portrait.enabled = False
             try:
-                return json.loads(alt.read_text(encoding='utf-8')) or {}
+                self.panel_portrait.texture = None
             except Exception:
-                return {}
-        return {}
+                pass
+        for i, slot in enumerate(self.panel_choices):
+            if i < len(choices):
+                slot.enabled = True
+                slot.text = f'{i + 1}  {choices[i][0]}'
+            else:
+                slot.enabled = False
+                slot.text = ''
 
-    def _save_flags(self, data):
-        path = self._flags_path()
-        try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
-        except Exception as exc:
-            print('  flags save failed:', exc)
+    def close_panel(self):
+        from ursina import mouse
+        self.ui_open = False
+        self.ui_choices = []
+        self._lock_mouse(True)
+        self.panel_bg.enabled = False
+        self.panel_portrait.enabled = False
+        self.panel_name.enabled = False
+        self.panel_body.enabled = False
+        for slot in self.panel_choices:
+            slot.enabled = False
 
-    def _tick_visit_quests(self):
-        """Complete visit-type quests when player is near matching POI interact pos."""
-        if not self.quest_active:
+    def _pick_choice(self, index):
+        if index < 0 or index >= len(self.ui_choices):
             return
-        pos = self._actor_pos()
-        for poi in getattr(self, 'pois', []) or []:
-            pid = poi.get('id')
-            ppos = poi.get('pos')
-            if not pid or not ppos:
-                continue
-            if dist_xz(pos, ppos) <= 4.5:
-                self._quest_event('visit', poi_id=pid)
+        _label, cb = self.ui_choices[index]
+        if cb:
+            cb()
 
-    def _init_tutorial(self):
-        flags = self._load_flags()
-        done = bool(flags.get('tutorial_done'))
-        self.tutorial_active = not done
-        self.tutorial_step = 0
-        Entity = self.Entity
-        Text = self.Text
-        color = self.color
-        camera = self.camera
-        if not self.tutorial_active:
-            self.tutorial_overlay = None
-            self.tutorial_text = None
+    def open_mira(self, node_id='start'):
+        nodes = (self.mira_dlg or {}).get('nodes') or {}
+        node = nodes.get(node_id) or nodes.get('start')
+        if not node:
+            self.open_talk(
+                'Mama Mira',
+                "Welcome in, sugar. Cool Down's the one everyone off 50 asks for.",
+            )
             return
-        self.tutorial_overlay = Entity(
-            parent=camera.ui,
-            model='quad',
-            color=color.rgba32(8, 2, 16, 160),
-            scale=(1.1, 0.28),
-            position=(0, 0.38),
-            z=1,
-        )
-        self.tutorial_text = Text(
-            text='',
-            position=(0, 0.40),
-            origin=(0, 0),
-            color=color.rgb32(255, 230, 255),
-            scale=0.85,
-        )
-        self._refresh_tutorial_text()
+        choices = []
+        for ch in node.get('choices') or []:
+            label = ch.get('label', '...')
+            nxt = ch.get('next')
+            action = ch.get('action')
 
-    def _tutorial_steps(self):
-        return [
-            'WASD - walk toward Michelle (Sanctuary Drive door)',
-            'E - talk to Michelle',
-            'Mouse - look around  |  Enter skips tutorial',
-            '1 / LMB - pistol after buying from Gage',
-            'H - drink a shake from your pack',
+            def make(n=nxt, a=action):
+                def cb():
+                    if a == 'shop':
+                        shake = next((s for s in self.stalls if s['id'] == 'shake_bar'), None)
+                        if shake:
+                            self.open_shake_shop(shake)
+                        else:
+                            self.close_panel()
+                    elif n:
+                        self.open_mira(n)
+                    else:
+                        self.close_panel()
+                return cb
+
+            choices.append((label, make()))
+        if not choices:
+            choices = [('Walk away.', self.close_panel)]
+        expr = node.get('expression') or 'smile'
+        who = node.get('portrait') or 'mira'
+        tex_path = portrait_texture_path(who, expr)
+        tex = str(tex_path) if tex_path else None
+        self.open_panel('Mama Mira', node.get('text', ''), choices, portrait=True, portrait_tex=tex)
+
+    def open_vn(self, who, node_id=None):
+        if who == 'michelle':
+            self.open_michelle(node_id or 'door')
+            return
+        if who == 'mira':
+            self.open_mira(node_id or 'start')
+            return
+        dlg_map = {
+            'mira': self.mira_dlg,
+            'lila': self.lila_dlg,
+            'rosa': self.rosa_dlg,
+            'yara': self.yara_dlg,
+            'michelle': self.michelle_dlg,
+        }
+        dlg = dlg_map.get(who)
+        titles = {
+            'lila': 'Lila',
+            'rosa': 'Rosa',
+            'yara': 'Yara',
+            'mira': 'Mama Mira',
+            'michelle': 'Michelle',
+        }
+        title = titles.get(who, (who or 'NPC').title())
+        if not dlg:
+            self.open_talk(title, '...')
+            return
+        nodes = (dlg or {}).get('nodes') or {}
+        start = node_id or dlg.get('start') or 'start'
+        node = nodes.get(start) or nodes.get('start')
+        if not node:
+            self.open_talk(title, '...')
+            return
+        choices = []
+        for ch in node.get('choices') or []:
+            label = ch.get('label', '...')
+            nxt = ch.get('next')
+            action = ch.get('action')
+
+            def make(n=nxt, a=action, w=who):
+                def cb():
+                    if a == 'shop':
+                        self.close_panel()
+                    elif a == 'close' or not n:
+                        self.close_panel()
+                    else:
+                        self.open_vn(w, n)
+                return cb
+
+            choices.append((label, make()))
+        if not choices:
+            choices = [('Walk away.', self.close_panel)]
+        expr = node.get('expression') or 'default'
+        por = node.get('portrait') or who
+        tex = self._tex_for(por, expr)
+        if tex is None:
+            pp = portrait_texture_path(por, expr)
+            tex = str(pp) if pp else None
+        self.open_panel(title, node.get('text', ''), choices, portrait=True, portrait_tex=tex)
+
+    def open_talk(self, name, line, portrait_tex=None):
+        self.open_panel(name, line, [('Later.', self.close_panel)], portrait=bool(portrait_tex), portrait_tex=portrait_tex)
+
+    def open_gun_shop(self):
+        pistol = self.items.get('pistol', {})
+        ammo = self.items.get('ammo', {})
+        p_name = pistol.get('name', 'Lot Pistol')
+        a_name = ammo.get('name', 'Pistol Ammo')
+        body = "Cash on the plank. Pistol if you want polite. Ammo is not a suggestion."
+        choices = [
+            (f'{p_name}   -   70g', self._buy_pistol),
+            (f'{a_name} x12   -   48g', self._buy_ammo),
+            ('Leave.', self.close_panel),
         ]
+        self.open_panel('Gage   ·   Hancock Gun Hut', body, choices)
 
-    def _refresh_tutorial_text(self):
-        if not self.tutorial_text:
+    def _buy_pistol(self):
+        if self.owned_pistol:
+            self.toast('You already have the lot pistol.')
+            self.open_gun_shop()
             return
-        steps = self._tutorial_steps()
-        i = min(self.tutorial_step, len(steps) - 1)
-        self.tutorial_text.text = f'TUTORIAL  {i + 1}/{len(steps)}:  {steps[i]}   (Enter to dismiss)'
+        if self.gold < 70:
+            self.toast('Not enough gold.')
+            self.open_gun_shop()
+            return
+        self.gold -= 70
+        self.owned_pistol = True
+        self.ammo += 6
+        self.toast('Lot Pistol bought. 1 to draw, LMB to shoot. +6 rounds.')
+        self._quest_event('buy_pistol')
+        self._tutorial_note('gun')
+        self.open_gun_shop()
 
-    def _tick_tutorial(self, dt):
-        if not self.tutorial_active:
+    def _buy_ammo(self):
+        if self.gold < 48:
+            self.toast('Not enough gold.')
+            self.open_gun_shop()
             return
-        from ursina import held_keys
-        # step 0: any WASD movement
-        if self.tutorial_step == 0:
-            if any(held_keys[k] for k in ('w', 'a', 's', 'd')):
-                self.tutorial_step = 1
-                self._refresh_tutorial_text()
-        elif self.tutorial_step == 2:
-            # mouse look - advance after a moment if mouse locked
-            if getattr(self.mouse, 'locked', False):
-                self.tutorial_step = 3
-                self._refresh_tutorial_text()
-        # completing talk (step 1) finishes early via _tutorial_note
-
-    def _tutorial_note(self, what):
-        if not self.tutorial_active:
-            return
-        if what == 'talk' and self.tutorial_step <= 1:
-            self.tutorial_step = 2
-            self._refresh_tutorial_text()
-            # completing steps 1-2 can dismiss
-            self._finish_tutorial()
-            return
-        if what == 'gun' and self.tutorial_step >= 3:
-            self.tutorial_step = 4
-            self._refresh_tutorial_text()
-
-    def _finish_tutorial(self):
-        if not self.tutorial_active and not getattr(self, 'tutorial_overlay', None):
-            flags = self._load_flags()
-            if not flags.get('tutorial_done'):
-                flags['tutorial_done'] = True
-                self._save_flags(flags)
-            return
-        self.tutorial_active = False
-        try:
-            if self.tutorial_overlay:
-                self.tutorial_overlay.enabled = False
-            if self.tutorial_text:
-                self.tutorial_text.enabled = False
-                self.tutorial_text.text = ''
-        except Exception:
-            pass
-        flags = self._load_flags()
-        flags['tutorial_done'] = True
-        self._save_flags(flags)
-        self.toast('Tutorial done. Explore Hwy 50.')
-
-    def toast(self, msg):
-        self.toast_timer = 2.6
-        if self.hud_toast:
-            self.hud_toast.text = msg
-        print(f'[Rune Mommy] {msg}')
+        self.gold -= 48
