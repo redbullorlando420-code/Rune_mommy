@@ -4,6 +4,8 @@ from __future__ import annotations
 import math
 import random
 
+from lighting import should_sim, set_visible, CULL_TRAFFIC
+
 TRAFFIC_COUNT = 22
 LOT_WPS = (
     (-18.0, -8.8),
@@ -78,6 +80,11 @@ def _tag_traffic(car, route, cruise, lane_z):
 
 
 def tick_traffic(game, dt):
+    player = getattr(game, 'player', None)
+    opts = getattr(game, 'render_opts', None) or {}
+    cull = float(opts.get('cull_traffic', CULL_TRAFFIC))
+    px = getattr(player, 'x', 0.0) if player else 0.0
+    pz = getattr(player, 'z', 0.0) if player else 0.0
     for car in game.cars:
         if not car:
             continue
@@ -85,6 +92,10 @@ def tick_traffic(game, dt):
             continue
         if game.in_car is car:
             continue
+        if player and not should_sim(px, pz, car.x, car.z, cull):
+            set_visible(car, False)
+            continue
+        set_visible(car, True)
         route = getattr(car, 'route', 'hwy_e')
         cruise = getattr(car, 'cruise', 10.0)
         car.speed = cruise

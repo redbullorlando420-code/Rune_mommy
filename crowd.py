@@ -7,6 +7,8 @@ from __future__ import annotations
 import math
 import random
 
+from lighting import should_sim, set_visible, CULL_PED
+
 PED_COUNT = 52
 
 CIVILIAN_SHIRTS = (
@@ -177,6 +179,8 @@ def tick_crowd(game, dt):
     px, pz = player.x, player.z
     armed = bool(game.pistol_drawn or getattr(game, 'panic_t', 0) > 0)
     heat = getattr(game, 'heat', 0.0)
+    opts = getattr(game, 'render_opts', None) or {}
+    cull = float(opts.get('cull_ped', CULL_PED))
     for npc in game.peds:
         if not npc:
             continue
@@ -189,6 +193,10 @@ def tick_crowd(game, dt):
         dx = npc.x - px
         dz = npc.z - pz
         dist = math.hypot(dx, dz) or 0.01
+        if dist > cull:
+            set_visible(npc, False)
+            continue
+        set_visible(npc, True)
 
         speed = getattr(npc, 'walk_speed', 1.6)
         charging = False
