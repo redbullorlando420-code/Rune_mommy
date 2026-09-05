@@ -1,5 +1,3 @@
-        Entity(model='cube', scale=(3.4, 1.9, 0.12), position=(hx + 2.7, 1.0, hz - 5.4), color=color.rgb32(70, 78, 90))
-        door = Entity(model='cube', scale=(0.16, 2.15, 1.05), position=(hx + 4.08, 1.12, hz), color=wood)
         self.sanctuary_door = door
         Entity(model='cube', scale=(1.5, 0.16, 1.7), position=(hx + 4.9, 0.1, hz), color=color.rgb32(180, 180, 175))
         self.building_count += 2
@@ -44,7 +42,7 @@
             color=teal,
         )
 
-        # Michelle at the door — teal shirt, not hittable
+        # Michelle at the door - teal shirt, not hittable
         michelle = self._humanoid(
             door_xz[0],
             door_xz[1],
@@ -231,3 +229,9 @@
             shirt = hex_color(spec.get('color') or '#ff8fab')
             named = nid in ('lila', 'rosa', 'yara', 'rita', 'deb')
             npc = self._humanoid(
+                nx, nz, shirt=shirt, pants=color.rgb32(36, 24, 40),
+                skin=color.rgb32(255, 200, 160), detail='named' if named else 'crowd',
+            )
+            npc.npc_id = nid
+            npc.npc_name = spec.get('name', nid.title())
+            npc.kind = nid if nid in ('lila', 'rosa', 'yara') else 'talk'
