@@ -32,30 +32,32 @@ You spawn in the **Sanctuary Drive** driveway. Walk to Michelle and press **E** 
 
 ## Portraits (important)
 
-Faces are **local files**, not always on GitHub.
+Faces live under **`client/portraits/` next to `game.py`**. Full steps: `docs/PORTRAITS.md`.
 
-1. Put images here, next to `game.py`:
+### Where on Windows
 
-```
-client/portraits/<npc>/<expression>.png
-```
-
-Examples that already work on a full disk install:
+After unzipping a GitHub download, portraits go here (same folder that has `game.py`):
 
 ```
-client/portraits/mira/smile.png
-client/portraits/michelle/sassy.png
-client/portraits/lila/default.jpg
-client/portraits/rosa/smile.png
-client/portraits/yara/tease.png
+...\Rune_mommy-main\Rune_mommy-main\client\portraits\<npc>\<expression>.jpg
 ```
 
-2. The filename stem is the expression (`smile`, `sassy`, `tease`, …).
-3. `loaders.portrait_asset_path()` turns that into a **relative** path like `client/portraits/mira/smile.png`. Ursina needs relative paths — absolute Windows paths return `None` and you get "mira portrait: missing".
-4. Optional: `client/portraits/portraits.json` for aliases / fallbacks.
-5. If you downloaded a zip from GitHub and portraits are missing, copy the `client/portraits/` folder from your other clone (for example `Documents\\Rune_mommy\\client\\portraits`) into this folder.
+Example: `client\portraits\michelle\sassy.jpg`
 
-Smaller `.jpg` stand-ins may ship in the repo when the push path allows; full `.png`s often stay on disk only.
+### How the loader works
+
+1. Put files in `client/portraits/<npc_id>/` — stem is the expression (`smile`, `sassy`, `tease`, …). Ext: `.jpg` / `.png` / `.webp`.
+2. `loaders.py` maps names (`Mama Mira` → `mira`) and picks a file for that expression (with fallbacks).
+3. `portrait_asset_path()` returns a **relative** path like `client/portraits/mira/smile.jpg`. Ursina needs that — absolute `C:\...` paths fail and you see `mira portrait: missing`.
+4. Optional aliases: `client/portraits/portraits.json`.
+5. Sanity check from the game folder: `py -3 loaders.py`
+
+### What ships on GitHub
+
+- **Light `.jpg` stand-ins** (under ~30KB) may be in the repo under `client/portraits/<npc>/`.
+- **Full `.png` art** (~2MB each) usually stays **local-only** — copy `client/portraits/` from a full install into your Downloads unzip if faces are missing.
+
+Do not empty `data/shops.json`. Michelle first name only.
 
 ## What is in it
 
@@ -67,6 +69,7 @@ Smaller `.jpg` stand-ins may ship in the repo when the push path allows; full `.
 
 ## Docs
 
+- `docs/PORTRAITS.md` — face folders + how `loaders.py` works
 - `docs/PLAYING.md` — how to play
 - `docs/BUILDING.md` — buildings / meshes
 - `docs/TUTORIAL.md` — onboarding steps (if present)
