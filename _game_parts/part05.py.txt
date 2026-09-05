@@ -1,243 +1,226 @@
-        Entity(model='cube', scale=(2.8, 0.7, 0.08), position=(hx + 7.4, 2.7, hz + 3.4), color=teal)
-        Text(
-            parent=self._scene(),
-            text='Sanctuary Drive',
-            position=(hx + 7.4, 3.2, hz + 3.4),
-            origin=(0, 0),
-            billboard=True,
-            color=teal,
-        )
+        self.cam_pivot = Entity(parent=self.player, y=1.35)
+        camera.parent = self.cam_pivot
+        camera.position = Vec3(0, 1.65, -8.8)
+        camera.rotation = Vec3(12, 0, 0)
+        camera.fov = 80
 
-        # Michelle at the door — teal shirt, not hittable
-        michelle = self._humanoid(
-            door_xz[0],
-            door_xz[1],
-            shirt=color.rgb32(46, 196, 182),
-            pants=color.rgb32(245, 245, 240),
-            skin=color.rgb32(255, 214, 170),
-            detail='named',
-            style='michelle',
-        )
-        michelle.npc_id = 'michelle'
-        michelle.npc_name = 'Michelle'
-        michelle.kind = 'michelle'
-        michelle.hittable = False
-        michelle.line = "Alec, I just got off the plane, can you not stare at my tits for five seconds?"
-        michelle.portrait_tex = None
-        rel = portrait_asset_path('michelle')
-        if rel:
-            try:
-                from ursina import load_texture
-                tex = load_texture(rel)
-            except Exception:
-                tex = str(pp)
-            michelle.portrait_tex = tex
-            bill = Entity(
-                parent=michelle,
-                model='quad',
-                texture=tex,
-                scale=(1.05, 1.4),
-                position=(0, 1.45, -0.55),
-                double_sided=True,
-            )
-            try:
-                bill.billboard = True
-            except Exception:
-                pass
-        self.npcs.append(michelle)
-        self.michelle = michelle
-
-    def _build_stalls(self):
-
+    def _build_hud(self):
         Entity = self.Entity
-        color = self.color
         Text = self.Text
-        shops = list((self.shops_data or {}).get('shops') or [])
-        for shop in shops:
-            sid = shop.get('id', '')
-            name = shop.get('name', sid)
-            pal = shop.get('palette') or ['#ff4fd8', '#5af0ff', '#1a081c']
-            is_gun = sid == 'gun_hut' or 'gun' in name.lower()
-            if is_gun:
-                x, z = 36.0, 4.0
-                w, d, h = 4.2, 3.6, 3.1
-                body_col = hex_color(pal[0])
-                accent = hex_color(pal[1])
-                make_shop_stall(Entity, color, Text, self._scene(), x, z, w, d, h, body_col, accent, accent, name, is_gun=True)
-            else:
-                x, z = tile_to_world(shop.get('tileX', 16), shop.get('tileY', 7))
-                w = max(3.2, float(shop.get('w', 4)) * 0.85)
-                d = max(2.8, float(shop.get('h', 4)) * 0.7)
-                h = 2.35 if shop.get('flagship') else 2.05
-                body_col = hex_color(pal[2] if len(pal) > 2 else pal[0]).tint(-0.15)
-                neon = hex_color(pal[0])
-                trim = hex_color(pal[1] if len(pal) > 1 else pal[0])
-                make_shop_stall(Entity, color, Text, self._scene(), x, z, w, d, h, body_col, neon, trim, name, is_gun=False)
-            self.building_count += 1
-            rec = {
-                'id': sid,
-                'name': name,
-                'kind': 'gun' if is_gun else 'shake',
-                'pos': (x, 0, z),
-                'shop': shop,
-                'npc': shop.get('npcName', ''),
-            }
-            self.stalls.append(rec)
-            if sid in SHAKE_IDS:
-                self.shake_spawned.append(name)
-
-        # fill any missing shake names as extra labeled boxes so all 10 exist
-        have = {s['id'] for s in self.stalls}
-        lookup = {s.get('id'): s for s in shops}
-        for sid in SHAKE_IDS:
-            if sid in have:
-                continue
-            shop = lookup.get(sid, {'id': sid, 'name': sid, 'palette': ['#ff4fd8']})
-            x, z = tile_to_world(shop.get('tileX', 0), shop.get('tileY', 7))
-            Entity(model='cube', scale=(3.2, 2.0, 2.8), position=(x, 1.0, z), color=hex_color((shop.get('palette') or ['#ff4fd8'])[0]), collider='box')
-            self.stalls.append({'id': sid, 'name': shop.get('name', sid), 'kind': 'shake', 'pos': (x, 0, z), 'shop': shop, 'npc': shop.get('npcName', '')})
-            self.shake_spawned.append(shop.get('name', sid))
-
-    def _scene(self):
-        from ursina import scene
-        return scene
-
-    def _build_npcs(self):
-        Entity = self.Entity
         color = self.color
-        portrait = None
-        mp = self.mira_portrait_path
-        mp_ok = False
-        try:
-            mp_ok = Path(mp).exists() if mp else False
-        except Exception:
-            mp_ok = False
-        if mp_ok:
-            try:
-                from ursina import load_texture
-                # prefer relative asset path for Ursina
-                _rel = portrait_asset_path('mira') or (str(mp) if mp else None)
-                portrait = load_texture(_rel) if _rel else None
-                self.mira_texture = portrait
-            except Exception:
-                portrait = str(mp)
-                self.mira_texture = portrait
+        camera = self.camera
 
-        shake = next((s for s in self.stalls if s['id'] == 'shake_bar'), None)
-        mx, mz = (0.0, -2.6)
-        if shake:
-            mx, mz = shake['pos'][0], shake['pos'][2] - 2.4
+        Text(text='RUNE MOMMY', position=(-0.86, 0.48), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 210))
+        Text(text='Clermont / Hwy 50', position=(-0.86, 0.445), origin=(-0.5, 0.5), color=color.rgb32(140, 230, 255), scale=0.75)
+        self.hud_gold = Text(text='Gold  200', position=(-0.86, 0.40), origin=(-0.5, 0.5), color=color.rgb32(255, 220, 90))
+        self.hud_hp = Text(text='HP  100', position=(-0.86, 0.370), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 170), scale=0.85)
+        self.hud_heat = Text(text='HEAT  0.0', position=(-0.86, 0.340), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 90), scale=0.85)
+        self.hud_ammo = Text(text='Pistol  --', position=(-0.86, 0.310), origin=(-0.5, 0.5), color=color.rgb32(200, 200, 210), scale=0.85)
+        self.hud_pack = Text(text='Pack  0', position=(-0.86, 0.280), origin=(-0.5, 0.5), color=color.rgb32(180, 230, 200), scale=0.85)
+        self.hud_breed = Text(text='BREED  0%', position=(-0.86, 0.250), origin=(-0.5, 0.5), color=color.rgb32(46, 196, 182), scale=0.85)
+        self.hud_quest = Text(text='QUEST  —', position=(-0.86, 0.220), origin=(-0.5, 0.5), color=color.rgb32(180, 255, 200), scale=0.8)
+        self.hud_mode = Text(text='WALK', position=(-0.86, 0.190), origin=(-0.5, 0.5), color=color.rgb32(200, 220, 255), scale=0.8)
+        self.hud_prompt = Text(text='', position=(0, -0.42), origin=(0, 0), color=color.rgb32(255, 240, 180), scale=0.9)
+        self.hud_toast = Text(text='', position=(0, 0.32), origin=(0, 0), color=color.rgb32(255, 180, 220), scale=0.85)
+        self.crosshair = Entity(parent=camera.ui, model='quad', color=color.rgb32(255, 255, 255), scale=0.008, rotation_z=45)
 
-        mira = self._humanoid(mx, mz, shirt=color.rgb32(255, 70, 180), pants=color.rgb32(40, 12, 40), skin=color.rgb32(255, 206, 166), detail='named')
-        mira.npc_id = 'mira'
-        mira.npc_name = 'Mama Mira'
-        mira.kind = 'mira'
-        mira.hittable = False
-        self.talk_npcs.append({'ent': mira, 'name': 'Mama Mira', 'talk': 'Neons loud tonight.', 'killable': False})
-        if portrait:
-            bill = Entity(
-                parent=mira,
-                model='quad',
-                texture=portrait,
-                scale=(1.15, 1.55),
-                position=(0, 1.45, -0.55),
-                double_sided=True,
+        self.panel_bg = Entity(
+            parent=camera.ui,
+            model='quad',
+            color=color.rgba32(10, 4, 18, 235),
+            scale=(1.58, 0.50),
+            position=(0.06, -0.28),
+            enabled=False,
+            z=0.1,
+        )
+        self.panel_portrait = Entity(
+            parent=camera.ui,
+            model='quad',
+            scale=(0.34, 0.60),
+            position=(-0.68, -0.26),
+            enabled=False,
+            z=-0.05,
+        )
+        if self.mira_texture:
+            self.panel_portrait.texture = self.mira_texture
+        self.panel_name = Text(text='', position=(-0.52, -0.08), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 210), enabled=False)
+        self.panel_body = Text(text='', position=(-0.52, -0.13), origin=(-0.5, 0.5), color=color.rgb32(245, 230, 255), enabled=False, scale=0.8)
+        self.panel_choices = []
+        for i in range(4):
+            t = Text(
+                text='',
+                position=(-0.52, -0.34 - i * 0.045),
+                origin=(-0.5, 0.5),
+                color=color.rgb32(160, 230, 255),
+                enabled=False,
+                scale=0.75,
             )
-            try:
-                bill.billboard = True
-            except Exception:
-                pass
-        self.npcs.append(mira)
-
-        gun = next((s for s in self.stalls if s['kind'] == 'gun'), None)
-        gx, gz = (36.0, 2.2)
-        if gun:
-            gx, gz = gun['pos'][0], gun['pos'][2] - 2.3
-        gage = self._humanoid(gx, gz, shirt=color.rgb32(90, 55, 30), pants=color.rgb32(30, 24, 20), skin=color.rgb32(210, 170, 130), detail='named')
-        gage.npc_id = 'gage'
-        gage.npc_name = 'Gage'
-        gage.kind = 'gun'
-        gage.hittable = False
-        self.npcs.append(gage)
-        self.talk_npcs.append({'ent': gage, 'name': 'Gage', 'talk': 'Cash on the plank.', 'killable': False})
-
-        steak = next((s for s in self.stalls if s['id'] == 'steak_n_shake'), None)
-        if steak:
-            deb = self._humanoid(steak['pos'][0], steak['pos'][2] - 2.2, shirt=color.rgb32(245, 210, 50), pants=color.rgb32(20, 20, 20), detail='named')
-            deb.npc_id = 'deb'
-            deb.npc_name = 'Diner Deb'
-            deb.kind = 'talk'
-            deb.line = 'Same lot as Mira. Vanilla, chocolate, strawberry, or the black-and-white.'
-            self.npcs.append(deb)
-
-        # Extra talkable Clermont NPCs from npcs.json. Keep them off Mira.
-        talk_spots = {
-            'lila': (-14.0, 5.5),
-            'yara': (8.0, -26.5),
-            'rosa': (mx - 3.2, mz + 0.4),
-            'tavi': (-24.0, -20.0),
-            'rook': (26.0, 7.0),
-            'rita': (18.0, -13.0),
-            'motel_clerk': (-8.0, 4.2),
-            'barista': (-20.0, -12.8),
-            'pharmacist': (30.0, -30.2),
-            'neighbor': (-40.0, 10.5),
-            'lot_attendant': (8.0, 2.8),
-            'amanda_friend': (-14.0, -30.0),
-        }
-        # place POI NPCs from self.pois (adds new ids + refreshes positions)
-        for poi in getattr(self, 'pois', []) or []:
-            nid = poi.get('npc_id')
-            if nid:
-                talk_spots[nid] = (poi['pos'][0], poi['pos'][2])
-        for nid, (nx, nz) in talk_spots.items():
-            spec = (self.npcs_data or {}).get(nid) or {'id': nid, 'name': nid.title(), 'greet': '...'}
-            shirt = hex_color(spec.get('color') or '#ff8fab')
-            named = nid in ('lila', 'rosa', 'yara', 'rita', 'deb')
-            npc = self._humanoid(
-                nx, nz, shirt=shirt, pants=color.rgb32(36, 24, 40),
-                skin=color.rgb32(255, 200, 160), detail='named' if named else 'crowd',
-            )
-            npc.npc_id = nid
-            npc.npc_name = spec.get('name', nid.title())
-            npc.kind = nid if nid in ('lila', 'rosa', 'yara') else 'talk'
-            npc.line = spec.get('greet') or spec.get('lines', ['...'])[0]
-            npc.portrait_tex = None
-            rel = portrait_asset_path(nid)
-            if rel:
-                try:
-                    from ursina import load_texture
-                    tex = load_texture(rel)
-                except Exception:
-                    tex = str(pp)
-                npc.portrait_tex = tex
-                bill = Entity(
-                    parent=npc,
-                    model='quad',
-                    texture=tex,
-                    scale=(1.05, 1.4),
-                    position=(0, 1.45, -0.55),
-                    double_sided=True,
-                )
-                try:
-                    bill.billboard = True
-                except Exception:
-                    pass
-            self.npcs.append(npc)
-            self.talk_npcs.append({
-                'ent': npc,
-                'name': npc.npc_name,
-                'talk': npc.line,
-                'killable': False,
-            })
-
-    def _humanoid(self, x, z, shirt, pants, skin=None, hitbox=False, detail='crowd', style=None):
-        return make_humanoid(
-            self.Entity, self.color, x, z, shirt, pants,
-            skin=skin, hitbox=hitbox, detail=detail, style=style,
+            self.panel_choices.append(t)
+        Text(
+            text='WASD walk   mouse look   E use   1 pistol   LMB shoot   ESC quit',
+            position=(-0.86, -0.48),
+            origin=(-0.5, 0.5),
+            color=color.rgb32(160, 140, 180),
+            scale=0.65,
         )
 
-    def _build_cars(self):
-        paints = [
-            self.color.rgb32(200, 30, 40),
-            self.color.rgb32(20, 20, 24),
+    # ----- tick -----------------------------------------------------------
+
+    def tick(self):
+        from ursina import time, held_keys, mouse, raycast, Vec3, destroy, color
+        dt = min(time.dt, 0.05)
+        self.shoot_cd = max(0.0, self.shoot_cd - dt)
+        if self.toast_timer > 0:
+            self.toast_timer -= dt
+            if self.toast_timer <= 0 and self.hud_toast:
+                self.hud_toast.text = ''
+
+        self.panic_t = max(0.0, getattr(self, 'panic_t', 0.0) - dt)
+        self._wander_targets(dt)
+        tick_crowd(self, dt)
+        tick_traffic(self, dt)
+        self._tick_heat(dt)
+
+        self._tick_tutorial(dt)
+
+        if self.ui_open:
+            self._refresh_hud()
+            return
+
+        if self.in_car:
+            self._drive(dt)
+        else:
+            self._walk(dt)
+
+        self._maybe_auto_michelle()
+        self._tick_visit_quests()
+
+        if self.pistol_drawn and self.owned_pistol and held_keys['left mouse'] and self.shoot_cd <= 0:
+            self._shoot()
+
+        self._refresh_hud()
+
+    def _walk(self, dt):
+        from ursina import held_keys, mouse, raycast, Vec3
+        player = self.player
+        # Re-lock every frame so WASD works after click/focus (unless panel or Tab-free).
+        if not self.ui_open and not getattr(self, 'mouse_free', False):
+            self._lock_mouse(True)
+        if getattr(mouse, 'locked', False):
+            player.rotation_y += mouse.velocity[0] * 140
+            self.cam_pivot.rotation_x -= mouse.velocity[1] * 140
+            self.cam_pivot.rotation_x = max(-35, min(40, self.cam_pivot.rotation_x))
+
+        wish = Vec3(
+            held_keys['d'] - held_keys['a'],
+            0,
+            held_keys['w'] - held_keys['s'],
+        )
+        if wish.length() > 0:
+            wish = wish.normalized()
+            speed = 8.5
+            move = (player.forward * wish.z + player.right * wish.x) * speed * dt
+            origin = player.world_position + Vec3(0, 0.9, 0)
+            ign = list(self.ignore)
+            # Try full move, then axis slides so a curb never hard-locks you.
+            hit = raycast(origin, move.normalized(), distance=0.55 + move.length(), ignore=ign, debug=False)
+            if not hit.hit:
+                player.position += move
+            else:
+                mx = Vec3(move.x, 0, 0)
+                mz = Vec3(0, 0, move.z)
+                if mx.length() > 1e-5:
+                    hx = raycast(origin, mx.normalized(), distance=0.55 + mx.length(), ignore=ign, debug=False)
+                    if not hx.hit:
+                        player.x += mx.x
+                if mz.length() > 1e-5:
+                    hz = raycast(origin, mz.normalized(), distance=0.55 + mz.length(), ignore=ign, debug=False)
+                    if not hz.hit:
+                        player.z += mz.z
+            player.x = max(-55, min(58, player.x))
+            player.z = max(-55, min(28, player.z))
+
+        self.y_vel -= 32 * dt
+        player.y += self.y_vel * dt
+        if player.y <= 0:
+            player.y = 0
+            self.y_vel = 0
+            self.grounded = True
+        else:
+            self.grounded = False
+
+        if held_keys['space'] and self.grounded:
+            self.y_vel = 8.2
+            self.grounded = False
+
+        if not self.visual.enabled:
+            self.visual.enabled = True
+        if self.cam_in_car:
+            self._set_camera_follow(False)
+
+    def _drive(self, dt):
+        from ursina import held_keys, mouse, raycast, Vec3, Entity, destroy, color
+        from vendor.vehicle import bicycle_step
+        car = self.in_car
+        if getattr(mouse, 'locked', False):
+            # Clamp mouse look while driving (pitch only on cam_pivot)
+            car.cam_pivot.rotation_x -= mouse.velocity[1] * 80
+            car.cam_pivot.rotation_x = max(-20, min(25, car.cam_pivot.rotation_x))
+
+        dmg = float(getattr(car, 'damage', 0.0) or 0.0)
+        dmg_mul = max(0.15, 1.0 - 0.5 * (dmg / 100.0))
+        base_vmax, base_accel = 24.0, 16.0
+        vmax = base_vmax * dmg_mul
+        accel_force = base_accel * dmg_mul
+        brake_force = 0.0
+        accel = 0.0
+
+        fuel = float(getattr(car, 'fuel', 100.0) or 0.0)
+        out_of_gas = fuel <= 0.0 or getattr(car, 'disabled', False)
+
+        if out_of_gas:
+            # Speed decays to 0; no throttle / reverse
+            brake_force = 14.0
+            if not getattr(car, 'out_of_gas_toasted', False) and fuel <= 0.0 and not getattr(car, 'disabled', False):
+                car.out_of_gas_toasted = True
+                self.toast('Out of gas. Find a pump.')
+        else:
+            if held_keys['w']:
+                accel = accel_force
+            elif held_keys['s']:
+                # S brakes if moving forward; hold for reverse when nearly stopped
+                if car.speed > 0.55:
+                    brake_force = 32.0
+                else:
+                    accel = -accel_force * 0.55
+            if held_keys['space']:
+                # Stronger handbrake
+                brake_force = max(brake_force, 52.0)
+
+        steer = float(held_keys['a'] - held_keys['d'])
+        # Higher grip: less drag accelerating, more coasting
+        nx, nz, nyaw, nspd = bicycle_step(
+            car.x, car.z, car.rotation_y, car.speed,
+            steer, accel, dt,
+            vmax=vmax, wheelbase=2.6, drag=2.4,
+            steer_gain=1.05, brake_force=brake_force,
+            coast_drag=3.2, accel_drag=0.55,
+        )
+
+        # Fuel burn ~ full tank lasts a few minutes of continuous drive
+        # k_speed=0.028, k_accel=0.045  → cruise ~3 min; floored ~1–1.5 min
+        if not getattr(car, 'traffic', False) and not out_of_gas:
+            burn = (0.028 * abs(nspd) + 0.045 * max(0.0, accel)) * dt
+            fuel = max(0.0, fuel - burn)
+            car.fuel = fuel
+            if fuel <= 0.0 and not getattr(car, 'out_of_gas_toasted', False):
+                car.out_of_gas_toasted = True
+                self.toast('Out of gas. Find a pump.')
+
+        # Collision: buildings via raycast (do not ignore other cars); traffic via proximity
+        proposed = Vec3(nx - car.x, 0, nz - car.z)
+        hit_something = False
+        impact_speed = abs(nspd)
+        if proposed.length() > 0.001:
+            origin = car.world_position + Vec3(0, 0.7, 0)
+            ign = [self.player, self.visual, self.cam_pivot, car, getattr(car, 'body', None)]
