@@ -1,0 +1,52 @@
+
+
+def update():
+    if GAME:
+        GAME.tick()
+    if TEST_SECONDS > 0 and (pytime.time() - TEST_T0) >= TEST_SECONDS:
+        from ursina import application
+        print('RUNE_MOMMY_TEST ok  shakes=%s cars=%s peds=%s traffic=%s parked=%s' % (
+            len(GAME.shake_spawned) if GAME else 0,
+            len(GAME.cars) if GAME else 0,
+            len(getattr(GAME, 'peds', []) or []) if GAME else 0,
+            getattr(GAME, 'traffic_count', 0) if GAME else 0,
+            getattr(GAME, 'parked_count', 0) if GAME else 0,
+        ))
+        application.quit()
+
+
+def input(key):
+    if GAME:
+        GAME.on_input(key)
+
+
+def run():
+    global GAME, TEST_SECONDS, TEST_T0
+    test = os.environ.get('RUNE_MOMMY_TEST', '').strip().lower() in ('1', 'true', 'yes')
+    TEST_SECONDS = float(os.environ.get('RUNE_MOMMY_TEST_SEC', '2' if test else '0') or 0)
+    window_type = os.environ.get('URSINA_WINDOW', 'offscreen' if test else 'onscreen')
+    TEST_T0 = pytime.time()
+
+    print('Rune Mommy   -   Clermont / Hwy 50')
+    print('  WASD walk   mouse look   Space jump')
+    print('  E enter/exit car, talk, buy')
+    print('  1 draw pistol   LMB shoot   H shake   ESC quit')
+    rep = data_report()
+    print('  shops:', ', '.join(rep['shake_names']))
+    print('  mira portrait:', 'yes' if rep['mira_portrait'] else 'missing')
+
+    app = boot_ursina(window_type=window_type)
+    GAME = Game()
+    GAME.setup()
+    print('  spawned shakes:', len(GAME.shake_spawned), GAME.shake_spawned)
+    print('  cars:', len(GAME.cars), ' npcs:', len(GAME.npcs))
+    print('  buildings=%d quests=%d tutorial=%s' % (
+        GAME.building_count,
+        len(GAME.quest_defs),
+        'on' if GAME.tutorial_active else 'off',
+    ))
+    app.run()
+
+
+if __name__ == '__main__':
+    run()
