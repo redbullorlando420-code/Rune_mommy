@@ -1,3 +1,106 @@
+                nx, nz, shirt=shirt, pants=color.rgb32(36, 24, 40),
+                skin=color.rgb32(255, 200, 160), detail='named' if named else 'crowd',
+            )
+            npc.npc_id = nid
+            npc.npc_name = spec.get('name', nid.title())
+            npc.kind = nid if nid in ('lila', 'rosa', 'yara') else 'talk'
+            npc.line = spec.get('greet') or spec.get('lines', ['...'])[0]
+            npc.portrait_tex = None
+            rel = portrait_asset_path(nid)
+            if rel:
+                try:
+                    from ursina import load_texture
+                    tex = load_texture(rel)
+                except Exception:
+                    tex = str(pp)
+                npc.portrait_tex = tex
+                bill = Entity(
+                    parent=npc,
+                    model='quad',
+                    texture=tex,
+                    scale=(1.05, 1.4),
+                    position=(0, 1.45, -0.55),
+                    double_sided=True,
+                )
+                try:
+                    bill.billboard = True
+                except Exception:
+                    pass
+            self.npcs.append(npc)
+            self.talk_npcs.append({
+                'ent': npc,
+                'name': npc.npc_name,
+                'talk': npc.line,
+                'killable': False,
+            })
+
+    def _humanoid(self, x, z, shirt, pants, skin=None, hitbox=False, detail='crowd', style=None):
+        return make_humanoid(
+            self.Entity, self.color, x, z, shirt, pants,
+            skin=skin, hitbox=hitbox, detail=detail, style=style,
+        )
+
+    def _build_cars(self):
+        paints = [
+            self.color.rgb32(200, 30, 40),
+            self.color.rgb32(20, 20, 24),
+            self.color.rgb32(230, 230, 235),
+            self.color.rgb32(30, 170, 190),
+            self.color.rgb32(240, 190, 40),
+            self.color.rgb32(120, 40, 180),
+            self.color.rgb32(230, 90, 20),
+            self.color.rgb32(40, 90, 160),
+        ]
+        spots = [
+            (-8.0, -12.5, 90),
+            (-3.5, -12.6, 88),
+            (2.0, -12.4, 92),
+            (7.5, -12.7, 86),
+            (14.0, -19.5, 0),
+            (-14.0, -19.2, 8),
+            (22.0, -12.8, 90),
+            (30.5, -6.0, 10),
+        ]
+        for i, (x, z, yaw) in enumerate(spots[:8]):
+            car = self._make_car((x, 0, z), yaw, paints[i % len(paints)])
+            car.parked = True
+            car.traffic = False
+            self.cars.append(car)
+        self.parked_count = len(self.cars)
+
+    def _make_car(self, pos, yaw, paint):
+        return make_car(self.Entity, self.color, pos, yaw, paint)
+
+    def _build_crowd(self):
+        spawn_crowd(self)
+        hx, hz = -32.0, 12.0
+        for ped in self.peds:
+            if not ped:
+                continue
+            if abs(getattr(ped, 'x', 0) - hx) < 14 and abs(getattr(ped, 'z', 0) - hz) < 10:
+                ped.x = min(46, ped.x + 18)
+
+    def _build_traffic(self):
+        spawn_traffic(self)
+
+    def _rebuild_ignore(self):
+        ign = [self.player, self.visual, self.cam_pivot]
+        if self.gun_model:
+            ign.append(self.gun_model)
+        for npc in self.npcs:
+            if npc:
+                ign.append(npc)
+        for car in self.cars:
+            if not car:
+                continue
+            ign.append(car)
+            body = getattr(car, 'body', None)
+            if body:
+                ign.append(body)
+        self.ignore = ign
+
+    def _build_targets(self):
+        color = self.color
         # Six shootable hostiles from mobs.json, south of Hwy 50 (z < -16).
         mix = ('dusk_walker', 'road_thug', 'cinder_hound', 'dusk_walker', 'road_thug', 'cinder_hound')
         spots = [(-12, -32), (2, -34), (14, -31), (22, -36), (-22, -30), (6, -40)]
@@ -77,6 +180,7 @@
         self.hud_ammo = Text(text='Pistol  --', position=(-0.86, 0.310), origin=(-0.5, 0.5), color=color.rgb32(200, 200, 210), scale=0.85)
         self.hud_pack = Text(text='Pack  0', position=(-0.86, 0.280), origin=(-0.5, 0.5), color=color.rgb32(180, 230, 200), scale=0.85)
         self.hud_breed = Text(text='BREED  0%', position=(-0.86, 0.250), origin=(-0.5, 0.5), color=color.rgb32(46, 196, 182), scale=0.85)
+        self.hud_quest = Text(text='QUEST  —', position=(-0.86, 0.220), origin=(-0.5, 0.5), color=color.rgb32(180, 255, 200), scale=0.8)
         self.hud_prompt = Text(text='', position=(0, -0.42), origin=(0, 0), color=color.rgb32(255, 240, 180), scale=0.9)
         self.hud_toast = Text(text='', position=(0, 0.32), origin=(0, 0), color=color.rgb32(255, 180, 220), scale=0.85)
         self.crosshair = Entity(parent=camera.ui, model='quad', color=color.rgb32(255, 255, 255), scale=0.008, rotation_z=45)
@@ -124,109 +228,3 @@
     # ----- tick -----------------------------------------------------------
 
     def tick(self):
-        from ursina import time, held_keys, mouse, raycast, Vec3, destroy, color
-        dt = min(time.dt, 0.05)
-        self.shoot_cd = max(0.0, self.shoot_cd - dt)
-        if self.toast_timer > 0:
-            self.toast_timer -= dt
-            if self.toast_timer <= 0 and self.hud_toast:
-                self.hud_toast.text = ''
-
-        self.panic_t = max(0.0, getattr(self, 'panic_t', 0.0) - dt)
-        self._wander_targets(dt)
-        tick_crowd(self, dt)
-        tick_traffic(self, dt)
-        self._tick_heat(dt)
-
-        if self.ui_open:
-            self._refresh_hud()
-            return
-
-        if self.in_car:
-            self._drive(dt)
-        else:
-            self._walk(dt)
-
-        self._maybe_auto_michelle()
-
-        if self.pistol_drawn and self.owned_pistol and held_keys['left mouse'] and self.shoot_cd <= 0:
-            self._shoot()
-
-        self._refresh_hud()
-
-    def _walk(self, dt):
-        from ursina import held_keys, mouse, raycast, Vec3, time
-        player = self.player
-        if getattr(mouse, 'locked', False):
-            player.rotation_y += mouse.velocity[0] * 140
-            self.cam_pivot.rotation_x -= mouse.velocity[1] * 140
-            self.cam_pivot.rotation_x = max(-35, min(40, self.cam_pivot.rotation_x))
-
-        wish = Vec3(
-            held_keys['d'] - held_keys['a'],
-            0,
-            held_keys['w'] - held_keys['s'],
-        )
-        if wish.length() > 0:
-            wish = wish.normalized()
-            move = (player.forward * wish.z + player.right * wish.x) * 7.2 * dt
-            origin = player.world_position + Vec3(0, 0.9, 0)
-            hit = raycast(origin, move.normalized(), distance=0.7 + move.length(), ignore=self.ignore, debug=False)
-            if not hit.hit:
-                player.position += move
-            player.x = max(-48, min(52, player.x))
-            player.z = max(-52, min(22, player.z))
-
-        self.y_vel -= 32 * dt
-        player.y += self.y_vel * dt
-        if player.y <= 0:
-            player.y = 0
-            self.y_vel = 0
-            self.grounded = True
-        else:
-            self.grounded = False
-
-        if held_keys['space'] and self.grounded:
-            self.y_vel = 8.2
-            self.grounded = False
-
-        if not self.visual.enabled:
-            self.visual.enabled = True
-        if self.cam_in_car:
-            self._set_camera_follow(False)
-
-    def _drive(self, dt):
-        from ursina import held_keys, mouse, raycast, Vec3
-        car = self.in_car
-        if getattr(mouse, 'locked', False):
-            car.cam_pivot.rotation_x -= mouse.velocity[1] * 80
-            car.cam_pivot.rotation_x = max(-20, min(25, car.cam_pivot.rotation_x))
-
-        accel, brake, vmax = 16.0, 28.0, 24.0
-        if held_keys['w']:
-            car.speed += accel * dt
-        elif held_keys['s']:
-            if car.speed > 0.6:
-                car.speed -= brake * dt
-            else:
-                car.speed -= accel * 0.55 * dt
-        else:
-            if abs(car.speed) < 0.4:
-                car.speed = 0
-            else:
-                car.speed -= math.copysign(8.0 * dt, car.speed)
-        if held_keys['space']:
-            car.speed *= max(0.0, 1 - 3.5 * dt)
-        car.speed = max(-9.0, min(vmax, car.speed))
-
-        steer = (held_keys['a'] - held_keys['d'])
-        if abs(car.speed) > 0.25:
-            turn = steer * 95 * (abs(car.speed) / vmax) * dt
-            if car.speed < 0:
-                turn = -turn
-            car.rotation_y += turn
-
-        move = car.forward * car.speed * dt
-        origin = car.world_position + Vec3(0, 0.7, 0)
-        ign = list(self.ignore) + [car, car.body]
-        hit = raycast(origin, move.normalized() if move.length() else car.forward, distance=2.0, ignore=ign, debug=False)
