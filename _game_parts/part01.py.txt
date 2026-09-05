@@ -28,7 +28,32 @@ from lighting import apply_lighting, apply_perf
 from models3d import (
     make_humanoid, make_car, make_house, make_shop_stall,
     make_billboard, make_street_sign, make_poi_building,
+    set_world_textures,
 )
+
+_TEX_CACHE = {}
+
+
+def load_tex(name):
+    """Load a texture from assets/textures/<name>.jpg|.png|.webp (Ursina or relative path)."""
+    key = str(name).lower().strip()
+    if key in _TEX_CACHE:
+        return _TEX_CACHE[key]
+    folder = ROOT / 'assets' / 'textures'
+    for ext in ('.jpg', '.jpeg', '.png', '.webp'):
+        path = folder / f'{key}{ext}'
+        if path.is_file():
+            rel = str(path.relative_to(ROOT)).replace(chr(92), '/')
+            try:
+                from ursina import load_texture
+                tex = load_texture(rel)
+            except Exception:
+                tex = rel
+            _TEX_CACHE[key] = tex
+            return tex
+    _TEX_CACHE[key] = None
+    return None
+
 
 SHAKE_IDS = (
     'shake_bar',
@@ -290,6 +315,18 @@ class Game:
 
         self._lock_mouse(True)
 
+        # CC0 / procedural ground + building textures
+        tex_map = {
+            'grass': load_tex('grass'),
+            'asphalt': load_tex('asphalt'),
+            'concrete': load_tex('concrete'),
+            'brick': load_tex('brick'),
+            'stucco': load_tex('stucco'),
+            'water': load_tex('water'),
+        }
+        set_world_textures(tex_map)
+        self.world_textures = tex_map
+
         self._build_ground()
         self._build_highway()
         self._build_skyline()
@@ -297,41 +334,3 @@ class Game:
         self._build_pois()
         self._build_house()
         self._build_stalls()
-        self._build_npcs()
-        self._build_cars()
-        self._build_targets()
-        self._build_crowd()
-        self._build_traffic()
-        self._build_player()
-        self._build_hud()
-        self._init_quests()
-        self._init_tutorial()
-        self._rebuild_ignore()
-
-        tut = 'on' if self.tutorial_active else 'off'
-        print('  buildings=%d quests=%d tutorial=%s' % (
-            self.building_count, len(self.quest_defs), tut))
-        self.toast("Click the window, then WASD. E talks to Michelle at the door.")
-
-    def _lock_mouse(self, locked):
-        mouse = self.mouse
-        try:
-            mouse.locked = bool(locked)
-            mouse.visible = not locked
-        except Exception:
-            try:
-                mouse.visible = not locked
-            except Exception:
-                pass
-
-    # ----- world ----------------------------------------------------------
-
-    def _build_ground(self):
-        Entity = self.Entity
-        color = self.color
-        Entity(
-            model='plane',
-            scale=(160, 1, 130),
-            color=color.rgb32(32, 24, 36),
-            texture='white_cube',
-            texture_scale=(70, 55),
