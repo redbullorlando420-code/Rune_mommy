@@ -79,3 +79,4 @@ py -3 game.py
 ```
 
 `low` / `med` (default) / `high`. Shadows only on `high`.
+
