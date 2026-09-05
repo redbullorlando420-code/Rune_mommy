@@ -1,82 +1,76 @@
 # Rune Mommy
 
-Feminine neon **Clermont / Hwy 50** — a 3D desktop game (Ursina / Python). **Not a browser game.**
+3D desktop game (Ursina / Python). Clermont / Hwy 50. **Not a browser game.**
 
-## Quick start (Windows 11, Python 3.10+)
+## Windows 11 (Python 3.10+)
+
+Unzip or clone into a folder, open a terminal **in that folder**, then:
 
 ```bat
 py -3 -m pip install -r requirements.txt
 py -3 game.py
 ```
 
-If `py` is missing, use `python` instead of `py -3`.  
-Need Python? https://www.python.org/downloads/windows/ — check **Add python.exe to PATH**.
+If `py` is missing, use `python` instead of `py -3`.
 
-A window titled **Rune Mommy** should open. Boot log prints `buildings=N quests=N tutorial=on/off`.
+A window titled **Rune Mommy** opens. **Click the game window once**, then use WASD. Esc closes talk panels.
 
 ## Controls
 
-| Key | Action |
-|-----|--------|
-| **WASD** | Walk |
-| **Mouse** | Look |
-| **Space** | Jump |
-| **E** | Enter/exit car, talk, buy, POIs |
-| **1** | Draw / holster pistol (Gage @ Hancock Gun Hut) |
-| **LMB** | Shoot |
-| **H** | Drink a shake (heals) |
-| **Tab** | Free / lock cursor |
-| **Enter** | Dismiss tutorial |
-| **Esc** | Close talk panel, or quit |
-| **1–4** | Dialogue choices |
+- **WASD** walk (click the window first so it captures the mouse)
+- **Mouse** look
+- **Space** jump
+- **E** enter/exit car, talk, buy, refuel at a pump
+- **1** draw / holster pistol (buy from Gage at Hancock Gun Hut)
+- **LMB** shoot
+- **H** drink a shake (heals)
+- **Tab** free the cursor
+- **Esc** close talk panel, or quit
+- **1–4** pick dialogue choices
 
-You spawn on the **Sanctuary Drive** driveway. **Michelle** is at the front door (`door` dialogue node).
+You spawn in the **Sanctuary Drive** driveway. Walk to Michelle and press **E** (talk does not auto-open anymore).
 
-## World overview
+## Portraits (important)
 
-- **E Hwy 50** — shake row, neon traffic, lot crowd, billboards
-- **Sanctuary Drive** — Michelle’s teal-roof house + neighborhood labels
-- **POIs** — gas / pumps, Palm Court Motel, laundromat, Green Siren kiosk, pharmacy, Willow pocket park
-- **Quests** — starter log in `data/quests.json` (HUD `QUEST: …`, gold on complete)
-- **Crowd / traffic** — `crowd.py` + `traffic.py` (caps kept for performance)
+Faces are **local files**, not always on GitHub.
 
-## Dev layout
+1. Put images here, next to `game.py`:
 
-| Path | Role |
-|------|------|
-| `game.py` | Main playable (~Game class). Prefer this for gameplay edits. |
-| `game_launcher.py` / `_game_parts/` | Split-source rebuild for GitHub size limits |
-| `models3d.py` | Composed Ursina meshes (houses, stalls, humanoids, cars) |
-| `crowd.py` / `traffic.py` | Lot peds + Hwy 50 traffic |
-| `loaders.py` | shops / NPCs / portraits / items |
-| `vendor/` | Lightweight helpers (astar, steering, …) |
-| `data/` | `shops.json`, `npcs.json`, `quests.json`, `dialogue/`, items, mobs |
-| `client/portraits/` | Local-only face textures (may be missing on GitHub) |
-| `docs/PLAYING.md` | Player guide |
-| `docs/BUILDING.md` | How to add shop / NPC / quest |
-
-## Content rules
-
-- **Do not empty** `data/shops.json` — keep all **ten** Clermont shake stalls (+ gun hut).
-- **Michelle** only — never invent / write **Lewis**.
-- Michelle dialogue **start** stays `door`.
-- Keep `open_vn` for **lila / rosa / yara** and `open_michelle`.
-- Portraits may be **local-only** (binaries too large for some push paths).
-- Desktop only — do not turn this into a browser client.
-- Do not `git push` from automation unless a human asks.
-
-## Tutorial
-
-First boot (no `data/local_flags.json` / `tutorial_done`) shows a non-blocking overlay: WASD → E talk → mouse look → pistol → H shakes. **Enter** or finishing early steps writes `{ "tutorial_done": true }`.
-
-## Graphics quality
-
-Neon-dusk lighting + distance cull for crowds/traffic (`lighting.py`). See `docs/lighting.md`.
-
-```bat
-set RUNE_MOMMY_QUALITY=low
-py -3 game.py
+```
+client/portraits/<npc>/<expression>.png
 ```
 
-`low` / `med` (default) / `high`. Shadows only on `high`.
+Examples that already work on a full disk install:
 
+```
+client/portraits/mira/smile.png
+client/portraits/michelle/sassy.png
+client/portraits/lila/default.jpg
+client/portraits/rosa/smile.png
+client/portraits/yara/tease.png
+```
+
+2. The filename stem is the expression (`smile`, `sassy`, `tease`, …).
+3. `loaders.portrait_asset_path()` turns that into a **relative** path like `client/portraits/mira/smile.png`. Ursina needs relative paths — absolute Windows paths return `None` and you get "mira portrait: missing".
+4. Optional: `client/portraits/portraits.json` for aliases / fallbacks.
+5. If you downloaded a zip from GitHub and portraits are missing, copy the `client/portraits/` folder from your other clone (for example `Documents\\Rune_mommy\\client\\portraits`) into this folder.
+
+Smaller `.jpg` stand-ins may ship in the repo when the push path allows; full `.png`s often stay on disk only.
+
+## What is in it
+
+- Hwy 50 traffic, lot crowds, heat, fuel + vehicle damage
+- Ten Clermont shake shops + Hancock Gun Hut (`data/shops.json` — do not empty)
+- Club 27 Cabaret, Quiet Spa, Citrus Tower, Waterfront Park
+- Mama Mira, Gage, Lila, Rosa, Yara, Michelle (first name only)
+- Quests + mini tutorial (`data/quests.json`, on-screen tips)
+
+## Docs
+
+- `docs/PLAYING.md` — how to play
+- `docs/BUILDING.md` — buildings / meshes
+- `docs/TUTORIAL.md` — onboarding steps (if present)
+
+## Data
+
+Do not empty `data/shops.json`. Keep all ten shake stalls.
