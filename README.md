@@ -13,7 +13,7 @@ py -3 game.py
 
 If `py` is missing, use `python` instead of `py -3`.
 
-A window titled **Rune Mommy** opens. **Click the game window once**, then use WASD. Esc closes talk panels.
+A window titled **Rune Mommy** opens. **Click the window once**, then use WASD. Esc closes talk panels.
 
 ## Controls
 
