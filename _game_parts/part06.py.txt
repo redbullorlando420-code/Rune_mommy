@@ -1,232 +1,230 @@
-            if self.gun_model:
-                ign.append(self.gun_model)
-            # Never destroy / count named NPC talk entities as crash targets
-            for npc in self.npcs:
-                if not npc:
-                    continue
-                kind = getattr(npc, 'kind', '')
-                named = getattr(npc, 'npc_id', '')
-                if kind in ('mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara') or named in (
-                    'mira', 'michelle', 'gage', 'lila', 'rosa', 'yara', 'rita', 'deb',
-                    'motel_clerk', 'barista', 'pharmacist', 'neighbor', 'lot_attendant',
-                    'amanda_friend', 'club27_host', 'quiet_spa_tech', 'citrus_guide', 'park_ranger',
-                ):
-                    ign.append(npc)
-            ign = [e for e in ign if e]
-            direction = proposed.normalized()
-            hit = raycast(origin, direction, distance=max(2.0, proposed.length() + 1.2), ignore=ign, debug=False)
-            if hit.hit:
-                hit_something = True
+            self.color.rgb32(230, 230, 235),
+            self.color.rgb32(30, 170, 190),
+            self.color.rgb32(240, 190, 40),
+            self.color.rgb32(120, 40, 180),
+            self.color.rgb32(230, 90, 20),
+            self.color.rgb32(40, 90, 160),
+        ]
+        spots = [
+            (-8.0, -12.5, 90),
+            (-3.5, -12.6, 88),
+            (2.0, -12.4, 92),
+            (7.5, -12.7, 86),
+            (14.0, -19.5, 0),
+            (-14.0, -19.2, 8),
+            (22.0, -12.8, 90),
+            (30.5, -6.0, 10),
+        ]
+        for i, (x, z, yaw) in enumerate(spots[:8]):
+            car = self._make_car((x, 0, z), yaw, paints[i % len(paints)])
+            car.parked = True
+            car.traffic = False
+            car.fuel = float(random.uniform(35, 70))
+            car.damage = 0.0
+            car.disabled = False
+            self.cars.append(car)
+        self.parked_count = len(self.cars)
 
-        if not hit_something:
-            for other in self.cars:
-                if not other or other is car:
-                    continue
-                d = dist_xz((nx, 0, nz), (other.x, 0, other.z))
-                if d < 2.6:
-                    hit_something = True
-                    break
+    def _make_car(self, pos, yaw, paint):
+        car = make_car(self.Entity, self.color, pos, yaw, paint)
+        # Traffic cars ignore fuel; parked/enterable get a tank below in _build_cars.
+        if not getattr(car, 'traffic', False):
+            if not hasattr(car, 'fuel') or car.fuel is None:
+                car.fuel = float(random.uniform(35, 70))
+        return car
 
-        if hit_something:
-            self._car_take_damage(car, impact_speed)
-            nspd *= -0.25
-            # stay put on impact
-            nx, nz = car.x, car.z
-        else:
-            car.x, car.z = nx, nz
-            car.rotation_y = nyaw
+    def _build_crowd(self):
+        spawn_crowd(self)
+        hx, hz = -32.0, 12.0
+        for ped in self.peds:
+            if not ped:
+                continue
+            if abs(getattr(ped, 'x', 0) - hx) < 14 and abs(getattr(ped, 'z', 0) - hz) < 10:
+                ped.x = min(46, ped.x + 18)
 
-        car.speed = nspd
-        car.y = 0
-        car.x = max(-48, min(52, car.x))
-        car.z = max(-52, min(22, car.z))
+    def _build_traffic(self):
+        spawn_traffic(self)
 
-        self._update_car_damage_visual(car, dt)
+    def _rebuild_ignore(self):
+        ign = [self.player, self.visual, self.cam_pivot]
+        if self.gun_model:
+            ign.append(self.gun_model)
+        for npc in self.npcs:
+            if npc:
+                ign.append(npc)
+        for car in self.cars:
+            if not car:
+                continue
+            ign.append(car)
+            body = getattr(car, 'body', None)
+            if body:
+                ign.append(body)
+        self.ignore = ign
 
-        # Slight camera follow lag (lerp cam_pivot local z toward target)
-        try:
-            target_z = -0.15 if abs(car.speed) > 8 else 0.2
-            cur = float(getattr(car.cam_pivot, 'z', 0.2) or 0.2)
-            car.cam_pivot.z = cur + (target_z - cur) * min(1.0, 3.5 * dt)
-        except Exception:
-            pass
-
-        self.player.position = car.position
-        self.player.y = 0
-        self.player.rotation_y = car.rotation_y
-        if self.visual.enabled:
-            self.visual.enabled = False
-        if not self.cam_in_car:
-            self._set_camera_follow(True)
-
-    def _car_take_damage(self, car, impact_speed):
-        if getattr(car, 'traffic', False) and self.in_car is not car:
-            return
-        add = min(42.0, max(3.0, abs(float(impact_speed)) * 2.4))
-        car.damage = min(100.0, float(getattr(car, 'damage', 0.0) or 0.0) + add)
-        if car.damage >= 100.0 and not getattr(car, 'disabled', False):
-            car.disabled = True
-            car.speed = 0.0
-            self.toast('Car totaled.')
-            if self.in_car is car:
-                # stall — force exit shortly via disabled flag in enter check
-                pass
-
-    def _update_car_damage_visual(self, car, dt=0.016):
-        dmg = float(getattr(car, 'damage', 0.0) or 0.0)
-        base = getattr(car, 'base_paint', None) or getattr(car, 'paint', None)
-        if base is not None and getattr(car, 'body', None):
-            t = min(1.0, dmg / 100.0)
+    def _build_targets(self):
+        color = self.color
+        # Six shootable hostiles from mobs.json, south of Hwy 50 (z < -16).
+        mix = ('dusk_walker', 'road_thug', 'cinder_hound', 'dusk_walker', 'road_thug', 'cinder_hound')
+        spots = [(-12, -32), (2, -34), (14, -31), (22, -36), (-22, -30), (6, -40)]
+        for i, (mid, (x, z)) in enumerate(zip(mix, spots)):
+            spec = (self.mobs_data or {}).get(mid) or {'id': mid, 'name': mid, 'hp': 30, 'xp': 10, 'color': '#6d6875'}
+            shirt = hex_color(spec.get('color') or '#6d6875')
+            skin = color.rgb32(170, 190, 150) if 'walker' in mid else color.rgb32(220, 160, 120)
+            t = self._humanoid(x, z, shirt=shirt, pants=color.rgb32(24, 24, 28), skin=skin, hitbox=True)
+            t.npc_id = f"{mid}_{i}"
+            t.mob_id = mid
+            t.npc_name = spec.get('name', mid)
+            t.kind = 'mob'
+            t.hp = int(spec.get('hp', 30))
+            t.max_hp = t.hp
+            t.xp = int(spec.get('xp', 10))
+            t.heading = random.uniform(0, 360)
+            t.wander_t = random.uniform(0, 2)
+            t.hittable = True
             try:
-                # darker / redder as damage rises
-                if hasattr(base, 'r'):
-                    r = int(base.r * 255 * (1 - 0.55 * t) + 180 * t)
-                    g = int(base.g * 255 * (1 - 0.75 * t) + 30 * t)
-                    b = int(base.b * 255 * (1 - 0.75 * t) + 25 * t)
-                    col = self.color.rgb32(max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b)))
-                else:
-                    col = base.tint(-0.55 * t) if hasattr(base, 'tint') else base
-                car.body.color = col
-                cabin = getattr(car, 'cabin', None)
-                if cabin is not None:
-                    cabin.color = col.tint(-0.15) if hasattr(col, 'tint') else col
+                sz = float(spec.get('size') or 1.0)
+                t.scale = sz
             except Exception:
                 pass
-        # Smoke particles at high damage
-        car.smoke_cd = max(0.0, float(getattr(car, 'smoke_cd', 0.0) or 0.0) - dt)
-        if dmg >= 55.0 and car.smoke_cd <= 0.0 and random.random() < min(0.35, dt * 4.0):
-            car.smoke_cd = 0.18
-            try:
-                from ursina import Entity, destroy, Vec3
-                smoke = Entity(
-                    model='cube',
-                    color=self.color.rgb32(30, 30, 32),
-                    scale=0.18,
-                    position=(car.x + random.uniform(-0.3, 0.3), 1.2, car.z + random.uniform(-0.3, 0.3)),
-                    collider=None,
-                )
-                try:
-                    smoke.animate_y(smoke.y + 1.6, duration=0.7)
-                    smoke.animate_scale(0.04, duration=0.7)
-                except Exception:
-                    pass
-                destroy(smoke, delay=0.75)
-            except Exception:
+            self.targets.append(t)
+            self.npcs.append(t)
+        # barrels
+        Entity = self.Entity
+        for x, z in ((12, -8), (11.2, -8.6), (-6, -22)):
+            b = Entity(model='cube', color=color.rgb32(150, 70, 30), scale=(0.7, 1.0, 0.7), position=(x, 0.5, z), collider='box')
+            b.kind = 'barrel'
+            b.hittable = True
+            b.hp = 15
+            b.xp = 0
+            b.npc_name = 'barrel'
+            self.targets.append(b)
+
+    def _build_player(self):
+        Entity = self.Entity
+        color = self.color
+        camera = self.camera
+        Vec3 = self.Vec3
+
+        self.player = Entity(position=(-18.0, 0, 12.0), rotation_y=-90)
+        self.visual = Entity(parent=self.player)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(30, 40, 55), scale=(0.44, 0.55, 0.3), y=0.28)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.52, 0.62, 0.34), y=0.82)
+        Entity(parent=self.visual, model='sphere', color=color.rgb32(255, 210, 175), scale=0.33, y=1.32)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.12, 0.5, 0.12), x=0.34, y=0.78)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.12, 0.5, 0.12), x=-0.34, y=0.78)
+        self.gun_model = Entity(
+            parent=self.visual,
+            model='cube',
+            color=color.rgb32(40, 42, 48),
+            scale=(0.08, 0.16, 0.42),
+            position=(0.38, 1.05, 0.28),
+            enabled=False,
+        )
+        Entity(parent=self.gun_model, model='cube', color=color.rgb32(30, 30, 32), scale=(0.7, 0.45, 0.35), position=(0, -0.4, -0.15))
+
+        self.cam_pivot = Entity(parent=self.player, y=1.35)
+        camera.parent = self.cam_pivot
+        camera.position = Vec3(0, 1.65, -8.8)
+        camera.rotation = Vec3(12, 0, 0)
+        camera.fov = 80
+
+    def _build_hud(self):
+        Entity = self.Entity
+        Text = self.Text
+        color = self.color
+        camera = self.camera
+
+        Text(text='RUNE MOMMY', position=(-0.86, 0.48), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 210))
+        Text(text='Clermont / Hwy 50', position=(-0.86, 0.445), origin=(-0.5, 0.5), color=color.rgb32(140, 230, 255), scale=0.75)
+        self.hud_gold = Text(text='Gold  200', position=(-0.86, 0.40), origin=(-0.5, 0.5), color=color.rgb32(255, 220, 90))
+        self.hud_hp = Text(text='HP  100', position=(-0.86, 0.370), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 170), scale=0.85)
+        self.hud_heat = Text(text='HEAT  0.0', position=(-0.86, 0.340), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 90), scale=0.85)
+        self.hud_ammo = Text(text='Pistol  --', position=(-0.86, 0.310), origin=(-0.5, 0.5), color=color.rgb32(200, 200, 210), scale=0.85)
+        self.hud_pack = Text(text='Pack  0', position=(-0.86, 0.280), origin=(-0.5, 0.5), color=color.rgb32(180, 230, 200), scale=0.85)
+        self.hud_breed = Text(text='BREED  0%', position=(-0.86, 0.250), origin=(-0.5, 0.5), color=color.rgb32(46, 196, 182), scale=0.85)
+        self.hud_quest = Text(text='QUEST  —', position=(-0.86, 0.220), origin=(-0.5, 0.5), color=color.rgb32(180, 255, 200), scale=0.8)
+        self.hud_mode = Text(text='WALK', position=(-0.86, 0.190), origin=(-0.5, 0.5), color=color.rgb32(200, 220, 255), scale=0.8)
+        self.hud_prompt = Text(text='', position=(0, -0.42), origin=(0, 0), color=color.rgb32(255, 240, 180), scale=0.9)
+        self.hud_toast = Text(text='', position=(0, 0.32), origin=(0, 0), color=color.rgb32(255, 180, 220), scale=0.85)
+        self.crosshair = Entity(parent=camera.ui, model='quad', color=color.rgb32(255, 255, 255), scale=0.008, rotation_z=45)
+
+        self.panel_bg = Entity(
+            parent=camera.ui,
+            model='quad',
+            color=color.rgba32(10, 4, 18, 235),
+            scale=(1.58, 0.50),
+            position=(0.06, -0.28),
+            enabled=False,
+            z=0.1,
+        )
+        self.panel_portrait = Entity(
+            parent=camera.ui,
+            model='quad',
+            scale=(0.34, 0.60),
+            position=(-0.68, -0.26),
+            enabled=False,
+            z=-0.05,
+        )
+        if self.mira_texture:
+            self.panel_portrait.texture = self.mira_texture
+        self.panel_name = Text(text='', position=(-0.52, -0.08), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 210), enabled=False)
+        self.panel_body = Text(text='', position=(-0.52, -0.13), origin=(-0.5, 0.5), color=color.rgb32(245, 230, 255), enabled=False, scale=0.8)
+        self.panel_choices = []
+        for i in range(4):
+            t = Text(
+                text='',
+                position=(-0.52, -0.34 - i * 0.045),
+                origin=(-0.5, 0.5),
+                color=color.rgb32(160, 230, 255),
+                enabled=False,
+                scale=0.75,
+            )
+            self.panel_choices.append(t)
+        Text(
+            text='WASD walk   mouse look   E use   1 pistol   LMB shoot   ESC quit',
+            position=(-0.86, -0.48),
+            origin=(-0.5, 0.5),
+            color=color.rgb32(160, 140, 180),
+            scale=0.65,
+        )
+
+    # ----- tick -----------------------------------------------------------
+
+    def tick(self):
+        from ursina import time, held_keys, mouse, raycast, Vec3, destroy, color
+        dt = min(time.dt, 0.05)
+        self.shoot_cd = max(0.0, self.shoot_cd - dt)
+        if self.toast_timer > 0:
+            self.toast_timer -= dt
+            if self.toast_timer <= 0 and self.hud_toast:
+                self.hud_toast.text = ''
+
+        mode = getattr(self, 'mode', 'play')
+        if mode in ('menu', 'settings'):
+            # title / settings — no world sim, no walk
+            if self.hud_toast and self.toast_timer > 0:
                 pass
+            return
 
-    def _set_camera_follow(self, in_car):
-        from ursina import Vec3, camera
-        self.cam_in_car = bool(in_car)
-        if in_car:
-            camera.parent = self.in_car.cam_pivot
-            camera.position = Vec3(0, 2.4, -10.5)
-            camera.rotation = Vec3(14, 0, 0)
+        self.panic_t = max(0.0, getattr(self, 'panic_t', 0.0) - dt)
+        self._wander_targets(dt)
+
+        if mode == 'play':
+            tick_crowd(self, dt)
+            tick_traffic(self, dt)
+            self._tick_heat(dt)
+            self._tick_tutorial(dt)
+        # safe: skip crowd/traffic/heat; walk only
+
+        if self.ui_open:
+            self._refresh_hud()
+            return
+
+        if mode == 'play' and self.in_car:
+            self._drive(dt)
         else:
-            camera.parent = self.cam_pivot
-            camera.position = Vec3(0, 1.65, -8.8)
-            camera.rotation = Vec3(12, 0, 0)
+            self._walk(dt)
 
-    def _wander_targets(self, dt):
-        from ursina import Vec3, raycast
-        for t in self.targets:
-            if getattr(t, 'kind', '') not in ('target', 'mob'):
-                continue
-            if not t or getattr(t, 'hp', 0) <= 0:
-                continue
-            t.wander_t += dt
-            if t.wander_t > 2.8:
-                t.heading = random.uniform(0, 360)
-                t.wander_t = 0
-            t.rotation_y = t.heading
-            step = t.forward * 1.15 * dt
-            t.position += step
-            t.y = 0
-            t.x = max(-40, min(40, t.x))
-            t.z = max(-40, min(8, t.z))
-
-    def _shoot(self):
-        from ursina import camera, raycast, Vec3, Entity, color, destroy, mouse
-        if not self.owned_pistol or not self.pistol_drawn:
-            return
-        if self.shoot_cd > 0:
-            return
-        if self.ammo <= 0:
-            self.toast('Empty. Buy ammo at Hancock Gun Hut.')
-            self.shoot_cd = 0.35
-            return
-        self.ammo -= 1
-        self.shoot_cd = 0.22
-        self.panic_t = max(self.panic_t, 4.5)
-        origin = camera.world_position
-        direction = camera.forward
-        ign = list(self.ignore)
-        if self.in_car:
-            ign += [self.in_car, self.in_car.body]
-        hit = raycast(origin, direction, distance=48, ignore=ign, debug=False)
-        end = hit.world_point if hit.hit else origin + direction * 48
-        mid = origin + (end - origin) * 0.5
-        length = max(0.2, (end - origin).length())
-        tracer = Entity(model='cube', color=color.rgb32(255, 230, 80), scale=(0.04, 0.04, min(length, 18)), position=mid, collider=None)
-        try:
-            tracer.look_at(end)
-        except Exception:
-            pass
-        destroy(tracer, delay=0.07)
-        flash = Entity(model='sphere', color=color.rgb32(255, 240, 180), scale=0.18, position=origin + direction * 1.2)
-        destroy(flash, delay=0.05)
-        if hit.hit and hit.entity:
-            ent = hit.entity
-            # walk up to a tagged parent
-            cur = ent
-            tagged = None
-            for _ in range(6):
-                if cur is None:
-                    break
-                if getattr(cur, 'hittable', False):
-                    tagged = cur
-                    break
-                cur = getattr(cur, 'parent', None)
-            if tagged is None:
-                # maybe we hit a child of a target
-                for t in list(self.targets):
-                    if not t:
-                        continue
-                    if ent == t or getattr(ent, 'parent', None) == t:
-                        tagged = t
-                        break
-            if tagged is not None:
-                kind = getattr(tagged, 'kind', '')
-                named = getattr(tagged, 'npc_id', '')
-                if kind in ('mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara') or named in ('mira', 'michelle', 'gage', 'lila', 'rosa', 'yara', 'rita', 'deb', 'motel_clerk', 'barista', 'pharmacist', 'neighbor', 'lot_attendant', 'amanda_friend'):
-                    self.toast('Not a target.')
-                    return
-                tagged.hp = getattr(tagged, 'hp', 10) - 18
-                if kind in ('civilian', 'lot_rat', 'walker', 'thug', 'heat_hunter', 'mob'):
-                    self.heat = min(3.0, self.heat + 0.4)
-                try:
-                    tagged.blink(color.red)
-                except Exception:
-                    pass
-                if tagged.hp <= 0:
-                    name = getattr(tagged, 'npc_name', 'target')
-                    loot = 12 if name != 'barrel' else 4
-                    xp = int(getattr(tagged, 'xp', 0) or 0)
-                    self.gold += loot
-                    tagged.hittable = False
-                    try:
-                        tagged.enabled = False
-                    except Exception:
-                        try:
-                            tagged.visible = False
-                        except Exception:
-                            pass
-                    extra = f' +{xp}xp' if xp else ''
-                    self.toast(f'{name} down. +{loot}g{extra}')
-                    self._quest_event('kill', kind=kind, mob_id=getattr(tagged, 'mob_id', ''))
-
-    def _refresh_hud(self):
-        if self.hud_gold:
-            self.hud_gold.text = f'Gold  {self.gold}'
-        if self.hud_hp:
-            self.hud_hp.text = f'HP  {int(self.hp)}'
-        if self.hud_heat:
+        if mode == 'play':
+            self._maybe_auto_michelle()
+            self._tick_visit_quests()
