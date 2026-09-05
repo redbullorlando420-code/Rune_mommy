@@ -1,0 +1,244 @@
+                # counter
+                Entity(model='cube', scale=(w * 0.7, 0.7, 0.45), position=(x, 0.45, z - d / 2 - 0.2), color=trim.tint(-0.3))
+            label = Text(
+                parent=self._scene(),
+                text=name,
+                position=(x, (3.35 if is_gun else 2.85), z),
+                origin=(0, 0),
+                billboard=True,
+                color=color.rgb32(255, 210, 255) if not is_gun else color.rgb32(255, 180, 90),
+            )
+            try:
+                label.world_scale = 1.8 if is_gun else 1.45
+            except Exception:
+                pass
+            rec = {
+                'id': sid,
+                'name': name,
+                'kind': 'gun' if is_gun else 'shake',
+                'pos': (x, 0, z),
+                'shop': shop,
+                'npc': shop.get('npcName', ''),
+            }
+            self.stalls.append(rec)
+            if sid in SHAKE_IDS:
+                self.shake_spawned.append(name)
+
+        # fill any missing shake names as extra labeled boxes so all 10 exist
+        have = {s['id'] for s in self.stalls}
+        lookup = {s.get('id'): s for s in shops}
+        for sid in SHAKE_IDS:
+            if sid in have:
+                continue
+            shop = lookup.get(sid, {'id': sid, 'name': sid, 'palette': ['#ff4fd8']})
+            x, z = tile_to_world(shop.get('tileX', 0), shop.get('tileY', 7))
+            Entity(model='cube', scale=(3.2, 2.0, 2.8), position=(x, 1.0, z), color=hex_color((shop.get('palette') or ['#ff4fd8'])[0]), collider='box')
+            self.stalls.append({'id': sid, 'name': shop.get('name', sid), 'kind': 'shake', 'pos': (x, 0, z), 'shop': shop, 'npc': shop.get('npcName', '')})
+            self.shake_spawned.append(shop.get('name', sid))
+
+    def _scene(self):
+        from ursina import scene
+        return scene
+
+    def _build_npcs(self):
+        Entity = self.Entity
+        color = self.color
+        portrait = None
+        mp = self.mira_portrait_path
+        mp_ok = False
+        try:
+            mp_ok = Path(mp).exists() if mp else False
+        except Exception:
+            mp_ok = False
+        if mp_ok:
+            try:
+                from ursina import load_texture
+                portrait = load_texture(str(mp))
+                self.mira_texture = portrait
+            except Exception:
+                portrait = str(mp)
+                self.mira_texture = portrait
+
+        shake = next((s for s in self.stalls if s['id'] == 'shake_bar'), None)
+        mx, mz = (0.0, -2.6)
+        if shake:
+            mx, mz = shake['pos'][0], shake['pos'][2] - 2.4
+
+        mira = self._humanoid(mx, mz, shirt=color.rgb32(255, 70, 180), pants=color.rgb32(40, 12, 40), skin=color.rgb32(255, 206, 166))
+        mira.npc_id = 'mira'
+        mira.npc_name = 'Mama Mira'
+        mira.kind = 'mira'
+        mira.hittable = False
+        self.talk_npcs.append({'ent': mira, 'name': 'Mama Mira', 'talk': 'Neons loud tonight.', 'killable': False})
+        if portrait:
+            bill = Entity(
+                parent=mira,
+                model='quad',
+                texture=portrait,
+                scale=(1.15, 1.55),
+                position=(0, 1.45, -0.55),
+                double_sided=True,
+            )
+            try:
+                bill.billboard = True
+            except Exception:
+                pass
+        self.npcs.append(mira)
+
+        gun = next((s for s in self.stalls if s['kind'] == 'gun'), None)
+        gx, gz = (36.0, 2.2)
+        if gun:
+            gx, gz = gun['pos'][0], gun['pos'][2] - 2.3
+        gage = self._humanoid(gx, gz, shirt=color.rgb32(90, 55, 30), pants=color.rgb32(30, 24, 20), skin=color.rgb32(210, 170, 130))
+        gage.npc_id = 'gage'
+        gage.npc_name = 'Gage'
+        gage.kind = 'gun'
+        gage.hittable = False
+        self.npcs.append(gage)
+        self.talk_npcs.append({'ent': gage, 'name': 'Gage', 'talk': 'Cash on the plank.', 'killable': False})
+
+        steak = next((s for s in self.stalls if s['id'] == 'steak_n_shake'), None)
+        if steak:
+            deb = self._humanoid(steak['pos'][0], steak['pos'][2] - 2.2, shirt=color.rgb32(245, 210, 50), pants=color.rgb32(20, 20, 20))
+            deb.npc_id = 'deb'
+            deb.npc_name = 'Diner Deb'
+            deb.kind = 'talk'
+            deb.line = 'Same lot as Mira. Vanilla, chocolate, strawberry, or the black-and-white.'
+            self.npcs.append(deb)
+
+        # Extra talkable Clermont NPCs from npcs.json. Keep them off Mira.
+        talk_spots = {
+            'lila': (-14.0, 5.5),
+            'yara': (8.0, -26.5),
+            'rosa': (mx - 3.2, mz + 0.4),
+            'tavi': (-24.0, -20.0),
+            'rook': (26.0, 7.0),
+            'rita': (18.0, -13.0),
+        }
+        for nid, (nx, nz) in talk_spots.items():
+            spec = (self.npcs_data or {}).get(nid) or {'id': nid, 'name': nid.title(), 'greet': '...'}
+            shirt = hex_color(spec.get('color') or '#ff8fab')
+            npc = self._humanoid(nx, nz, shirt=shirt, pants=color.rgb32(36, 24, 40), skin=color.rgb32(255, 200, 160))
+            npc.npc_id = nid
+            npc.npc_name = spec.get('name', nid.title())
+            npc.kind = nid if nid in ('lila', 'rosa', 'yara') else 'talk'
+            npc.line = spec.get('greet') or spec.get('lines', ['...'])[0]
+            npc.portrait_tex = None
+            pp = portrait_texture_path(nid)
+            if pp and Path(pp).is_file():
+                try:
+                    from ursina import load_texture
+                    tex = load_texture(str(pp))
+                except Exception:
+                    tex = str(pp)
+                npc.portrait_tex = tex
+                bill = Entity(
+                    parent=npc,
+                    model='quad',
+                    texture=tex,
+                    scale=(1.05, 1.4),
+                    position=(0, 1.45, -0.55),
+                    double_sided=True,
+                )
+                try:
+                    bill.billboard = True
+                except Exception:
+                    pass
+            self.npcs.append(npc)
+            self.talk_npcs.append({
+                'ent': npc,
+                'name': npc.npc_name,
+                'talk': npc.line,
+                'killable': False,
+            })
+
+    def _humanoid(self, x, z, shirt, pants, skin=None, hitbox=False):
+        Entity = self.Entity
+        color = self.color
+        skin = skin or color.rgb32(255, 206, 166)
+        root = Entity(position=(x, 0, z))
+        Entity(parent=root, model='cube', color=pants, scale=(0.42, 0.55, 0.28), y=0.28)
+        Entity(parent=root, model='cube', color=shirt, scale=(0.5, 0.62, 0.32), y=0.82, collider='box' if hitbox else None)
+        Entity(parent=root, model='sphere', color=skin, scale=0.32, y=1.32)
+        Entity(parent=root, model='cube', color=shirt, scale=(0.12, 0.5, 0.12), x=0.34, y=0.78)
+        Entity(parent=root, model='cube', color=shirt, scale=(0.12, 0.5, 0.12), x=-0.34, y=0.78)
+        if hitbox:
+            Entity(parent=root, model='cube', scale=(0.55, 1.55, 0.42), y=0.85, collider='box', visible=False)
+        return root
+
+    def _build_cars(self):
+        paints = [
+            self.color.rgb32(200, 30, 40),
+            self.color.rgb32(20, 20, 24),
+            self.color.rgb32(230, 230, 235),
+            self.color.rgb32(30, 170, 190),
+            self.color.rgb32(240, 190, 40),
+            self.color.rgb32(120, 40, 180),
+            self.color.rgb32(230, 90, 20),
+            self.color.rgb32(40, 90, 160),
+        ]
+        spots = [
+            (-8.0, -12.5, 90),
+            (-3.5, -12.6, 88),
+            (2.0, -12.4, 92),
+            (7.5, -12.7, 86),
+            (14.0, -19.5, 0),
+            (-14.0, -19.2, 8),
+            (22.0, -12.8, 90),
+            (30.5, -6.0, 10),
+        ]
+        for i, (x, z, yaw) in enumerate(spots[:8]):
+            car = self._make_car((x, 0, z), yaw, paints[i % len(paints)])
+            car.parked = True
+            car.traffic = False
+            self.cars.append(car)
+        self.parked_count = len(self.cars)
+
+    def _make_car(self, pos, yaw, paint):
+        Entity = self.Entity
+        color = self.color
+        car = Entity(position=pos, rotation_y=yaw)
+        car.speed = 0.0
+        car.paint = paint
+        car.kind = 'car'
+        car.body = Entity(parent=car, model='cube', color=paint, scale=(1.65, 0.52, 3.35), y=0.58, collider='box')
+        Entity(parent=car, model='cube', color=paint.tint(-0.25), scale=(1.45, 0.42, 1.55), y=1.02, z=-0.15)
+        Entity(parent=car, model='cube', color=color.rgb32(40, 80, 120), scale=(1.35, 0.28, 1.35), y=1.12, z=-0.15)
+        for wx, wz in ((-0.82, 1.05), (0.82, 1.05), (-0.82, -1.05), (0.82, -1.05)):
+            Entity(parent=car, model='cube', color=color.rgb32(18, 18, 18), scale=(0.28, 0.38, 0.42), x=wx, y=0.22, z=wz)
+        Entity(parent=car, model='cube', color=color.rgb32(255, 220, 120), scale=(1.2, 0.08, 0.08), y=0.55, z=1.68)
+        car.cam_pivot = Entity(parent=car, y=1.35, z=0.2)
+        car.parked = getattr(car, 'parked', True)
+        car.traffic = getattr(car, 'traffic', False)
+        return car
+
+    def _build_crowd(self):
+        spawn_crowd(self)
+        hx, hz = -32.0, 12.0
+        for ped in self.peds:
+            if not ped:
+                continue
+            if abs(getattr(ped, 'x', 0) - hx) < 14 and abs(getattr(ped, 'z', 0) - hz) < 10:
+                ped.x = min(46, ped.x + 18)
+
+    def _build_traffic(self):
+        spawn_traffic(self)
+
+    def _rebuild_ignore(self):
+        ign = [self.player, self.visual, self.cam_pivot]
+        if self.gun_model:
+            ign.append(self.gun_model)
+        for npc in self.npcs:
+            if npc:
+                ign.append(npc)
+        for car in self.cars:
+            if not car:
+                continue
+            ign.append(car)
+            body = getattr(car, 'body', None)
+            if body:
+                ign.append(body)
+        self.ignore = ign
+
+    def _build_targets(self):
+        color = self.color
