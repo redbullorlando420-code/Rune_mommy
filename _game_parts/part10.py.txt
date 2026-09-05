@@ -1,3 +1,50 @@
+                hud = hud.replace('{progress}', str(prog))
+            return f'QUEST  {hud}'
+        if self.quest_completed:
+            return 'QUEST  done for now'
+        return 'QUEST  —'
+
+    def _quest_complete(self, qid):
+        if qid in self.quest_completed:
+            return
+        q = self._quest_def(qid)
+        if not q:
+            return
+        if qid in self.quest_active:
+            self.quest_active.remove(qid)
+        self.quest_completed.add(qid)
+        gold = int(q.get('reward_gold') or 0)
+        if gold:
+            self.gold += gold
+        self.toast(f"Quest complete: {q.get('name', qid)}  +{gold}g")
+        self._quest_unlock_ready()
+
+    def _quest_event(self, etype, **kw):
+        for qid in list(self.quest_active):
+            q = self._quest_def(qid)
+            if not q:
+                continue
+            qtype = q.get('type')
+            if etype == 'talk' and qtype == 'talk':
+                if kw.get('npc_id') == q.get('npc'):
+                    self._quest_complete(qid)
+            elif etype == 'buy' and qtype == 'buy':
+                if kw.get('item_id') == q.get('item'):
+                    self._quest_complete(qid)
+            elif etype == 'buy_pistol' and qtype == 'buy_pistol':
+                self._quest_complete(qid)
+            elif etype == 'kill' and qtype == 'kill':
+                kinds = set(q.get('kinds') or [])
+                kind = kw.get('kind') or ''
+                mob = kw.get('mob_id') or ''
+                if kind in kinds or mob in kinds or any(k in (kind, mob) for k in kinds):
+                    self.quest_progress[qid] = self.quest_progress.get(qid, 0) + 1
+                    need = int(q.get('count') or 3)
+                    if self.quest_progress[qid] >= need:
+                        self._quest_complete(qid)
+            elif etype == 'michelle_room' and qtype == 'michelle_room':
+                rooms = set(q.get('rooms') or [])
+                if kw.get('room') in rooms:
                     self._quest_complete(qid)
             elif etype == 'visit' and qtype == 'visit':
                 poi = q.get('poi') or q.get('place')
