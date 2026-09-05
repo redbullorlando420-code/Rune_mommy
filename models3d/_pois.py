@@ -1,4 +1,6 @@
-from models3d._base import *
+"""POI buildings (gas, motel, Club 27, Citrus Tower, etc.)."""
+from __future__ import annotations
+from models3d._base import _t, _rgb
 
 def make_poi_building(Entity, color, Text, scene_parent, kind, x, z):
     """Gas, motel, laundromat, starbucks kiosk, pharmacy, park benches. Returns (parts, interact_pos, label)."""
@@ -18,9 +20,11 @@ def make_poi_building(Entity, color, Text, scene_parent, kind, x, z):
         Entity(model='cube', scale=(5.5, 2.4, 4.0), position=(x, 1.2, z), color=_rgb(color, 40, 50, 70),
                texture=_t('concrete') or _t('stucco'), texture_scale=(2, 1.5), collider='box')
         Entity(model='cube', scale=(7.0, 0.2, 5.5), position=(x, 2.8, z), color=canopy)
+        # asphalt parking pad under pumps
         Entity(model='cube', scale=(8.5, 0.05, 6.5), position=(x, 0.03, z - 1.5),
                color=_rgb(color, 36, 34, 38), texture=_t('asphalt'), texture_scale=(4, 3))
         n += 1
+        # pumps
         for dx in (-1.6, 1.6):
             Entity(model='cube', scale=(0.55, 1.5, 0.55), position=(x + dx, 0.75, z - 2.8), color=pump_col, collider='box')
             Entity(model='cube', scale=(0.7, 0.15, 0.7), position=(x + dx, 1.55, z - 2.8), color=_rgb(color, 240, 220, 60))
@@ -77,6 +81,7 @@ def make_poi_building(Entity, color, Text, scene_parent, kind, x, z):
         n += 3
         interact = (x, 0, z - 2.0)
     elif kind == 'club27':
+        # Club 27 Cabaret — 215 US Highway 27, Clermont FL 34714
         label = 'Club 27'
         dark = _rgb(color, 18, 8, 28)
         neon = _rgb(color, 255, 40, 160)
@@ -84,15 +89,19 @@ def make_poi_building(Entity, color, Text, scene_parent, kind, x, z):
         Entity(model='cube', scale=(9.5, 3.4, 6.5), position=(x, 1.7, z), color=dark,
                texture=_t('stucco') or _t('brick'), texture_scale=(2.5, 1.8), collider='box')
         Entity(model='cube', scale=(9.9, 0.22, 6.9), position=(x, 3.5, z), color=_rgb(color, 40, 10, 50))
+        # neon trim + VIP awning
         Entity(model='cube', scale=(9.7, 0.12, 0.18), position=(x, 3.35, z - 3.3), color=neon)
         Entity(model='cube', scale=(4.2, 0.12, 2.0), position=(x, 2.55, z - 4.2), color=vip)
         Entity(model='cube', scale=(0.18, 1.6, 0.18), position=(x - 1.9, 1.7, z - 4.9), color=_rgb(color, 60, 20, 40))
         Entity(model='cube', scale=(0.18, 1.6, 0.18), position=(x + 1.9, 1.7, z - 4.9), color=_rgb(color, 60, 20, 40))
+        # door + windows glow
         Entity(model='cube', scale=(1.1, 2.0, 0.12), position=(x, 1.1, z - 3.3), color=_rgb(color, 30, 10, 40))
         Entity(model='cube', scale=(1.6, 1.0, 0.08), position=(x - 2.6, 1.8, z - 3.28), color=_rgb(color, 255, 60, 180))
         Entity(model='cube', scale=(1.6, 1.0, 0.08), position=(x + 2.6, 1.8, z - 3.28), color=_rgb(color, 255, 60, 180))
+        # parking lot pad
         Entity(model='cube', scale=(12.0, 0.05, 5.5), position=(x, 0.03, z - 6.2), color=_rgb(color, 28, 22, 34),
                texture=_t('asphalt'), texture_scale=(5, 2.5))
+        # billboard Club 27
         Entity(model='cube', scale=(0.18, 4.0, 0.18), position=(x + 5.8, 2.0, z - 5.5), color=_rgb(color, 50, 40, 60), collider='box')
         Entity(model='cube', scale=(3.4, 1.6, 0.12), position=(x + 5.8, 3.5, z - 5.5), color=_rgb(color, 20, 6, 24))
         Entity(model='cube', scale=(3.1, 1.3, 0.05), position=(x + 5.8, 3.5, z - 5.58), color=neon)
@@ -100,6 +109,7 @@ def make_poi_building(Entity, color, Text, scene_parent, kind, x, z):
         interact = (x, 0, z - 4.5)
         label_y = 4.6
     elif kind == 'quiet_spa':
+        # Quiet Spa — Hwy 50 west massage parlor vibe (Noble / Serenity inspired)
         label = 'Quiet Spa'
         soft = _rgb(color, 210, 200, 190)
         bamboo = _rgb(color, 120, 95, 55)
@@ -107,11 +117,13 @@ def make_poi_building(Entity, color, Text, scene_parent, kind, x, z):
         Entity(model='cube', scale=(6.2, 2.6, 4.4), position=(x, 1.3, z), color=soft,
                texture=_t('stucco'), texture_scale=(2.2, 1.4), collider='box')
         Entity(model='cube', scale=(6.6, 0.18, 4.8), position=(x, 2.7, z), color=_rgb(color, 90, 120, 100))
+        # asphalt parking pad
         Entity(model='cube', scale=(8.0, 0.05, 4.0), position=(x, 0.03, z - 4.0),
                color=_rgb(color, 40, 38, 42), texture=_t('asphalt'), texture_scale=(4, 2))
         n += 1
         Entity(model='cube', scale=(4.0, 1.3, 0.08), position=(x, 1.5, z - 2.25), color=frost)
         Entity(model='cube', scale=(0.7, 1.7, 0.1), position=(x + 2.0, 0.95, z - 2.25), color=bamboo)
+        # bamboo accents
         for dx in (-2.6, -2.2, 2.2, 2.6):
             Entity(model='cube', scale=(0.14, 2.2, 0.14), position=(x + dx, 1.2, z - 2.1), color=bamboo)
             n += 1
@@ -120,12 +132,15 @@ def make_poi_building(Entity, color, Text, scene_parent, kind, x, z):
         interact = (x, 0, z - 2.8)
         label_y = 3.6
     elif kind == 'citrus_tower':
+        # Citrus Tower landmark — tall orange/white stacked cylinders ~20u
         label = 'Citrus Tower'
         orange = _rgb(color, 230, 110, 30)
         white = _rgb(color, 245, 245, 240)
+        # gift shop base
         Entity(model='cube', scale=(5.5, 2.4, 5.5), position=(x, 1.2, z), color=_rgb(color, 240, 235, 220),
                texture=_t('stucco') or _t('concrete'), texture_scale=(2, 1.4), collider='box')
         Entity(model='cube', scale=(5.8, 0.2, 5.8), position=(x, 2.5, z), color=orange)
+        # stacked tower shafts
         h = 0.0
         for i, (rad, hh, col) in enumerate((
             (2.4, 4.0, orange),
@@ -141,6 +156,7 @@ def make_poi_building(Entity, color, Text, scene_parent, kind, x, z):
                 Entity(model='cube', scale=(rad * 1.6, hh, rad * 1.6), position=(x, y0, z), color=col, collider='box' if i == 0 else None)
             h += hh
             n += 1
+        # observation deck ring
         deck_y = 2.5 + h
         try:
             Entity(model='cylinder', scale=(2.6, 0.35, 2.6), position=(x, deck_y, z), color=_rgb(color, 200, 200, 210))
@@ -151,13 +167,16 @@ def make_poi_building(Entity, color, Text, scene_parent, kind, x, z):
         interact = (x, 0, z - 3.5)
         label_y = deck_y + 2.2
     elif kind == 'waterfront':
+        # Waterfront Park / Lake Minneola
         label = 'Lake Minneola'
         Entity(model='cube', scale=(14, 0.06, 10), position=(x, 0.04, z), color=_rgb(color, 34, 110, 50),
                texture=_t('grass'), texture_scale=(8, 6))
         Entity(model='cube', scale=(12, 0.08, 8), position=(x + 1.5, 0.02, z + 6.5), color=_rgb(color, 40, 120, 200),
                texture=_t('water'), texture_scale=(4, 3))
+        # splash pad
         Entity(model='cube', scale=(2.2, 0.35, 2.2), position=(x - 3.0, 0.25, z - 1.5), color=_rgb(color, 180, 220, 240))
         Entity(model='cube', scale=(0.25, 1.1, 0.25), position=(x - 3.0, 0.9, z - 1.5), color=_rgb(color, 100, 180, 230))
+        # benches
         for dx, dz in ((-5.0, -2.5), (0.5, -3.0), (4.0, -1.5)):
             Entity(model='cube', scale=(1.5, 0.35, 0.45), position=(x + dx, 0.25, z + dz), color=_rgb(color, 90, 60, 40))
             Entity(model='cube', scale=(0.12, 0.55, 0.45), position=(x + dx - 0.7, 0.35, z + dz), color=_rgb(color, 70, 50, 30))
@@ -183,6 +202,7 @@ def make_poi_building(Entity, color, Text, scene_parent, kind, x, z):
         Entity(model='cube', scale=(5.0, 2.0, 3.0), position=(x, 1.0, z), color=_rgb(color, 120, 100, 80),
                texture=_t('brick') or _t('stucco'), texture_scale=(2.2, 1.3), collider='box')
         Entity(model='cube', scale=(5.4, 0.2, 3.4), position=(x, 2.15, z), color=_rgb(color, 90, 70, 55))
+        # tiny Mount Rushmore-ish quads
         for i, dx in enumerate((-1.5, -0.5, 0.5, 1.5)):
             Entity(model='cube', scale=(0.7, 1.1, 0.55), position=(x + dx, 2.9, z - 0.2), color=_rgb(color, 200 - i * 8, 190 - i * 6, 170))
             n += 1
