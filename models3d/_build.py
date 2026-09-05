@@ -9,6 +9,7 @@ def _pitched_roof(Entity, color, x, y, z, w, d, roof_col, pitch=0.35):
            color=roof_col, rotation_z=pitch * 55)
     Entity(model='cube', scale=(w * 0.55, 0.22, d + 0.15), position=(x + w * 0.22, y, z),
            color=roof_col, rotation_z=-pitch * 55)
+    # ridge
     Entity(model='cube', scale=(0.18, 0.14, d + 0.2), position=(x, y + 0.35, z), color=roof_col.tint(0.1) if hasattr(roof_col, 'tint') else roof_col)
 
 
@@ -20,16 +21,20 @@ def make_house(Entity, color, Text, scene_parent, x, z, *, w=3.6, h=2.8, d=3.2, 
     roof_col = roof_col or _rgb(color, rng.randint(40, 90), rng.randint(100, 180), rng.randint(120, 190))
     wood = _rgb(color, 90, 55, 40)
     n = 0
+    # base (stucco/brick texture + tint so walls are not blank)
     wall_tex = _t('stucco') or _t('brick')
     Entity(model='cube', scale=(w, h, d), position=(x, h / 2, z), color=body_col,
            texture=wall_tex, texture_scale=(2.2, 1.6), collider='box')
     n += 1
+    # pitched roof
     _pitched_roof(Entity, color, x, h + 0.15, z, w + 0.4, d + 0.2, roof_col)
     n += 3
+    # windows (front)
     win = _rgb(color, 120, 200, 230)
     Entity(model='cube', scale=(0.55, 0.55, 0.06), position=(x - w * 0.22, h * 0.55, z - d / 2 - 0.02), color=win)
     Entity(model='cube', scale=(0.55, 0.55, 0.06), position=(x + w * 0.22, h * 0.55, z - d / 2 - 0.02), color=win)
     n += 2
+    # door recess
     Entity(model='cube', scale=(0.70, 1.35, 0.12), position=(x, 0.72, z - d / 2 - 0.04), color=wood)
     Entity(model='cube', scale=(0.55, 1.15, 0.08), position=(x, 0.68, z - d / 2 - 0.10), color=_rgb(color, 60, 40, 30))
     n += 2
@@ -40,6 +45,7 @@ def make_house(Entity, color, Text, scene_parent, x, z, *, w=3.6, h=2.8, d=3.2, 
         Entity(model='cube', scale=(0.12, 1.4, 0.12), position=(x + w * 0.28, 0.75, z - d / 2 - 1.1), color=wood)
         Entity(model='cube', scale=(w * 0.65, 0.08, 1.2), position=(x, 1.45, z - d / 2 - 0.7), color=roof_col)
         n += 4
+    # AC unit
     Entity(model='cube', scale=(0.55, 0.45, 0.45), position=(x + w / 2 + 0.35, 0.35, z + 0.4), color=_rgb(color, 70, 78, 90))
     n += 1
     if garage:
@@ -66,14 +72,19 @@ def make_shop_stall(Entity, color, Text, scene_parent, x, z, w, d, h, body_col, 
     Entity(model='cube', scale=(w, h, d), position=(x, h / 2, z), color=body_col,
            texture=stall_tex, texture_scale=(2.0, 1.4), collider='box')
     n += 1
+    # flat roof + neon edge
     Entity(model='cube', scale=(w + 0.55, 0.14, d + 0.4), position=(x, h + 0.1, z), color=neon)
     n += 1
+    # awning
     Entity(model='cube', scale=(w + 0.2, 0.08, 0.85), position=(x, h * 0.72, z - d / 2 - 0.4), color=trim)
     n += 1
+    # window strip
     Entity(model='cube', scale=(w * 0.7, 0.7, 0.06), position=(x, h * 0.55, z - d / 2 - 0.02), color=_rgb(color, 80, 180, 220))
     n += 1
+    # door
     Entity(model='cube', scale=(0.7, 1.4, 0.1), position=(x + w * 0.28, 0.75, z - d / 2 - 0.05), color=_rgb(color, 40, 30, 50))
     n += 1
+    # counter
     Entity(model='cube', scale=(w * 0.7, 0.7, 0.45), position=(x, 0.45, z - d / 2 - 0.25), color=trim.tint(-0.3) if hasattr(trim, 'tint') else trim)
     n += 1
     if is_gun:
@@ -112,3 +123,4 @@ def make_street_sign(Entity, color, Text, scene_parent, x, z, text):
         Text(parent=scene_parent, text=text, position=(x, 2.5, z), origin=(0, 0),
              billboard=True, color=_rgb(color, 240, 255, 240))
     return 2
+
