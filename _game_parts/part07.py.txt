@@ -1,18 +1,3 @@
-        if index < 0 or index >= len(self.ui_choices):
-            return
-        _label, cb = self.ui_choices[index]
-        if cb:
-            cb()
-
-    def open_mira(self, node_id='start'):
-        nodes = (self.mira_dlg or {}).get('nodes') or {}
-        node = nodes.get(node_id) or nodes.get('start')
-        if not node:
-            self.open_talk(
-                'Mama Mira',
-                "Welcome in, sugar. Cool Down's the one everyone off 50 asks for.",
-            )
-            return
         choices = []
         for ch in node.get('choices') or []:
             label = ch.get('label', '...')
@@ -56,7 +41,6 @@
             'yara': self.yara_dlg,
             'michelle': self.michelle_dlg,
         }
-        dlg = dlg_map.get(who)
         titles = {
             'lila': 'Lila',
             'rosa': 'Rosa',
@@ -115,7 +99,7 @@
             (f'{a_name} x12   -   48g', self._buy_ammo),
             ('Leave.', self.close_panel),
         ]
-        self.open_panel('Gage   ·   Hancock Gun Hut', body, choices)
+        self.open_panel('Gage   *   Hancock Gun Hut', body, choices)
 
     def _buy_pistol(self):
         if self.owned_pistol:
@@ -162,7 +146,7 @@
 
             choices.append((label, make()))
         choices.append(('Leave.', self.close_panel))
-        title = f"{stall.get('npc') or stall['name']}   ·   {stall['name']}"
+        title = f"{stall.get('npc') or stall['name']}   *   {stall['name']}"
         self.open_panel(title, greeting, choices, portrait=stall.get('id') == 'shake_bar')
 
     def _buy_item(self, item_id, price, name, stall):
@@ -267,3 +251,18 @@
                         self.preg = True
                         try:
                             self._apply_preg_look()
+                        except Exception:
+                            pass
+                        if n:
+                            self.open_michelle(n)
+                        else:
+                            self.open_michelle('preg')
+                    elif a == 'close' or not n:
+                        self.close_panel()
+                    else:
+                        self.open_michelle(n)
+                return cb
+
+            choices.append((label, make()))
+        if not choices:
+            choices = [('Close.', self.close_panel)]
