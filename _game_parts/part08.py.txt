@@ -1,18 +1,3 @@
-                        except Exception:
-                            pass
-                        if n:
-                            self.open_michelle(n)
-                        else:
-                            self.open_michelle('preg')
-                    elif a == 'close' or not n:
-                        self.close_panel()
-                    else:
-                        self.open_michelle(n)
-                return cb
-
-            choices.append((label, make()))
-        if not choices:
-            choices = [('Close.', self.close_panel)]
         who = node.get('portrait') or 'michelle'
         expr = node.get('expression') or 'sassy'
         tex = self._tex_for(who, expr)
@@ -98,7 +83,7 @@
             return f'QUEST  {hud}'
         if self.quest_completed:
             return 'QUEST  done for now'
-        return 'QUEST  —'
+        return 'QUEST  -'
 
     def _quest_complete(self, qid):
         if qid in self.quest_completed:
@@ -219,11 +204,11 @@
 
     def _tutorial_steps(self):
         return [
-            'WASD — walk toward Michelle (Sanctuary Drive door)',
-            'E — talk to Michelle',
-            'Mouse — look around  |  Enter skips tutorial',
-            '1 / LMB — pistol after buying from Gage',
-            'H — drink a shake from your pack',
+            'WASD - walk toward Michelle (Sanctuary Drive door)',
+            'E - talk to Michelle',
+            'Mouse - look around  |  Enter skips tutorial',
+            '1 / LMB - pistol after buying from Gage',
+            'H - drink a shake from your pack',
         ]
 
     def _refresh_tutorial_text(self):
@@ -243,7 +228,7 @@
                 self.tutorial_step = 1
                 self._refresh_tutorial_text()
         elif self.tutorial_step == 2:
-            # mouse look — advance after a moment if mouse locked
+            # mouse look - advance after a moment if mouse locked
             if getattr(self.mouse, 'locked', False):
                 self.tutorial_step = 3
                 self._refresh_tutorial_text()
@@ -271,3 +256,20 @@
             return
         self.tutorial_active = False
         try:
+            if self.tutorial_overlay:
+                self.tutorial_overlay.enabled = False
+            if self.tutorial_text:
+                self.tutorial_text.enabled = False
+                self.tutorial_text.text = ''
+        except Exception:
+            pass
+        flags = self._load_flags()
+        flags['tutorial_done'] = True
+        self._save_flags(flags)
+        self.toast('Tutorial done. Explore Hwy 50.')
+
+    def toast(self, msg):
+        self.toast_timer = 2.6
+        if self.hud_toast:
+            self.hud_toast.text = msg
+        print(f'[Rune Mommy] {msg}')
