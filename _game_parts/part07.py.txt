@@ -1,268 +1,254 @@
-        choices = []
-        for ch in node.get('choices') or []:
-            label = ch.get('label', '...')
-            nxt = ch.get('next')
-            action = ch.get('action')
-
-            def make(n=nxt, a=action):
-                def cb():
-                    if a == 'shop':
-                        shake = next((s for s in self.stalls if s['id'] == 'shake_bar'), None)
-                        if shake:
-                            self.open_shake_shop(shake)
-                        else:
-                            self.close_panel()
-                    elif n:
-                        self.open_mira(n)
-                    else:
-                        self.close_panel()
-                return cb
-
-            choices.append((label, make()))
-        if not choices:
-            choices = [('Walk away.', self.close_panel)]
-        expr = node.get('expression') or 'smile'
-        who = node.get('portrait') or 'mira'
-        tex_path = portrait_texture_path(who, expr)
-        tex = str(tex_path) if tex_path else None
-        self.open_panel('Mama Mira', node.get('text', ''), choices, portrait=True, portrait_tex=tex)
-
-    def open_vn(self, who, node_id=None):
-        if who == 'michelle':
-            self.open_michelle(node_id or 'door')
-            return
-        if who == 'mira':
-            self.open_mira(node_id or 'start')
-            return
-        dlg_map = {
-            'mira': self.mira_dlg,
-            'lila': self.lila_dlg,
-            'rosa': self.rosa_dlg,
-            'yara': self.yara_dlg,
-            'michelle': self.michelle_dlg,
-        }
-        titles = {
-            'lila': 'Lila',
-            'rosa': 'Rosa',
-            'yara': 'Yara',
-            'mira': 'Mama Mira',
-            'michelle': 'Michelle',
-        }
-        title = titles.get(who, (who or 'NPC').title())
-        if not dlg:
-            self.open_talk(title, '...')
-            return
-        nodes = (dlg or {}).get('nodes') or {}
-        start = node_id or dlg.get('start') or 'start'
-        node = nodes.get(start) or nodes.get('start')
-        if not node:
-            self.open_talk(title, '...')
-            return
-        choices = []
-        for ch in node.get('choices') or []:
-            label = ch.get('label', '...')
-            nxt = ch.get('next')
-            action = ch.get('action')
-
-            def make(n=nxt, a=action, w=who):
-                def cb():
-                    if a == 'shop':
-                        self.close_panel()
-                    elif a == 'close' or not n:
-                        self.close_panel()
-                    else:
-                        self.open_vn(w, n)
-                return cb
-
-            choices.append((label, make()))
-        if not choices:
-            choices = [('Walk away.', self.close_panel)]
-        expr = node.get('expression') or 'default'
-        por = node.get('portrait') or who
-        tex = self._tex_for(por, expr)
-        if tex is None:
-            pp = portrait_texture_path(por, expr)
-            tex = str(pp) if pp else None
-        self.open_panel(title, node.get('text', ''), choices, portrait=True, portrait_tex=tex)
-
-    def open_talk(self, name, line, portrait_tex=None):
-        self.open_panel(name, line, [('Later.', self.close_panel)], portrait=bool(portrait_tex), portrait_tex=portrait_tex)
-
-    def open_gun_shop(self):
-        pistol = self.items.get('pistol', {})
-        ammo = self.items.get('ammo', {})
-        p_name = pistol.get('name', 'Lot Pistol')
-        a_name = ammo.get('name', 'Pistol Ammo')
-        body = "Cash on the plank. Pistol if you want polite. Ammo is not a suggestion."
-        choices = [
-            (f'{p_name}   -   70g', self._buy_pistol),
-            (f'{a_name} x12   -   48g', self._buy_ammo),
-            ('Leave.', self.close_panel),
-        ]
-        self.open_panel('Gage   *   Hancock Gun Hut', body, choices)
-
-    def _buy_pistol(self):
-        if self.owned_pistol:
-            self.toast('You already have the lot pistol.')
-            self.open_gun_shop()
-            return
-        if self.gold < 70:
-            self.toast('Not enough gold.')
-            self.open_gun_shop()
-            return
-        self.gold -= 70
-        self.owned_pistol = True
-        self.ammo += 6
-        self.toast('Lot Pistol bought. 1 to draw, LMB to shoot. +6 rounds.')
-        self._quest_event('buy_pistol')
-        self._tutorial_note('gun')
-        self.open_gun_shop()
-
-    def _buy_ammo(self):
-        if self.gold < 48:
-            self.toast('Not enough gold.')
-            self.open_gun_shop()
-            return
-        self.gold -= 48
-        self.ammo += 12
-        self.toast('12 pistol rounds.')
-        self.open_gun_shop()
-
-    def open_shake_shop(self, stall):
-        shop = stall.get('shop') or {}
-        greeting = shop.get('greeting') or shop.get('blurb') or stall['name']
-        stock = list(shop.get('stock') or [])
-        choices = []
-        for entry in stock[:3]:
-            item_id = entry.get('itemId')
-            price = int(entry.get('price', 10))
-            item = self.items.get(item_id, {})
-            label = f"{item.get('name', item_id)}   -   {price}g"
-
-            def make(iid=item_id, pr=price, nm=item.get('name', item_id)):
-                def cb():
-                    self._buy_item(iid, pr, nm, stall)
-                return cb
-
-            choices.append((label, make()))
-        choices.append(('Leave.', self.close_panel))
-        title = f"{stall.get('npc') or stall['name']}   *   {stall['name']}"
-        self.open_panel(title, greeting, choices, portrait=stall.get('id') == 'shake_bar')
-
-    def _buy_item(self, item_id, price, name, stall):
-        if self.gold < price:
-            self.toast('Not enough gold.')
-            self.open_shake_shop(stall)
-            return
-        self.gold -= price
-        self.pack.append(name)
-        self.toast(name)
-        self._quest_event('buy', item_id=item_id)
-        self.open_shake_shop(stall)
-
-    def _buy_first_stock(self, stall):
-        shop = stall.get('shop') or {}
-        stock = list(shop.get('stock') or [])
-        if not stock:
-            self.toast(f"{stall.get('name', 'Stall')} is empty.")
-            return
-        entry = stock[0]
-        item_id = entry.get('itemId')
-        price = int(entry.get('price', 0))
-        item = self.items.get(item_id, {})
-        name = item.get('name', item_id or 'item')
-        if self.gold < price:
-            self.toast(f'Need {price}g for {name}.')
-            return
-        self.gold -= price
-        self.pack.append(name)
-        self.toast(name)
-        self._quest_event('buy', item_id=item_id)
-
-    def _tex_for(self, who, expr='default'):
-        # Ursina load_texture needs a path relative to cwd/ROOT, not an absolute Windows path.
-        rel = portrait_asset_path(who, expr)
-        if not rel:
-            for fb in ('smile', 'default', 'sassy', 'tease', 'wink', 'lean'):
-                rel = portrait_asset_path(who, fb)
-                if rel:
-                    break
-        if not rel:
-            return None
-        try:
-            from ursina import load_texture
-            return load_texture(rel)
-        except Exception:
-            return None
-
-
-    def _nearest_house_vol(self, pos, radius):
-        best, best_d = None, radius
-        for ent in self.house_vols:
-            if not ent:
-                continue
-            d = dist_xz(pos, (ent.x, 0, ent.z))
-            if d < best_d:
-                best, best_d = getattr(ent, 'room_node', None), d
-        if best:
-            return best, best_d
-        return None
-
-    def _maybe_auto_michelle(self):
-        if self.michelle_seen or self.ui_open or self.in_car or not self.michelle:
-            return
         pos = self._actor_pos()
-        if dist_xz(pos, (self.michelle.x, 0, self.michelle.z)) < 3.5:
-            self.michelle_seen = True
-            self.michelle_auto_opened = True
-            self.open_michelle('door')
-            self._quest_event('talk', npc_id='michelle')
-            self._tutorial_note('talk')
+        gas = self._nearest_gas(pos)
+        if self.in_car:
+            if gas:
+                car = self.in_car
+                fuel = float(getattr(car, 'fuel', 100) or 0)
+                dmg = float(getattr(car, 'damage', 0) or 0)
+                need = max(0.0, 100.0 - fuel)
+                cost = max(1, int(math.ceil(need / 2.0))) if need > 0.5 else 0
+                if need > 0.5:
+                    return f'E  fill tank ({cost}g)'
+                if dmg >= 5:
+                    return 'E  repair (50g)'
+                return 'E  exit car  ·  tank full'
+            return 'E  exit car'
+        car, cd = self._nearest_car(pos, 3.2)
+        npc, nd = self._nearest_npc(pos, 3.0)
+        stall, sd = self._nearest_stall(pos, 3.6)
+        options = []
+        if gas:
+            near_car, _ncd = self._nearest_car(pos, 5.0)
+            if near_car and not getattr(near_car, 'traffic', False):
+                fuel = float(getattr(near_car, 'fuel', 100) or 0)
+                need = max(0.0, 100.0 - fuel)
+                cost = max(1, int(math.ceil(need / 2.0))) if need > 0.5 else 0
+                dmg = float(getattr(near_car, 'damage', 0) or 0)
+                if need > 0.5:
+                    options.append((0.1, f'E  fill tank ({cost}g)'))
+                elif dmg >= 5:
+                    options.append((0.1, 'E  repair (50g)'))
+                else:
+                    options.append((0.15, 'E  gas station'))
+            else:
+                options.append((0.2, 'E  gas pump'))
+        if car and not getattr(car, 'disabled', False):
+            options.append((cd, f'E  enter car'))
+        if npc:
+            kind = getattr(npc, 'kind', '')
+            if kind == 'mira':
+                options.append((nd, 'E  talk to Mama Mira'))
+            elif kind == 'michelle':
+                options.append((nd, 'E  talk to Michelle'))
+            elif kind == 'gun':
+                options.append((nd, 'E  Hancock Gun Hut (Gage)'))
+            elif kind not in ('target', 'mob'):
+                options.append((nd, f'E  talk to {getattr(npc, "npc_name", "NPC")}'))
+        if stall and (not npc or sd + 0.4 < nd):
+            if stall['kind'] == 'gun':
+                options.append((sd, 'E  Hancock Gun Hut'))
+            else:
+                options.append((sd, f'E  {stall["name"]}'))
+        door_xz = (self.house_rooms or {}).get('door')
+        if door_xz and not self.michelle_seen:
+            dd = dist_xz(pos, (door_xz[0], 0, door_xz[1]))
+            if dd < 3.0:
+                options.append((dd, 'E  Sanctuary Drive'))
+        for poi in getattr(self, 'pois', []) or []:
+            if poi.get('is_gas'):
+                continue
+            pd = dist_xz(pos, poi['pos'])
+            if pd < 3.4:
+                options.append((pd, f"E  {poi.get('name', 'POI')}"))
+        if not options:
+            return ''
+        options.sort(key=lambda x: x[0])
+        return options[0][1]
 
-    def open_michelle(self, node_id='door'):
-        nodes = (self.michelle_dlg or {}).get('nodes') or {}
-        start = (self.michelle_dlg or {}).get('start') or 'door'
-        node = nodes.get(node_id) or nodes.get(start)
-        self.michelle_seen = True
-        self.michelle_auto_opened = True
-        if not node:
-            greet = "Alec, I just got off the plane, can you not stare at my tits for five seconds?"
-            self.open_talk('Michelle', greet, self._tex_for('michelle'))
+    def _actor_pos(self):
+        if self.in_car:
+            p = self.in_car.world_position
+            return (p.x, p.y, p.z)
+        p = self.player.world_position
+            return (p.x, p.y, p.z)
+
+    def _nearest_car(self, pos, radius):
+        best, best_d = None, radius
+        for car in self.cars:
+            if not car:
+                continue
+            if getattr(car, 'disabled', False):
+                continue
+            d = dist_xz(pos, (car.x, 0, car.z))
+            if d < best_d:
+                best, best_d = car, d
+        return best, best_d
+
+    def _nearest_gas(self, pos, radius=None):
+        best, best_d = None, 99.0
+        for poi in getattr(self, 'pois', []) or []:
+            if not poi.get('is_gas'):
+                continue
+            r = float(radius if radius is not None else poi.get('pump_r', 4.2))
+            d = dist_xz(pos, poi['pos'])
+            if d < r and d < best_d:
+                best, best_d = poi, d
+        return best
+
+    def _nearest_npc(self, pos, radius):
+        best, best_d = None, radius
+        for npc in self.npcs:
+            if not npc:
+                continue
+            kind = getattr(npc, 'kind', '')
+            if kind in ('target', 'mob', 'civilian', 'lot_rat', 'walker', 'thug', 'heat_hunter', 'barrel'):
+                continue
+            if getattr(npc, 'hittable', False):
+                continue
+            if getattr(npc, 'enabled', True) is False:
+                continue
+            d = dist_xz(pos, (npc.x, 0, npc.z))
+            if d < best_d:
+                best, best_d = npc, d
+        return best, best_d
+
+    def _nearest_stall(self, pos, radius):
+        best, best_d = None, radius
+        for st in self.stalls:
+            d = dist_xz(pos, st['pos'])
+            if d < best_d:
+                best, best_d = st, d
+        return best, best_d
+
+    # ----- input ----------------------------------------------------------
+
+    def on_input(self, key):
+        from ursina import application, mouse
+        if key in ('enter', 'return') and getattr(self, 'tutorial_active', False):
+            self._finish_tutorial()
             return
-        self.michelle_node = node.get('id') or node_id
-        choices = []
-        for ch in node.get('choices') or []:
-            label = ch.get('label', '...')
-            nxt = ch.get('next')
-            action = ch.get('action')
+        if key == 'escape':
+            if self.ui_open:
+                self.close_panel()
+                return
+            application.quit()
+            return
+        if self.ui_open:
+            if key in ('1', '2', '3', '4'):
+                self._pick_choice(int(key) - 1)
+            return
+        if key == 'e':
+            self._interact()
+            return
+        if key == '1':
+            self._toggle_pistol()
+            return
+        if key in ('h', 'H'):
+            self._eat_food()
+            return
+        if key == 'left mouse down':
+            # Clicking the window should capture the mouse for look+WASD.
+            if not self.ui_open and not getattr(self.mouse, 'locked', False):
+                self._lock_mouse(True)
+                self.toast('Mouse locked. WASD walk. E talk. Tab frees cursor.')
+                return
+            if self.pistol_drawn:
+                self._shoot()
+            return
+        if key == 'tab':
+            self._lock_mouse(not bool(getattr(mouse, 'locked', True)))
 
-            def make(n=nxt, a=action):
-                def cb():
-                    if a == 'breed':
-                        self.breed = min(100, int(self.breed) + 18)
-                        self.toast('BREED  %d%%' % int(self.breed))
-                        if self.breed >= 100 and not self.preg:
-                            self.open_michelle('bun')
-                        elif n:
-                            self.open_michelle(n)
-                        else:
-                            self.close_panel()
-                    elif a == 'preg':
-                        self.preg = True
-                        try:
-                            self._apply_preg_look()
-                        except Exception:
-                            pass
-                        if n:
-                            self.open_michelle(n)
-                        else:
-                            self.open_michelle('preg')
-                    elif a == 'close' or not n:
-                        self.close_panel()
-                    else:
-                        self.open_michelle(n)
-                return cb
+    def _toggle_pistol(self):
+        if not self.owned_pistol:
+            self.toast('No pistol. Buy one from Gage at Hancock Gun Hut (east).')
+            return
+        self.pistol_drawn = not self.pistol_drawn
+        if self.gun_model and not self.in_car:
+            self.gun_model.enabled = self.pistol_drawn
+        if self.pistol_drawn:
+            self.panic_t = max(self.panic_t, 3.5)
+            self.toast('Pistol drawn.')
+        else:
+            self.toast('Holstered.')
 
-            choices.append((label, make()))
-        if not choices:
-            choices = [('Close.', self.close_panel)]
+    def _interact(self):
+        pos = self._actor_pos()
+        gas = self._nearest_gas(pos)
+        if self.in_car:
+            if gas:
+                self.open_gas_station(gas, self.in_car)
+                return
+            self._exit_car()
+            return
+        if gas:
+            near_car, _ncd = self._nearest_car(pos, 5.0)
+            # Prefer parked/player car near pump; traffic ignored for service
+            service = None
+            if near_car and not getattr(near_car, 'traffic', False):
+                service = near_car
+            if service is not None:
+                self.open_gas_station(gas, service)
+                return
+            # No car: allow NPC talk (e.g. Rita); otherwise nudge
+            npc_chk, nd_chk = self._nearest_npc(pos, 3.0)
+            if not (npc_chk and nd_chk <= 3.0):
+                self.toast('Bring a car.')
+                return
+        car, cd = self._nearest_car(pos, 3.2)
+        npc, nd = self._nearest_npc(pos, 3.0)
+        stall, sd = self._nearest_stall(pos, 3.6)
+
+        # prefer NPC / stall over car if closer
+        if npc and nd <= 3.0 and (car is None or nd <= cd + 0.15):
+            kind = getattr(npc, 'kind', '')
+            if kind == 'mira':
+                self.open_mira('start')
+                return
+            if kind == 'michelle':
+                nid = 'door' if not self.michelle_seen else (self.michelle_node or 'door')
+                self.michelle_seen = True
+                self.michelle_auto_opened = True
+                self.open_michelle(nid)
+                self._quest_event('talk', npc_id='michelle')
+                self._tutorial_note('talk')
+                return
+            if kind == 'gun':
+                self.open_gun_shop()
+                return
+            named = getattr(npc, 'npc_id', '')
+            if kind in ('lila', 'rosa', 'yara') or named in ('lila', 'rosa', 'yara'):
+                self.open_vn(kind if kind in ('lila', 'rosa', 'yara') else named)
+                return
+            if kind == 'talk':
+                self.open_talk(
+                    getattr(npc, 'npc_name', 'NPC'),
+                    getattr(npc, 'line', '...'),
+                    getattr(npc, 'portrait_tex', None),
+                )
+                self._quest_event('talk', npc_id=getattr(npc, 'npc_id', ''))
+                return
+        if self.michelle_seen and self.house_rooms:
+            best_room, best_rd = None, 2.8
+            for rname in ('guest', 'garage', 'shower', 'lawn'):
+                xz = self.house_rooms.get(rname)
+                if not xz:
+                    continue
+                d = dist_xz(pos, (xz[0], 0, xz[1]))
+                if d < best_rd:
+                    best_room, best_rd = rname, d
+            if best_room and (car is None or best_rd <= cd + 0.1):
+                self.open_michelle(best_room)
+                self._quest_event('michelle_room', room=best_room)
+                return
+        if stall and sd <= 3.6 and (car is None or sd < cd):
+            if stall['kind'] == 'gun':
+                self.open_gun_shop()
+                return
+            self._buy_first_stock(stall)
+            return
+        if car:
+            self._enter_car(car)
+            return
+        self.toast('Nothing in range. Cars in the median. Mira at The Shake Bar.')
+
+    def _enter_car(self, car):
