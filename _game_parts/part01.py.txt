@@ -18,6 +18,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 os.chdir(ROOT)
 
+# Ensure ground/building textures exist (GitHub zip may omit binary jpgs).
+try:
+    from assets.generate_textures import ensure_all as _ensure_textures
+    _ensure_textures()
+except Exception as _tex_exc:
+    print('[textures] fallback skip:', _tex_exc)
+
+
 from loaders import (
     load_shops, portrait_texture_path, portrait_asset_path, load_npcs, load_mobs, load_items,
     load_oss_items, load_skills, load_progression, load_vehicles,
@@ -224,14 +232,26 @@ class Game:
         self.grounded = True
         self.in_car = None
         self.ui_open = False
+        self.mouse_free = False
         self.ui_choices = []
         self.toast_timer = 0.0
         self.prompt = ''
         self.panic_t = 0.0
         self.heat_spawn_cd = 0.0
         self.michelle_auto_opened = False
-        self.mouse_free = False
         self.michelle_node = 'door'
+        self.mode = 'menu'  # menu | settings | safe | play
+        self.world_paused = True
+        self.intro_started = False
+        self.mouse_sens = 140.0
+        self.fullscreen_stub = False
+        self.menu_ents = []
+        self.menu_title = None
+        self.menu_lines = []
+        self.menu_backdrop = None
+        self.safe_gate = None
+        self.safe_yard_center = (80.0, 0.0, 80.0)
+        self.clermont_spawn = (-18.0, 0.0, 12.0)
         self.talk_npcs = []
         self.house_vols = []
         self.sanctuary_door = None
@@ -308,26 +328,3 @@ class Game:
                 color, self.Vec3,
                 Sky=self.Sky,
                 DirectionalLight=DirectionalLight,
-                AmbientLight=AmbientLight,
-                PointLight=PointLight,
-            )
-        except Exception:
-            self.Sky(color=color.rgb32(20, 8, 34))
-
-        self._lock_mouse(True)
-
-        # CC0 / procedural ground + building textures
-        tex_map = {
-            'grass': load_tex('grass'),
-            'asphalt': load_tex('asphalt'),
-            'concrete': load_tex('concrete'),
-            'brick': load_tex('brick'),
-            'stucco': load_tex('stucco'),
-            'water': load_tex('water'),
-        }
-        set_world_textures(tex_map)
-        self.world_textures = tex_map
-
-        self._build_ground()
-        self._build_highway()
-        self._build_skyline()
