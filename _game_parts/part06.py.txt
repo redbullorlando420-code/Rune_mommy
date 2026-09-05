@@ -1,3 +1,32 @@
+            if self.gun_model:
+                ign.append(self.gun_model)
+            # Never destroy / count named NPC talk entities as crash targets
+            for npc in self.npcs:
+                if not npc:
+                    continue
+                kind = getattr(npc, 'kind', '')
+                named = getattr(npc, 'npc_id', '')
+                if kind in ('mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara') or named in (
+                    'mira', 'michelle', 'gage', 'lila', 'rosa', 'yara', 'rita', 'deb',
+                    'motel_clerk', 'barista', 'pharmacist', 'neighbor', 'lot_attendant',
+                    'amanda_friend', 'club27_host', 'quiet_spa_tech', 'citrus_guide', 'park_ranger',
+                ):
+                    ign.append(npc)
+            ign = [e for e in ign if e]
+            direction = proposed.normalized()
+            hit = raycast(origin, direction, distance=max(2.0, proposed.length() + 1.2), ignore=ign, debug=False)
+            if hit.hit:
+                hit_something = True
+
+        if not hit_something:
+            for other in self.cars:
+                if not other or other is car:
+                    continue
+                d = dist_xz((nx, 0, nz), (other.x, 0, other.z))
+                if d < 2.6:
+                    hit_something = True
+                    break
+
         if hit_something:
             self._car_take_damage(car, impact_speed)
             nspd *= -0.25
@@ -201,36 +230,3 @@
         if self.hud_hp:
             self.hud_hp.text = f'HP  {int(self.hp)}'
         if self.hud_heat:
-            self.hud_heat.text = f'HEAT  {self.heat:.1f}'
-        if getattr(self, 'hud_breed', None):
-            flag = '  PREG' if self.preg else ''
-            self.hud_breed.text = f'Breed  {int(self.breed)}%{flag}'
-        if self.hud_ammo:
-            if not self.owned_pistol:
-                self.hud_ammo.text = 'Pistol  not owned'
-            elif self.pistol_drawn:
-                self.hud_ammo.text = f'Pistol  DRAWN   ammo {self.ammo}'
-            else:
-                self.hud_ammo.text = f'Pistol  holstered   ammo {self.ammo}'
-        if self.hud_pack:
-            self.hud_pack.text = f'Pack  {len(self.pack)}'
-        if getattr(self, 'hud_quest', None):
-            self.hud_quest.text = self._quest_hud_line()
-        if getattr(self, 'hud_mode', None):
-            if self.in_car:
-                fuel = int(getattr(self.in_car, 'fuel', 0) or 0)
-                dmg = int(getattr(self.in_car, 'damage', 0) or 0)
-                self.hud_mode.text = f'DRIVE   FUEL {fuel}%   DMG {dmg}%'
-            else:
-                self.hud_mode.text = 'WALK'
-        if self.gun_model:
-            self.gun_model.enabled = bool(self.pistol_drawn and self.owned_pistol and not self.in_car)
-        if self.ui_open:
-            if self.hud_prompt:
-                self.hud_prompt.text = '1-4 choose    ESC close'
-            return
-        prompt = self._nearest_prompt()
-        if self.hud_prompt:
-            self.hud_prompt.text = prompt
-
-    def _nearest_prompt(self):
