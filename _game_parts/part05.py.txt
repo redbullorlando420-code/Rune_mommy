@@ -1,3 +1,70 @@
+        Text(text='RUNE MOMMY', position=(-0.86, 0.48), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 210))
+        Text(text='Clermont / Hwy 50', position=(-0.86, 0.445), origin=(-0.5, 0.5), color=color.rgb32(140, 230, 255), scale=0.75)
+        self.hud_gold = Text(text='Gold  200', position=(-0.86, 0.40), origin=(-0.5, 0.5), color=color.rgb32(255, 220, 90))
+        self.hud_hp = Text(text='HP  100', position=(-0.86, 0.370), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 170), scale=0.85)
+        self.hud_heat = Text(text='HEAT  0.0', position=(-0.86, 0.340), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 90), scale=0.85)
+        self.hud_ammo = Text(text='Pistol  --', position=(-0.86, 0.310), origin=(-0.5, 0.5), color=color.rgb32(200, 200, 210), scale=0.85)
+        self.hud_pack = Text(text='Pack  0', position=(-0.86, 0.280), origin=(-0.5, 0.5), color=color.rgb32(180, 230, 200), scale=0.85)
+        self.hud_breed = Text(text='BREED  0%', position=(-0.86, 0.250), origin=(-0.5, 0.5), color=color.rgb32(46, 196, 182), scale=0.85)
+        self.hud_quest = Text(text='QUEST  —', position=(-0.86, 0.220), origin=(-0.5, 0.5), color=color.rgb32(180, 255, 200), scale=0.8)
+        self.hud_mode = Text(text='WALK', position=(-0.86, 0.190), origin=(-0.5, 0.5), color=color.rgb32(200, 220, 255), scale=0.8)
+        self.hud_prompt = Text(text='', position=(0, -0.42), origin=(0, 0), color=color.rgb32(255, 240, 180), scale=0.9)
+        self.hud_toast = Text(text='', position=(0, 0.32), origin=(0, 0), color=color.rgb32(255, 180, 220), scale=0.85)
+        self.crosshair = Entity(parent=camera.ui, model='quad', color=color.rgb32(255, 255, 255), scale=0.008, rotation_z=45)
+
+        self.panel_bg = Entity(
+            parent=camera.ui,
+            model='quad',
+            color=color.rgba32(10, 4, 18, 235),
+            scale=(1.58, 0.50),
+            position=(0.06, -0.28),
+            enabled=False,
+            z=0.1,
+        )
+        self.panel_portrait = Entity(
+            parent=camera.ui,
+            model='quad',
+            scale=(0.34, 0.60),
+            position=(-0.68, -0.26),
+            enabled=False,
+            z=-0.05,
+        )
+        if self.mira_texture:
+            self.panel_portrait.texture = self.mira_texture
+        self.panel_name = Text(text='', position=(-0.52, -0.08), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 210), enabled=False)
+        self.panel_body = Text(text='', position=(-0.52, -0.13), origin=(-0.5, 0.5), color=color.rgb32(245, 230, 255), enabled=False, scale=0.8)
+        self.panel_choices = []
+        for i in range(4):
+            t = Text(
+                text='',
+                position=(-0.52, -0.34 - i * 0.045),
+                origin=(-0.5, 0.5),
+                color=color.rgb32(160, 230, 255),
+                enabled=False,
+                scale=0.75,
+            )
+            self.panel_choices.append(t)
+        Text(
+            text='WASD walk   mouse look   E use   1 pistol   LMB shoot   ESC quit',
+            position=(-0.86, -0.48),
+            origin=(-0.5, 0.5),
+            color=color.rgb32(160, 140, 180),
+            scale=0.65,
+        )
+
+    # ----- tick -----------------------------------------------------------
+
+    def tick(self):
+        from ursina import time, held_keys, mouse, raycast, Vec3, destroy, color
+        dt = min(time.dt, 0.05)
+        self.shoot_cd = max(0.0, self.shoot_cd - dt)
+        if self.toast_timer > 0:
+            self.toast_timer -= dt
+            if self.toast_timer <= 0 and self.hud_toast:
+                self.hud_toast.text = ''
+
+        self.panic_t = max(0.0, getattr(self, 'panic_t', 0.0) - dt)
+        self._wander_targets(dt)
         tick_crowd(self, dt)
         tick_traffic(self, dt)
         self._tick_heat(dt)
@@ -63,198 +130,97 @@
             self._set_camera_follow(False)
 
     def _drive(self, dt):
-        from ursina import held_keys, mouse, raycast, Vec3
+        from ursina import held_keys, mouse, raycast, Vec3, Entity, destroy, color
+        from vendor.vehicle import bicycle_step
         car = self.in_car
         if getattr(mouse, 'locked', False):
+            # Clamp mouse look while driving (pitch only on cam_pivot)
             car.cam_pivot.rotation_x -= mouse.velocity[1] * 80
             car.cam_pivot.rotation_x = max(-20, min(25, car.cam_pivot.rotation_x))
 
-        accel, brake, vmax = 16.0, 28.0, 24.0
-        if held_keys['w']:
-            car.speed += accel * dt
-        elif held_keys['s']:
-            if car.speed > 0.6:
-                car.speed -= brake * dt
-            else:
-                car.speed -= accel * 0.55 * dt
+        dmg = float(getattr(car, 'damage', 0.0) or 0.0)
+        dmg_mul = max(0.15, 1.0 - 0.5 * (dmg / 100.0))
+        base_vmax, base_accel = 24.0, 16.0
+        vmax = base_vmax * dmg_mul
+        accel_force = base_accel * dmg_mul
+        brake_force = 0.0
+        accel = 0.0
+
+        fuel = float(getattr(car, 'fuel', 100.0) or 0.0)
+        out_of_gas = fuel <= 0.0 or getattr(car, 'disabled', False)
+
+        if out_of_gas:
+            # Speed decays to 0; no throttle / reverse
+            brake_force = 14.0
+            if not getattr(car, 'out_of_gas_toasted', False) and fuel <= 0.0 and not getattr(car, 'disabled', False):
+                car.out_of_gas_toasted = True
+                self.toast('Out of gas. Find a pump.')
         else:
-            if abs(car.speed) < 0.4:
-                car.speed = 0
-            else:
-                car.speed -= math.copysign(8.0 * dt, car.speed)
-        if held_keys['space']:
-            car.speed *= max(0.0, 1 - 3.5 * dt)
-        car.speed = max(-9.0, min(vmax, car.speed))
+            if held_keys['w']:
+                accel = accel_force
+            elif held_keys['s']:
+                # S brakes if moving forward; hold for reverse when nearly stopped
+                if car.speed > 0.55:
+                    brake_force = 32.0
+                else:
+                    accel = -accel_force * 0.55
+            if held_keys['space']:
+                # Stronger handbrake
+                brake_force = max(brake_force, 52.0)
 
-        steer = (held_keys['a'] - held_keys['d'])
-        if abs(car.speed) > 0.25:
-            turn = steer * 95 * (abs(car.speed) / vmax) * dt
-            if car.speed < 0:
-                turn = -turn
-            car.rotation_y += turn
+        steer = float(held_keys['a'] - held_keys['d'])
+        # Higher grip: less drag accelerating, more coasting
+        nx, nz, nyaw, nspd = bicycle_step(
+            car.x, car.z, car.rotation_y, car.speed,
+            steer, accel, dt,
+            vmax=vmax, wheelbase=2.6, drag=2.4,
+            steer_gain=1.05, brake_force=brake_force,
+            coast_drag=3.2, accel_drag=0.55,
+        )
 
-        move = car.forward * car.speed * dt
-        origin = car.world_position + Vec3(0, 0.7, 0)
-        ign = list(self.ignore) + [car, car.body]
-        hit = raycast(origin, move.normalized() if move.length() else car.forward, distance=2.0, ignore=ign, debug=False)
-        if hit.hit and move.length() > 0:
-            car.speed *= -0.25
-        else:
-            car.position += move
-        car.y = 0
-        car.x = max(-48, min(52, car.x))
-        car.z = max(-52, min(22, car.z))
+        # Fuel burn ~ full tank lasts a few minutes of continuous drive
+        # k_speed=0.028, k_accel=0.045  → cruise ~3 min; floored ~1–1.5 min
+        if not getattr(car, 'traffic', False) and not out_of_gas:
+            burn = (0.028 * abs(nspd) + 0.045 * max(0.0, accel)) * dt
+            fuel = max(0.0, fuel - burn)
+            car.fuel = fuel
+            if fuel <= 0.0 and not getattr(car, 'out_of_gas_toasted', False):
+                car.out_of_gas_toasted = True
+                self.toast('Out of gas. Find a pump.')
 
-        self.player.position = car.position
-        self.player.y = 0
-        self.player.rotation_y = car.rotation_y
-        if self.visual.enabled:
-            self.visual.enabled = False
-        if not self.cam_in_car:
-            self._set_camera_follow(True)
+        # Collision: buildings via raycast (do not ignore other cars); traffic via proximity
+        proposed = Vec3(nx - car.x, 0, nz - car.z)
+        hit_something = False
+        impact_speed = abs(nspd)
+        if proposed.length() > 0.001:
+            origin = car.world_position + Vec3(0, 0.7, 0)
+            ign = [self.player, self.visual, self.cam_pivot, car, getattr(car, 'body', None)]
+            if self.gun_model:
+                ign.append(self.gun_model)
+            # Never destroy / count named NPC talk entities as crash targets
+            for npc in self.npcs:
+                if not npc:
+                    continue
+                kind = getattr(npc, 'kind', '')
+                named = getattr(npc, 'npc_id', '')
+                if kind in ('mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara') or named in (
+                    'mira', 'michelle', 'gage', 'lila', 'rosa', 'yara', 'rita', 'deb',
+                    'motel_clerk', 'barista', 'pharmacist', 'neighbor', 'lot_attendant',
+                    'amanda_friend', 'club27_host', 'quiet_spa_tech', 'citrus_guide', 'park_ranger',
+                ):
+                    ign.append(npc)
+            ign = [e for e in ign if e]
+            direction = proposed.normalized()
+            hit = raycast(origin, direction, distance=max(2.0, proposed.length() + 1.2), ignore=ign, debug=False)
+            if hit.hit:
+                hit_something = True
 
-    def _set_camera_follow(self, in_car):
-        from ursina import Vec3, camera
-        self.cam_in_car = bool(in_car)
-        if in_car:
-            camera.parent = self.in_car.cam_pivot
-            camera.position = Vec3(0, 2.4, -10.5)
-            camera.rotation = Vec3(14, 0, 0)
-        else:
-            camera.parent = self.cam_pivot
-            camera.position = Vec3(0, 1.65, -8.8)
-            camera.rotation = Vec3(12, 0, 0)
-
-    def _wander_targets(self, dt):
-        from ursina import Vec3, raycast
-        for t in self.targets:
-            if getattr(t, 'kind', '') not in ('target', 'mob'):
-                continue
-            if not t or getattr(t, 'hp', 0) <= 0:
-                continue
-            t.wander_t += dt
-            if t.wander_t > 2.8:
-                t.heading = random.uniform(0, 360)
-                t.wander_t = 0
-            t.rotation_y = t.heading
-            step = t.forward * 1.15 * dt
-            t.position += step
-            t.y = 0
-            t.x = max(-40, min(40, t.x))
-            t.z = max(-40, min(8, t.z))
-
-    def _shoot(self):
-        from ursina import camera, raycast, Vec3, Entity, color, destroy, mouse
-        if not self.owned_pistol or not self.pistol_drawn:
-            return
-        if self.shoot_cd > 0:
-            return
-        if self.ammo <= 0:
-            self.toast('Empty. Buy ammo at Hancock Gun Hut.')
-            self.shoot_cd = 0.35
-            return
-        self.ammo -= 1
-        self.shoot_cd = 0.22
-        self.panic_t = max(self.panic_t, 4.5)
-        origin = camera.world_position
-        direction = camera.forward
-        ign = list(self.ignore)
-        if self.in_car:
-            ign += [self.in_car, self.in_car.body]
-        hit = raycast(origin, direction, distance=48, ignore=ign, debug=False)
-        end = hit.world_point if hit.hit else origin + direction * 48
-        mid = origin + (end - origin) * 0.5
-        length = max(0.2, (end - origin).length())
-        tracer = Entity(model='cube', color=color.rgb32(255, 230, 80), scale=(0.04, 0.04, min(length, 18)), position=mid, collider=None)
-        try:
-            tracer.look_at(end)
-        except Exception:
-            pass
-        destroy(tracer, delay=0.07)
-        flash = Entity(model='sphere', color=color.rgb32(255, 240, 180), scale=0.18, position=origin + direction * 1.2)
-        destroy(flash, delay=0.05)
-        if hit.hit and hit.entity:
-            ent = hit.entity
-            # walk up to a tagged parent
-            cur = ent
-            tagged = None
-            for _ in range(6):
-                if cur is None:
+        if not hit_something:
+            for other in self.cars:
+                if not other or other is car:
+                    continue
+                d = dist_xz((nx, 0, nz), (other.x, 0, other.z))
+                if d < 2.6:
+                    hit_something = True
                     break
-                if getattr(cur, 'hittable', False):
-                    tagged = cur
-                    break
-                cur = getattr(cur, 'parent', None)
-            if tagged is None:
-                # maybe we hit a child of a target
-                for t in list(self.targets):
-                    if not t:
-                        continue
-                    if ent == t or getattr(ent, 'parent', None) == t:
-                        tagged = t
-                        break
-            if tagged is not None:
-                kind = getattr(tagged, 'kind', '')
-                named = getattr(tagged, 'npc_id', '')
-                if kind in ('mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara') or named in ('mira', 'michelle', 'gage', 'lila', 'rosa', 'yara', 'rita', 'deb', 'motel_clerk', 'barista', 'pharmacist', 'neighbor', 'lot_attendant', 'amanda_friend'):
-                    self.toast('Not a target.')
-                    return
-                tagged.hp = getattr(tagged, 'hp', 10) - 18
-                if kind in ('civilian', 'lot_rat', 'walker', 'thug', 'heat_hunter', 'mob'):
-                    self.heat = min(3.0, self.heat + 0.4)
-                try:
-                    tagged.blink(color.red)
-                except Exception:
-                    pass
-                if tagged.hp <= 0:
-                    name = getattr(tagged, 'npc_name', 'target')
-                    loot = 12 if name != 'barrel' else 4
-                    xp = int(getattr(tagged, 'xp', 0) or 0)
-                    self.gold += loot
-                    tagged.hittable = False
-                    try:
-                        tagged.enabled = False
-                    except Exception:
-                        try:
-                            tagged.visible = False
-                        except Exception:
-                            pass
-                    extra = f' +{xp}xp' if xp else ''
-                    self.toast(f'{name} down. +{loot}g{extra}')
-                    self._quest_event('kill', kind=kind, mob_id=getattr(tagged, 'mob_id', ''))
 
-    def _refresh_hud(self):
-        if self.hud_gold:
-            self.hud_gold.text = f'Gold  {self.gold}'
-        if self.hud_hp:
-            self.hud_hp.text = f'HP  {int(self.hp)}'
-        if self.hud_heat:
-            self.hud_heat.text = f'HEAT  {self.heat:.1f}'
-        if getattr(self, 'hud_breed', None):
-            flag = '  PREG' if self.preg else ''
-            self.hud_breed.text = f'Breed  {int(self.breed)}%{flag}'
-        if self.hud_ammo:
-            if not self.owned_pistol:
-                self.hud_ammo.text = 'Pistol  not owned'
-            elif self.pistol_drawn:
-                self.hud_ammo.text = f'Pistol  DRAWN   ammo {self.ammo}'
-            else:
-                self.hud_ammo.text = f'Pistol  holstered   ammo {self.ammo}'
-        if self.hud_pack:
-            self.hud_pack.text = f'Pack  {len(self.pack)}'
-        if getattr(self, 'hud_quest', None):
-            self.hud_quest.text = self._quest_hud_line()
-        if self.gun_model:
-            self.gun_model.enabled = bool(self.pistol_drawn and self.owned_pistol and not self.in_car)
-        if self.ui_open:
-            if self.hud_prompt:
-                self.hud_prompt.text = '1-4 choose    ESC close'
-            return
-        prompt = self._nearest_prompt()
-        if self.hud_prompt:
-            self.hud_prompt.text = prompt
-
-    def _nearest_prompt(self):
-        pos = self._actor_pos()
-        if self.in_car:
-            return 'E  exit car'
