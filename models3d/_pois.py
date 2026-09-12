@@ -151,7 +151,7 @@ def make_poi_building(Entity, color, Text, scene_parent, kind, x, z):
         )):
             y0 = 2.5 + h + hh / 2
             try:
-                Entity(model='cylinder', scale=(rad, hh, rad), position=(x, y0, z), color=col, collider='box' if i == 0 else None)
+                Entity(model='cube', scale=(rad, hh, rad), position=(x, y0, z), color=col, collider='box' if i == 0 else None)
             except Exception:
                 Entity(model='cube', scale=(rad * 1.6, hh, rad * 1.6), position=(x, y0, z), color=col, collider='box' if i == 0 else None)
             h += hh
@@ -159,7 +159,7 @@ def make_poi_building(Entity, color, Text, scene_parent, kind, x, z):
         # observation deck ring
         deck_y = 2.5 + h
         try:
-            Entity(model='cylinder', scale=(2.6, 0.35, 2.6), position=(x, deck_y, z), color=_rgb(color, 200, 200, 210))
+            Entity(model='cube', scale=(2.6, 0.35, 2.6), position=(x, deck_y, z), color=_rgb(color, 200, 200, 210))
         except Exception:
             Entity(model='cube', scale=(4.2, 0.35, 4.2), position=(x, deck_y, z), color=_rgb(color, 200, 200, 210))
         Entity(model='cube', scale=(0.35, 1.2, 0.35), position=(x, deck_y + 0.9, z), color=white)
