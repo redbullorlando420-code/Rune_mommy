@@ -1,6 +1,3 @@
-                hud = hud.replace('{progress}', str(prog))
-            return f'QUEST  {hud}'
-        if self.quest_completed:
             return 'QUEST  done for now'
         return 'QUEST  —'
 
