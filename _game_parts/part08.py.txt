@@ -1,3 +1,9 @@
+                if hasattr(base, 'r'):
+                    r = int(base.r * 255 * (1 - 0.55 * t) + 180 * t)
+                    g = int(base.g * 255 * (1 - 0.75 * t) + 30 * t)
+                    b = int(base.b * 255 * (1 - 0.75 * t) + 25 * t)
+                    col = self.color.rgb32(max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b)))
+                else:
                     col = base.tint(-0.55 * t) if hasattr(base, 'tint') else base
                 car.body.color = col
                 cabin = getattr(car, 'cabin', None)
@@ -250,8 +256,3 @@
                 options.append((pd, f"E  {poi.get('name', 'POI')}"))
         if not options:
             return ''
-        options.sort(key=lambda x: x[0])
-        return options[0][1]
-
-    def _actor_pos(self):
-        if self.in_car:
