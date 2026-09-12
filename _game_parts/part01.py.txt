@@ -255,3 +255,4 @@ class Game:
         self.talk_npcs = []
         self.house_vols = []
         self.sanctuary_door = None
+        self.michelle = None
