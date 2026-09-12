@@ -1,29 +1,3 @@
-                options.append((nd, 'E  Hancock Gun Hut (Gage)'))
-            elif kind not in ('target', 'mob'):
-                options.append((nd, f'E  talk to {getattr(npc, "npc_name", "NPC")}'))
-        if stall and (not npc or sd + 0.4 < nd):
-            if stall['kind'] == 'gun':
-                options.append((sd, 'E  Hancock Gun Hut'))
-            else:
-                options.append((sd, f'E  {stall["name"]}'))
-        door_xz = (self.house_rooms or {}).get('door')
-        if door_xz and not self.michelle_seen:
-            dd = dist_xz(pos, (door_xz[0], 0, door_xz[1]))
-            if dd < 3.0:
-                options.append((dd, 'E  Sanctuary Drive'))
-        for poi in getattr(self, 'pois', []) or []:
-            if poi.get('is_gas'):
-                continue
-            pd = dist_xz(pos, poi['pos'])
-            if pd < 3.4:
-                options.append((pd, f"E  {poi.get('name', 'POI')}"))
-        if not options:
-            return ''
-        options.sort(key=lambda x: x[0])
-        return options[0][1]
-
-    def _actor_pos(self):
-        if self.in_car:
             p = self.in_car.world_position
             return (p.x, p.y, p.z)
         p = self.player.world_position
@@ -256,3 +230,28 @@
                 self.michelle_seen = True
                 self.michelle_auto_opened = True
                 self.open_michelle(nid)
+                self._quest_event('talk', npc_id='michelle')
+                self._tutorial_note('talk')
+                return
+            if kind == 'gun':
+                self.open_gun_shop()
+                return
+            named = getattr(npc, 'npc_id', '')
+            if kind in ('lila', 'rosa', 'yara') or named in ('lila', 'rosa', 'yara'):
+                self.open_vn(kind if kind in ('lila', 'rosa', 'yara') else named)
+                return
+            if kind == 'talk':
+                self.open_talk(
+                    getattr(npc, 'npc_name', 'NPC'),
+                    getattr(npc, 'line', '...'),
+                    getattr(npc, 'portrait_tex', None),
+                )
+                self._quest_event('talk', npc_id=getattr(npc, 'npc_id', ''))
+                return
+        if self.michelle_seen and self.house_rooms:
+            best_room, best_rd = None, 2.8
+            for rname in ('guest', 'garage', 'shower', 'lawn'):
+                xz = self.house_rooms.get(rname)
+                if not xz:
+                    continue
+                d = dist_xz(pos, (xz[0], 0, xz[1]))
