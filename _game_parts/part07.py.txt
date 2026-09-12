@@ -1,27 +1,3 @@
-            scale=0.65,
-        )
-
-    # ----- tick -----------------------------------------------------------
-
-    def tick(self):
-        from ursina import time, held_keys, mouse, raycast, Vec3, destroy, color
-        dt = min(time.dt, 0.05)
-        self.shoot_cd = max(0.0, self.shoot_cd - dt)
-        if self.toast_timer > 0:
-            self.toast_timer -= dt
-            if self.toast_timer <= 0 and self.hud_toast:
-                self.hud_toast.text = ''
-
-        mode = getattr(self, 'mode', 'play')
-        if mode in ('menu', 'settings'):
-            # title / settings — no world sim, no walk
-            if self.hud_toast and self.toast_timer > 0:
-                pass
-            return
-
-        self.panic_t = max(0.0, getattr(self, 'panic_t', 0.0) - dt)
-        self._wander_targets(dt)
-
         if mode == 'play':
             tick_crowd(self, dt)
             tick_traffic(self, dt)
@@ -45,6 +21,11 @@
                 self._shoot()
 
         self._refresh_hud()
+        if getattr(self, 'debug_on', True):
+            try:
+                self._debug_tick(dt)
+            except Exception as exc:
+                print('[Rune Mommy][DBGERR]', exc)
 
     def _walk(self, dt):
         from ursina import held_keys, mouse, raycast, Vec3
@@ -259,3 +240,29 @@
             return
         add = min(42.0, max(3.0, abs(float(impact_speed)) * 2.4))
         car.damage = min(100.0, float(getattr(car, 'damage', 0.0) or 0.0) + add)
+        if car.damage >= 100.0 and not getattr(car, 'disabled', False):
+            car.disabled = True
+            car.speed = 0.0
+            self.toast('Car totaled.')
+            if self.in_car is car:
+                # stall — force exit shortly via disabled flag in enter check
+                pass
+
+    def _update_car_damage_visual(self, car, dt=0.016):
+        dmg = float(getattr(car, 'damage', 0.0) or 0.0)
+        base = getattr(car, 'base_paint', None) or getattr(car, 'paint', None)
+        if base is not None and getattr(car, 'body', None):
+            t = min(1.0, dmg / 100.0)
+            try:
+                # darker / redder as damage rises
+                if hasattr(base, 'r'):
+                    r = int(base.r * 255 * (1 - 0.55 * t) + 180 * t)
+                    g = int(base.g * 255 * (1 - 0.75 * t) + 30 * t)
+                    b = int(base.b * 255 * (1 - 0.75 * t) + 25 * t)
+                    col = self.color.rgb32(max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b)))
+                else:
+                    col = base.tint(-0.55 * t) if hasattr(base, 'tint') else base
+                car.body.color = col
+                cabin = getattr(car, 'cabin', None)
+                if cabin is not None:
+                    cabin.color = col.tint(-0.15) if hasattr(col, 'tint') else col
