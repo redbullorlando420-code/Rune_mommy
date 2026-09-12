@@ -1,4 +1,7 @@
 
+    def open_talk(self, name, line, portrait_tex=None):
+        self.open_panel(name, line, [('Later.', self.close_panel)], portrait=bool(portrait_tex), portrait_tex=portrait_tex)
+
     def open_gun_shop(self):
         pistol = self.items.get('pistol', {})
         ammo = self.items.get('ammo', {})
@@ -253,5 +256,3 @@
             prog = self.quest_progress.get(qid, 0)
             if '{progress}' in hud:
                 hud = hud.replace('{progress}', str(prog))
-            return f'QUEST  {hud}'
-        if self.quest_completed:
