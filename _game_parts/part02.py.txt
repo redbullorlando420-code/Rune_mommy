@@ -259,3 +259,10 @@
                 position=(0, 0.06 - i * 0.07),
                 origin=(0, 0),
                 color=color.rgb32(255, 230, 255),
+                scale=1.0,
+                enabled=False,
+                z=-0.1,
+            )
+            self.menu_lines.append(tline)
+            self.menu_ents.append(tline)
+        self.settings_lines = []
