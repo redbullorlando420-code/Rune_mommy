@@ -1,3 +1,15 @@
+                return cb
+
+            choices.append((label, make()))
+        if not choices:
+            choices = [('Walk away.', self.close_panel)]
+        expr = node.get('expression') or 'default'
+        por = node.get('portrait') or who
+        tex = self._tex_for(por, expr)
+        if tex is None:
+            pp = portrait_texture_path(por, expr)
+            tex = str(pp) if pp else None
+        self.open_panel(title, node.get('text', ''), choices, portrait=True, portrait_tex=tex)
 
     def open_talk(self, name, line, portrait_tex=None):
         self.open_panel(name, line, [('Later.', self.close_panel)], portrait=bool(portrait_tex), portrait_tex=portrait_tex)
@@ -246,13 +258,3 @@
             if all(r in self.quest_completed for r in reqs):
                 self.quest_active.append(qid)
                 self.quest_progress[qid] = 0
-
-    def _quest_hud_line(self):
-        for qid in self.quest_active:
-            q = self._quest_def(qid)
-            if not q:
-                continue
-            hud = q.get('hud') or q.get('name') or qid
-            prog = self.quest_progress.get(qid, 0)
-            if '{progress}' in hud:
-                hud = hud.replace('{progress}', str(prog))
