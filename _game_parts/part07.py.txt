@@ -1,3 +1,7 @@
+    def tick(self):
+        from ursina import time, held_keys, mouse, raycast, Vec3, destroy, color
+        dt = min(time.dt, 0.05)
+        self.shoot_cd = max(0.0, self.shoot_cd - dt)
         if self.toast_timer > 0:
             self.toast_timer -= dt
             if self.toast_timer <= 0 and self.hud_toast:
@@ -40,10 +44,13 @@
     def _walk(self, dt):
         from ursina import held_keys, mouse, raycast, Vec3
         player = self.player
-        # Re-lock every frame so WASD works after click/focus (unless panel or Tab-free).
-        if not self.ui_open and not getattr(self, 'mouse_free', False):
+        # Play mode: keep mouse locked. Safe yard: leave free until user clicks
+        # (Windows loses WASD if we lock immediately after a UI Button).
+        mode = getattr(self, 'mode', 'play')
+        if mode == 'play' and not self.ui_open and not getattr(self, 'mouse_free', False):
             self._lock_mouse(True)
-        if getattr(mouse, 'locked', False):
+        looking = getattr(mouse, 'locked', False) or held_keys['right mouse']
+        if looking:
             sens = float(getattr(self, 'mouse_sens', 140) or 140)
             player.rotation_y += mouse.velocity[0] * sens
             self.cam_pivot.rotation_x -= mouse.velocity[1] * sens
@@ -249,9 +256,3 @@
             t = min(1.0, dmg / 100.0)
             try:
                 # darker / redder as damage rises
-                if hasattr(base, 'r'):
-                    r = int(base.r * 255 * (1 - 0.55 * t) + 180 * t)
-                    g = int(base.g * 255 * (1 - 0.75 * t) + 30 * t)
-                    b = int(base.b * 255 * (1 - 0.75 * t) + 25 * t)
-                    col = self.color.rgb32(max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b)))
-                else:
