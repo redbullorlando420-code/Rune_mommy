@@ -1,3 +1,18 @@
+            named = getattr(npc, 'npc_id', '')
+            if kind in ('lila', 'rosa', 'yara') or named in ('lila', 'rosa', 'yara'):
+                self.open_vn(kind if kind in ('lila', 'rosa', 'yara') else named)
+                return
+            if kind == 'talk':
+                self.open_talk(
+                    getattr(npc, 'npc_name', 'NPC'),
+                    getattr(npc, 'line', '...'),
+                    getattr(npc, 'portrait_tex', None),
+                )
+                self._quest_event('talk', npc_id=getattr(npc, 'npc_id', ''))
+                return
+        if self.michelle_seen and self.house_rooms:
+            best_room, best_rd = None, 2.8
+            for rname in ('guest', 'garage', 'shower', 'lawn'):
                 xz = self.house_rooms.get(rname)
                 if not xz:
                     continue
@@ -243,15 +258,3 @@
                         self.close_panel()
                     else:
                         self.open_vn(w, n)
-                return cb
-
-            choices.append((label, make()))
-        if not choices:
-            choices = [('Walk away.', self.close_panel)]
-        expr = node.get('expression') or 'default'
-        por = node.get('portrait') or who
-        tex = self._tex_for(por, expr)
-        if tex is None:
-            pp = portrait_texture_path(por, expr)
-            tex = str(pp) if pp else None
-        self.open_panel(title, node.get('text', ''), choices, portrait=True, portrait_tex=tex)
