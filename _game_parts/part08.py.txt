@@ -1,3 +1,18 @@
+        if car.damage >= 100.0 and not getattr(car, 'disabled', False):
+            car.disabled = True
+            car.speed = 0.0
+            self.toast('Car totaled.')
+            if self.in_car is car:
+                # stall — force exit shortly via disabled flag in enter check
+                pass
+
+    def _update_car_damage_visual(self, car, dt=0.016):
+        dmg = float(getattr(car, 'damage', 0.0) or 0.0)
+        base = getattr(car, 'base_paint', None) or getattr(car, 'paint', None)
+        if base is not None and getattr(car, 'body', None):
+            t = min(1.0, dmg / 100.0)
+            try:
+                # darker / redder as damage rises
                 if hasattr(base, 'r'):
                     r = int(base.r * 255 * (1 - 0.55 * t) + 180 * t)
                     g = int(base.g * 255 * (1 - 0.75 * t) + 30 * t)
@@ -244,15 +259,3 @@
             else:
                 options.append((sd, f'E  {stall["name"]}'))
         door_xz = (self.house_rooms or {}).get('door')
-        if door_xz and not self.michelle_seen:
-            dd = dist_xz(pos, (door_xz[0], 0, door_xz[1]))
-            if dd < 3.0:
-                options.append((dd, 'E  Sanctuary Drive'))
-        for poi in getattr(self, 'pois', []) or []:
-            if poi.get('is_gas'):
-                continue
-            pd = dist_xz(pos, poi['pos'])
-            if pd < 3.4:
-                options.append((pd, f"E  {poi.get('name', 'POI')}"))
-        if not options:
-            return ''
