@@ -1,3 +1,15 @@
+        if door_xz and not self.michelle_seen:
+            dd = dist_xz(pos, (door_xz[0], 0, door_xz[1]))
+            if dd < 3.0:
+                options.append((dd, 'E  Sanctuary Drive'))
+        for poi in getattr(self, 'pois', []) or []:
+            if poi.get('is_gas'):
+                continue
+            pd = dist_xz(pos, poi['pos'])
+            if pd < 3.4:
+                options.append((pd, f"E  {poi.get('name', 'POI')}"))
+        if not options:
+            return ''
         options.sort(key=lambda x: x[0])
         return options[0][1]
 
@@ -104,6 +116,12 @@
             if key == '3':
                 self._show_menu()
                 return
+            return
+
+        # Safe yard: Esc always returns to title (never soft-lock).
+        if mode == 'safe' and key == 'escape':
+            self._show_menu()
+            self.toast('Title menu.')
             return
 
         if key in ('enter', 'return') and getattr(self, 'tutorial_active', False) and mode == 'play':
@@ -241,18 +259,3 @@
             if kind == 'gun':
                 self.open_gun_shop()
                 return
-            named = getattr(npc, 'npc_id', '')
-            if kind in ('lila', 'rosa', 'yara') or named in ('lila', 'rosa', 'yara'):
-                self.open_vn(kind if kind in ('lila', 'rosa', 'yara') else named)
-                return
-            if kind == 'talk':
-                self.open_talk(
-                    getattr(npc, 'npc_name', 'NPC'),
-                    getattr(npc, 'line', '...'),
-                    getattr(npc, 'portrait_tex', None),
-                )
-                self._quest_event('talk', npc_id=getattr(npc, 'npc_id', ''))
-                return
-        if self.michelle_seen and self.house_rooms:
-            best_room, best_rd = None, 2.8
-            for rname in ('guest', 'garage', 'shower', 'lawn'):
