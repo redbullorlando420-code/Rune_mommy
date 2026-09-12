@@ -1,3 +1,78 @@
+        Entity = self.Entity
+        color = self.color
+        Text = self.Text
+        teal = color.rgb32(46, 196, 182)
+        body_col = color.rgb32(232, 214, 188)
+        wood = color.rgb32(90, 55, 40)
+        hx, hz = -32.0, 12.0
+        self.house_vols = []
+        self.sanctuary_pos = (hx, 0.0, hz)
+
+        # lot grass + darker back-lawn swamp strip (west) + driveway (east)
+        grass = load_tex('grass')
+        asphalt = load_tex('asphalt')
+        stucco = load_tex('stucco')
+        concrete = load_tex('concrete')
+        Entity(model='cube', scale=(16, 0.05, 14), position=(hx - 1.0, 0.025, hz),
+               color=color.rgb32(34, 88, 46), texture=grass, texture_scale=(8, 7))
+        Entity(model='cube', scale=(7.5, 0.06, 12), position=(hx - 7.2, 0.03, hz),
+               color=color.rgb32(16, 42, 28), texture=grass, texture_scale=(4, 6))
+        Entity(model='cube', scale=(6.2, 0.07, 5.6), position=(hx + 6.4, 0.035, hz),
+               color=color.rgb32(48, 44, 50), texture=asphalt or concrete, texture_scale=(3, 2.5))
+
+        # body + porch + windows + AC (composed, not a lone cube)
+        Entity(model='cube', scale=(8.0, 3.2, 6.4), position=(hx, 1.6, hz), color=body_col,
+               texture=stucco, texture_scale=(2.5, 1.6), collider='box')
+        Entity(model='cube', scale=(8.6, 0.35, 3.6), position=(hx - 1.2, 3.55, hz), color=teal, rotation_z=18)
+        Entity(model='cube', scale=(8.6, 0.35, 3.6), position=(hx + 1.2, 3.55, hz), color=teal, rotation_z=-18)
+        Entity(model='cube', scale=(0.3, 0.25, 7.0), position=(hx, 3.95, hz), color=color.rgb32(245, 248, 252))
+        for wz in (-1.6, 1.6):
+            Entity(model='cube', scale=(0.08, 0.7, 0.7), position=(hx + 4.05, 1.7, hz + wz), color=color.rgb32(120, 200, 230))
+        Entity(model='cube', scale=(2.8, 0.14, 2.2), position=(hx + 5.2, 0.1, hz),
+               color=color.rgb32(170, 160, 140), texture=concrete, texture_scale=(2, 1.5))
+        Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz + 0.9), color=wood)
+        Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz - 0.9), color=wood)
+        Entity(model='cube', scale=(0.7, 0.5, 0.55), position=(hx - 4.3, 0.4, hz + 2.2), color=color.rgb32(70, 78, 90))
+        # garage south of body
+        Entity(model='cube', scale=(5.4, 2.5, 4.6), position=(hx + 0.2, 1.25, hz - 5.4),
+               color=color.rgb32(210, 196, 176), texture=stucco, texture_scale=(2, 1.4), collider='box')
+        Entity(model='cube', scale=(5.6, 0.28, 4.8), position=(hx + 0.2, 2.62, hz - 5.4), color=teal)
+        Entity(model='cube', scale=(3.4, 1.9, 0.12), position=(hx + 2.7, 1.0, hz - 5.4), color=color.rgb32(70, 78, 90))
+        door = Entity(model='cube', scale=(0.16, 2.15, 1.05), position=(hx + 4.08, 1.12, hz), color=wood)
+        self.sanctuary_door = door
+        Entity(model='cube', scale=(1.5, 0.16, 1.7), position=(hx + 4.9, 0.1, hz), color=color.rgb32(180, 180, 175))
+        self.building_count += 2
+
+        # guest bed + shower markers inside
+        Entity(model='cube', scale=(2.2, 0.42, 1.5), position=(hx + 1.8, 0.45, hz + 1.5), color=color.rgb32(220, 210, 200))
+        Entity(model='cube', scale=(1.35, 1.9, 1.35), position=(hx - 2.1, 1.05, hz + 1.7), color=color.rgb32(180, 220, 215))
+
+        door_xz = (hx + 4.1, hz)
+        guest_xz = (hx + 1.8, hz + 1.5)
+        garage_xz = (hx + 0.2, hz - 5.4)
+        shower_xz = (hx - 2.1, hz + 1.7)
+        lawn_xz = (hx - 7.2, hz)
+        self.house_rooms = {
+            'door': door_xz,
+            'guest': guest_xz,
+            'garage': garage_xz,
+            'shower': shower_xz,
+            'lawn': lawn_xz,
+        }
+
+        def vol(xz, sx, sz, col, node):
+            e = Entity(model='cube', scale=(sx, 0.06, sz), position=(xz[0], 0.12, xz[1]), color=col)
+            e.room_node = node
+            self.house_vols.append(e)
+            return e
+
+        vol(guest_xz, 3.0, 2.4, color.rgb32(70, 180, 170), 'guest')
+        vol(garage_xz, 3.6, 3.2, color.rgb32(70, 70, 78), 'garage')
+        vol(shower_xz, 2.2, 2.2, color.rgb32(90, 200, 210), 'shower')
+        vol(lawn_xz, 4.2, 5.0, color.rgb32(22, 58, 32), 'lawn')
+        vol(door_xz, 2.2, 2.2, color.rgb32(90, 70, 55), 'door')
+
+        Entity(model='cube', scale=(0.14, 2.8, 0.14), position=(hx + 7.4, 1.4, hz + 3.4), color=color.rgb32(70, 60, 50))
         Entity(model='cube', scale=(2.8, 0.7, 0.08), position=(hx + 7.4, 2.7, hz + 3.4), color=teal)
         Text(
             parent=self._scene(),
@@ -180,64 +255,3 @@
             'rita': (18.0, -13.0),
             'motel_clerk': (-8.0, 4.2),
             'barista': (-20.0, -12.8),
-            'pharmacist': (30.0, -30.2),
-            'neighbor': (-40.0, 10.5),
-            'lot_attendant': (8.0, 2.8),
-            'amanda_friend': (-14.0, -30.0),
-        }
-        # place POI NPCs from self.pois (adds new ids + refreshes positions)
-        for poi in getattr(self, 'pois', []) or []:
-            nid = poi.get('npc_id')
-            if nid:
-                talk_spots[nid] = (poi['pos'][0], poi['pos'][2])
-        for nid, (nx, nz) in talk_spots.items():
-            spec = (self.npcs_data or {}).get(nid) or {'id': nid, 'name': nid.title(), 'greet': '...'}
-            shirt = hex_color(spec.get('color') or '#ff8fab')
-            named = nid in ('lila', 'rosa', 'yara', 'rita', 'deb')
-            npc = self._humanoid(
-                nx, nz, shirt=shirt, pants=color.rgb32(36, 24, 40),
-                skin=color.rgb32(255, 200, 160), detail='named' if named else 'crowd',
-            )
-            npc.npc_id = nid
-            npc.npc_name = spec.get('name', nid.title())
-            npc.kind = nid if nid in ('lila', 'rosa', 'yara') else 'talk'
-            npc.line = spec.get('greet') or spec.get('lines', ['...'])[0]
-            npc.portrait_tex = None
-            rel = portrait_asset_path(nid)
-            if rel:
-                try:
-                    from ursina import load_texture
-                    tex = load_texture(rel)
-                except Exception:
-                    tex = str(pp)
-                npc.portrait_tex = tex
-                bill = Entity(
-                    parent=npc,
-                    model='quad',
-                    texture=tex,
-                    scale=(1.05, 1.4),
-                    position=(0, 1.45, -0.55),
-                    double_sided=True,
-                )
-                try:
-                    bill.billboard = True
-                except Exception:
-                    pass
-            self.npcs.append(npc)
-            self.talk_npcs.append({
-                'ent': npc,
-                'name': npc.npc_name,
-                'talk': npc.line,
-                'killable': False,
-            })
-
-    def _humanoid(self, x, z, shirt, pants, skin=None, hitbox=False, detail='crowd', style=None):
-        return make_humanoid(
-            self.Entity, self.color, x, z, shirt, pants,
-            skin=skin, hitbox=hitbox, detail=detail, style=style,
-        )
-
-    def _build_cars(self):
-        paints = [
-            self.color.rgb32(200, 30, 40),
-            self.color.rgb32(20, 20, 24),
