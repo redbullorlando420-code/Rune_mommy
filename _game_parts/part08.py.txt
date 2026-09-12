@@ -1,3 +1,7 @@
+                    col = base.tint(-0.55 * t) if hasattr(base, 'tint') else base
+                car.body.color = col
+                cabin = getattr(car, 'cabin', None)
+                if cabin is not None:
                     cabin.color = col.tint(-0.15) if hasattr(col, 'tint') else col
             except Exception:
                 pass
@@ -225,3 +229,29 @@
             elif kind == 'michelle':
                 options.append((nd, 'E  talk to Michelle'))
             elif kind == 'gun':
+                options.append((nd, 'E  Hancock Gun Hut (Gage)'))
+            elif kind not in ('target', 'mob'):
+                options.append((nd, f'E  talk to {getattr(npc, "npc_name", "NPC")}'))
+        if stall and (not npc or sd + 0.4 < nd):
+            if stall['kind'] == 'gun':
+                options.append((sd, 'E  Hancock Gun Hut'))
+            else:
+                options.append((sd, f'E  {stall["name"]}'))
+        door_xz = (self.house_rooms or {}).get('door')
+        if door_xz and not self.michelle_seen:
+            dd = dist_xz(pos, (door_xz[0], 0, door_xz[1]))
+            if dd < 3.0:
+                options.append((dd, 'E  Sanctuary Drive'))
+        for poi in getattr(self, 'pois', []) or []:
+            if poi.get('is_gas'):
+                continue
+            pd = dist_xz(pos, poi['pos'])
+            if pd < 3.4:
+                options.append((pd, f"E  {poi.get('name', 'POI')}"))
+        if not options:
+            return ''
+        options.sort(key=lambda x: x[0])
+        return options[0][1]
+
+    def _actor_pos(self):
+        if self.in_car:
