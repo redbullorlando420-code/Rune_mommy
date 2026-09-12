@@ -1,3 +1,9 @@
+                'is_gas': is_gas,
+                'pump_r': 4.2 if is_gas else 3.4,
+            })
+
+    def _build_house(self):
+        """Suburban cubes at about (-32, 0, 12). Body, teal roof, garage, door, back lawn, Sanctuary Drive."""
         Entity = self.Entity
         color = self.color
         Text = self.Text
@@ -250,8 +256,3 @@
             'lila': (-14.0, 5.5),
             'yara': (8.0, -26.5),
             'rosa': (mx - 3.2, mz + 0.4),
-            'tavi': (-24.0, -20.0),
-            'rook': (26.0, 7.0),
-            'rita': (18.0, -13.0),
-            'motel_clerk': (-8.0, 4.2),
-            'barista': (-20.0, -12.8),
