@@ -1,3 +1,76 @@
+        self.michelle = None
+        self.building_count = 0
+        self.pois = []
+        self.quest_defs = list((self.quests_data or {}).get('quests') or [])
+        self.quest_active = []
+        self.quest_completed = set()
+        self.quest_progress = {}
+        self.hud_quest = None
+        self.hud_mode = None
+        self.tutorial_active = False
+        self.tutorial_step = 0
+        self.tutorial_overlay = None
+        self.tutorial_text = None
+        self.kill_quest_count = 0
+
+        self.player = None
+        self.cam_pivot = None
+        self.visual = None
+        self.gun_model = None
+        self.cars = []
+        self.npcs = []
+        self.peds = []
+        self.heat_hunters = []
+        self.drops = []
+        self.stalls = []
+        self.targets = []
+        self.ignore = []
+        self.shake_spawned = []
+        self.traffic_count = 0
+        self.parked_count = 0
+
+        self.panel_bg = None
+        self.panel_portrait = None
+        self.panel_name = None
+        self.panel_body = None
+        self.panel_choices = []
+        self.hud_gold = None
+        self.hud_hp = None
+        self.hud_heat = None
+        self.hud_ammo = None
+        self.hud_pack = None
+        self.hud_breed = None
+        self.hud_prompt = None
+        self.hud_toast = None
+        self.crosshair = None
+        self.cam_in_car = False
+
+        mira_p = portrait_texture_path('mira')
+        self.mira_portrait_path = mira_p if mira_p else (ROOT / 'client/portraits/mira/smile.png')
+        self.mira_texture = None
+
+    def setup(self):
+        from ursina import DirectionalLight, AmbientLight, PointLight, destroy  # noqa: F401
+        color = self.color
+        Entity = self.Entity
+        Text = self.Text
+        camera = self.camera
+        window = self.window
+        mouse = self.mouse
+
+        window.color = color.rgb32(12, 6, 22)
+        window.exit_button.visible = True
+        try:
+            window.fps_counter.enabled = True
+        except Exception:
+            pass
+
+        self.render_opts = apply_perf(window=window, camera=camera, color=color)
+        try:
+            apply_lighting(
+                color, self.Vec3,
+                Sky=self.Sky,
+                DirectionalLight=DirectionalLight,
                 AmbientLight=AmbientLight,
                 PointLight=PointLight,
             )
@@ -135,15 +208,17 @@
         make_street_sign(Entity, color, Text, self._scene(), gate_x - 0.8, gate_z, 'LEAVE ->')
 
     def _build_menu(self):
+        from ursina import Button, color as u_color
         Entity = self.Entity
         Text = self.Text
         color = self.color
         camera = self.camera
         self.menu_ents = []
+        self.menu_buttons = []
         self.menu_backdrop = Entity(
             parent=camera.ui,
             model='quad',
-            color=color.rgba32(6, 2, 14, 220),
+            color=color.rgba32(6, 2, 14, 230),
             scale=(2.2, 1.4),
             position=(0, 0),
             z=2,
@@ -153,7 +228,7 @@
         neon = Entity(
             parent=camera.ui,
             model='quad',
-            color=color.rgba32(255, 40, 180, 40),
+            color=color.rgba32(255, 40, 180, 50),
             scale=(1.1, 0.02),
             position=(0, 0.22),
             z=1.9,
@@ -162,106 +237,21 @@
         self.menu_ents.append(neon)
         self.menu_title = Text(
             text='RUNE MOMMY',
-            position=(0, 0.28),
+            position=(0, 0.30),
             origin=(0, 0),
             color=color.rgb32(255, 90, 210),
             scale=2.0,
             enabled=False,
+            z=-0.1,
         )
         self.menu_ents.append(self.menu_title)
         sub = Text(
-            text='Clermont',
-            position=(0, 0.20),
+            text='Clermont  ·  click a button or press 1 / 2 / 3',
+            position=(0, 0.22),
             origin=(0, 0),
             color=color.rgb32(140, 230, 255),
-            scale=1.1,
+            scale=0.9,
             enabled=False,
+            z=-0.1,
         )
         self.menu_ents.append(sub)
-        self.menu_lines = []
-        lines = [
-            '1   Start',
-            '2   Load',
-            '3   Settings',
-            'Esc quit',
-        ]
-        for i, line in enumerate(lines):
-            t = Text(
-                text=line,
-                position=(0, 0.06 - i * 0.07),
-                origin=(0, 0),
-                color=color.rgb32(255, 230, 255) if i < 3 else color.rgb32(160, 140, 180),
-                scale=1.15 if i < 3 else 0.85,
-                enabled=False,
-            )
-            self.menu_lines.append(t)
-            self.menu_ents.append(t)
-        self.settings_lines = []
-        for i in range(5):
-            t = Text(
-                text='',
-                position=(0, 0.08 - i * 0.07),
-                origin=(0, 0),
-                color=color.rgb32(200, 230, 255),
-                scale=1.0,
-                enabled=False,
-            )
-            self.settings_lines.append(t)
-            self.menu_ents.append(t)
-
-    def _set_menu_visible(self, visible):
-        for e in getattr(self, 'menu_ents', []) or []:
-            try:
-                e.enabled = bool(visible)
-            except Exception:
-                pass
-        if visible:
-            self._refresh_menu_labels()
-
-    def _refresh_menu_labels(self):
-        if self.mode == 'settings':
-            for t in self.menu_lines:
-                t.enabled = False
-            sens = int(self.mouse_sens)
-            fs = 'ON' if getattr(self, 'fullscreen_stub', False) else 'OFF'
-            specs = [
-                'SETTINGS',
-                f'1  Mouse sensitivity  {sens}',
-                f'2  Fullscreen (stub)  {fs}',
-                '3  Back',
-                'Esc back',
-            ]
-            for i, t in enumerate(self.settings_lines):
-                t.text = specs[i] if i < len(specs) else ''
-                t.enabled = True
-                if i == 0:
-                    t.color = self.color.rgb32(255, 90, 210)
-            if self.menu_title:
-                self.menu_title.enabled = False
-        else:
-            for t in self.settings_lines:
-                t.enabled = False
-                t.text = ''
-            for t in self.menu_lines:
-                t.enabled = True
-            if self.menu_title:
-                self.menu_title.enabled = True
-
-    def _hide_play_hud(self, hide):
-        bits = [
-            self.hud_gold, self.hud_hp, self.hud_heat, self.hud_ammo,
-            self.hud_pack, self.hud_breed, self.hud_quest, self.hud_mode,
-            self.hud_prompt, self.crosshair,
-        ]
-        for b in bits:
-            if b is None:
-                continue
-            try:
-                b.enabled = not hide
-            except Exception:
-                pass
-        # tutorial overlay stays off until play
-        if hide:
-            try:
-                if self.tutorial_overlay:
-                    self.tutorial_overlay.enabled = False

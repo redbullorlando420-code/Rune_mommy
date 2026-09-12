@@ -1,3 +1,157 @@
+        self.menu_lines = []
+        # Keep text lines for settings mode reuse
+        for i in range(5):
+            tline = Text(
+                text='',
+                position=(0, 0.06 - i * 0.07),
+                origin=(0, 0),
+                color=color.rgb32(255, 230, 255),
+                scale=1.0,
+                enabled=False,
+                z=-0.1,
+            )
+            self.menu_lines.append(tline)
+            self.menu_ents.append(tline)
+        self.settings_lines = []
+        for i in range(5):
+            tline = Text(
+                text='',
+                position=(0, 0.08 - i * 0.07),
+                origin=(0, 0),
+                color=color.rgb32(255, 230, 255),
+                scale=1.0,
+                enabled=False,
+                z=-0.1,
+            )
+            self.settings_lines.append(tline)
+            self.menu_ents.append(tline)
+
+        def mk_btn(label, y, action):
+            btn = Button(
+                text=label,
+                scale=(0.55, 0.08),
+                position=(0, y),
+                color=color.rgba32(40, 10, 50, 220),
+                highlight_color=color.rgba32(255, 60, 180, 220),
+                pressed_color=color.rgba32(180, 40, 120, 240),
+                text_color=color.rgb32(255, 240, 255),
+                parent=camera.ui,
+                enabled=False,
+                z=1.5,
+            )
+            try:
+                btn.text_entity.scale = 1.0
+            except Exception:
+                pass
+            btn.on_click = action
+            self.menu_buttons.append(btn)
+            self.menu_ents.append(btn)
+            return btn
+
+        self.btn_start = mk_btn('1   Start', 0.06, lambda: self._enter_safe_zone(from_load=False))
+        self.btn_load = mk_btn('2   Load', -0.02, lambda: self._try_load_game())
+        self.btn_settings = mk_btn('3   Settings', -0.10, lambda: self._enter_settings())
+        hint = Text(
+            text='Esc quit',
+            position=(0, -0.22),
+            origin=(0, 0),
+            color=color.rgb32(160, 140, 180),
+            scale=0.85,
+            enabled=False,
+            z=-0.1,
+        )
+        self.menu_ents.append(hint)
+        self.menu_hint = hint
+
+
+    def _set_menu_visible(self, visible):
+        vis = bool(visible)
+        for e in getattr(self, 'menu_ents', []) or []:
+            try:
+                e.enabled = vis
+            except Exception:
+                pass
+        # In settings mode, hide main Start/Load/Settings buttons
+        if vis and getattr(self, 'mode', '') == 'settings':
+            for b in getattr(self, 'menu_buttons', []) or []:
+                try:
+                    b.enabled = False
+                except Exception:
+                    pass
+            if getattr(self, 'menu_hint', None):
+                self.menu_hint.enabled = False
+        elif vis:
+            for b in getattr(self, 'menu_buttons', []) or []:
+                try:
+                    b.enabled = True
+                except Exception:
+                    pass
+            if getattr(self, 'menu_hint', None):
+                self.menu_hint.enabled = True
+            # hide the spare menu_lines text (buttons carry the labels)
+            for line in getattr(self, 'menu_lines', []) or []:
+                try:
+                    line.enabled = False
+                except Exception:
+                    pass
+        if vis:
+            self._refresh_menu_labels()
+            self.mouse_free = True
+            self._lock_mouse(False)
+            try:
+                self.mouse.visible = True
+                self.mouse.locked = False
+            except Exception:
+                pass
+
+
+    def _refresh_menu_labels(self):
+        if self.mode == 'settings':
+            for t in self.menu_lines:
+                t.enabled = False
+            sens = int(self.mouse_sens)
+            fs = 'ON' if getattr(self, 'fullscreen_stub', False) else 'OFF'
+            specs = [
+                'SETTINGS',
+                f'1  Mouse sensitivity  {sens}',
+                f'2  Fullscreen (stub)  {fs}',
+                '3  Back',
+                'Esc back',
+            ]
+            for i, t in enumerate(self.settings_lines):
+                t.text = specs[i] if i < len(specs) else ''
+                t.enabled = True
+                if i == 0:
+                    t.color = self.color.rgb32(255, 90, 210)
+            if self.menu_title:
+                self.menu_title.enabled = False
+        else:
+            for t in self.settings_lines:
+                t.enabled = False
+                t.text = ''
+            for t in self.menu_lines:
+                t.enabled = True
+            if self.menu_title:
+                self.menu_title.enabled = True
+
+    def _hide_play_hud(self, hide):
+        bits = [
+            self.hud_gold, self.hud_hp, self.hud_heat, self.hud_ammo,
+            self.hud_pack, self.hud_breed, self.hud_quest, self.hud_mode,
+            self.hud_prompt, self.crosshair,
+        ]
+        for b in bits:
+            if b is None:
+                continue
+            try:
+                b.enabled = not hide
+            except Exception:
+                pass
+        # tutorial overlay stays off until play
+        if hide:
+            try:
+                if self.tutorial_overlay:
+                    self.tutorial_overlay.enabled = False
                 if self.tutorial_text:
                     self.tutorial_text.enabled = False
             except Exception:
@@ -9,6 +163,11 @@
         self.ui_open = False
         self.mouse_free = True
         self._lock_mouse(False)
+        try:
+            self.mouse.visible = True
+            self.mouse.locked = False
+        except Exception:
+            pass
         self._set_menu_visible(True)
         self._hide_play_hud(True)
         if self.hud_toast:
@@ -96,159 +255,3 @@
         path = self._save_path()
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
-        except Exception as exc:
-            print('  local_save failed:', exc)
-
-    def _load_local_save(self):
-        path = self._save_path()
-        if not path.exists():
-            # honor flags-only as a soft save marker? require local_save for Load
-            return None
-        try:
-            return json.loads(path.read_text(encoding='utf-8')) or {}
-        except Exception:
-            return None
-
-    def _apply_local_save(self, data):
-        if not data:
-            return
-        self.gold = int(data.get('gold', self.gold))
-        self.hp = int(data.get('hp', self.hp))
-        self.breed = int(data.get('breed', self.breed))
-        self.preg = bool(data.get('preg', self.preg))
-        self.owned_pistol = bool(data.get('pistol', data.get('owned_pistol', self.owned_pistol)))
-        self.ammo = int(data.get('ammo', self.ammo))
-        self.pack = list(data.get('pack') or [])
-        self.intro_started = bool(data.get('intro_started', False))
-        self.michelle_seen = bool(data.get('michelle_seen', False))
-        if 'mouse_sens' in data:
-            try:
-                self.mouse_sens = float(data['mouse_sens'])
-            except Exception:
-                pass
-        if data.get('tutorial_done'):
-            self.tutorial_active = False
-            try:
-                if self.tutorial_overlay:
-                    self.tutorial_overlay.enabled = False
-                if self.tutorial_text:
-                    self.tutorial_text.enabled = False
-            except Exception:
-                pass
-            flags = self._load_flags()
-            flags['tutorial_done'] = True
-            self._save_flags(flags)
-        if self.preg:
-            try:
-                self._apply_preg_look()
-            except Exception:
-                pass
-
-    def _try_load_game(self):
-        data = self._load_local_save()
-        if not data:
-            self.toast('No save yet')
-            return
-        self._apply_local_save(data)
-        if data.get('intro_started'):
-            self.mode = 'play'
-            self.world_paused = False
-            self._set_menu_visible(False)
-            self._hide_play_hud(False)
-            self.mouse_free = False
-            self._lock_mouse(True)
-            sx, sy, sz = self.clermont_spawn
-            if self.player:
-                self.player.position = (sx, 0, sz)
-                self.player.rotation_y = -90
-            self.toast('Clermont. Michelle is at Sanctuary Drive — E to talk.')
-        else:
-            self._enter_safe_zone(from_load=True)
-
-    # ----- world ----------------------------------------------------------
-
-    def _build_ground(self):
-        Entity = self.Entity
-        color = self.color
-        grass = load_tex('grass')
-        asphalt = load_tex('asphalt')
-        Entity(
-            model='plane',
-            scale=(220, 1, 200),
-            color=color.rgb32(48, 90, 42) if grass else color.rgb32(32, 24, 36),
-            texture=grass or 'white_cube',
-            texture_scale=(70, 55),
-            collider=None,
-            y=0,
-        )
-        # lot asphalt patch
-        Entity(
-            model='cube',
-            scale=(78, 0.04, 52),
-            position=(2, 0.02, -14),
-            color=color.rgb32(36, 34, 38) if asphalt else color.rgb32(24, 18, 28),
-            texture=asphalt or 'white_cube',
-            texture_scale=(24, 16),
-        )
-
-    def _build_highway(self):
-        Entity = self.Entity
-        color = self.color
-        # Hwy 50 east-west between the two stall rows
-        asphalt = load_tex('asphalt')
-        concrete = load_tex('concrete')
-        Entity(
-            model='cube',
-            scale=(88, 0.08, 9.5),
-            position=(2, 0.05, -16),
-            color=color.rgb32(28, 26, 30) if asphalt else color.rgb32(18, 16, 20),
-            texture=asphalt,
-            texture_scale=(28, 3),
-        )
-        for x in range(-40, 44, 5):
-            Entity(
-                model='cube',
-                scale=(2.2, 0.09, 0.18),
-                position=(x, 0.1, -16),
-                color=color.rgb32(230, 200, 60),
-            )
-        # sidewalks
-        Entity(model='cube', scale=(88, 0.07, 1.6), position=(2, 0.06, -10.4),
-               color=color.rgb32(120, 115, 110) if concrete else color.rgb32(48, 38, 52),
-               texture=concrete, texture_scale=(40, 1))
-        Entity(model='cube', scale=(88, 0.07, 1.6), position=(2, 0.06, -21.6),
-               color=color.rgb32(120, 115, 110) if concrete else color.rgb32(48, 38, 52),
-               texture=concrete, texture_scale=(40, 1))
-        # street lamps
-        for x in (-28, -12, 0, 14, 28):
-            for z in (-10.2, -21.8):
-                Entity(model='cube', scale=(0.12, 3.2, 0.12), position=(x, 1.6, z), color=color.rgb32(40, 30, 50))
-                Entity(model='sphere', scale=0.35, position=(x, 3.3, z), color=color.rgb32(255, 90, 200))
-
-    def _build_skyline(self):
-        Entity = self.Entity
-        color = self.color
-        Text = self.Text
-        rng = random.Random(50)
-        # denser background strip-mall / midrise — composed, not single cubes
-        for i in range(12):
-            w, h, d = rng.uniform(3.2, 6.5), rng.uniform(4.5, 11.0), rng.uniform(3.0, 5.5)
-            x = -42 + i * 7.8 + rng.uniform(-0.6, 0.6)
-            z = 18 + rng.uniform(0, 3)
-            if math.hypot(x + 32.0, z - 12.0) < 14.0:
-                continue
-            body = color.rgb32(rng.randint(28, 55), rng.randint(16, 40), rng.randint(40, 70))
-            Entity(model='cube', scale=(w, h, d), position=(x, h / 2, z), color=body,
-                   texture=load_tex('brick') or load_tex('stucco'), texture_scale=(2.5, 2.0), collider='box')
-            Entity(model='cube', scale=(w + 0.3, 0.2, d + 0.3), position=(x, h + 0.1, z), color=body.tint(0.15) if hasattr(body, 'tint') else body)
-            # window grid
-            for wy in (0.35, 0.55, 0.75):
-                Entity(model='cube', scale=(w * 0.7, 0.18, 0.06), position=(x, h * wy, z - d / 2 - 0.02),
-                       color=color.rgb32(80, 160, 220))
-            self.building_count += 1
-        for i in range(8):
-            w, h, d = rng.uniform(3, 5.5), rng.uniform(3.2, 8.0), rng.uniform(3, 5)
-            x = -34 + i * 10
-            z = -50
-            Entity(model='cube', scale=(w, h, d), position=(x, h / 2, z),
