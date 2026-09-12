@@ -1,3 +1,11 @@
+            deb.line = 'Same lot as Mira. Vanilla, chocolate, strawberry, or the black-and-white.'
+            self.npcs.append(deb)
+
+        # Extra talkable Clermont NPCs from npcs.json. Keep them off Mira.
+        talk_spots = {
+            'lila': (-14.0, 5.5),
+            'yara': (8.0, -26.5),
+            'rosa': (mx - 3.2, mz + 0.4),
             'tavi': (-24.0, -20.0),
             'rook': (26.0, 7.0),
             'rita': (18.0, -13.0),
@@ -251,7 +259,3 @@
             position=(-0.86, -0.48),
             origin=(-0.5, 0.5),
             color=color.rgb32(160, 140, 180),
-            scale=0.65,
-        )
-
-    # ----- tick -----------------------------------------------------------
