@@ -1,24 +1,3 @@
-        )
-        for kind, x, z, npc_id in specs:
-            parts, interact, label = make_poi_building(Entity, color, Text, self._scene(), kind, x, z)
-            self.building_count += 1
-            is_gas = kind in ('gas', 'gas_hwy27') or (label or '').lower().find('gas') >= 0 or (label or '').lower().find('fuel') >= 0
-            self.pois.append({
-                'id': kind,
-                'name': label,
-                'pos': (interact[0], 0, interact[2]),
-                'npc_id': npc_id,
-                'line': None,
-                'is_gas': is_gas,
-                'pump_r': 4.2 if is_gas else 3.4,
-            })
-
-    def _build_house(self):
-        """Suburban cubes at about (-32, 0, 12). Body, teal roof, garage, door, back lawn, Sanctuary Drive."""
-        Entity = self.Entity
-        color = self.color
-        Text = self.Text
-        teal = color.rgb32(46, 196, 182)
         body_col = color.rgb32(232, 214, 188)
         wood = color.rgb32(90, 55, 40)
         hx, hz = -32.0, 12.0
@@ -259,3 +238,31 @@
             deb.npc_id = 'deb'
             deb.npc_name = 'Diner Deb'
             deb.kind = 'talk'
+            deb.line = 'Same lot as Mira. Vanilla, chocolate, strawberry, or the black-and-white.'
+            self.npcs.append(deb)
+
+        # Extra talkable Clermont NPCs from npcs.json. Keep them off Mira.
+        talk_spots = {
+            'lila': (-14.0, 5.5),
+            'yara': (8.0, -26.5),
+            'rosa': (mx - 3.2, mz + 0.4),
+            'tavi': (-24.0, -20.0),
+            'rook': (26.0, 7.0),
+            'rita': (18.0, -13.0),
+            'motel_clerk': (-8.0, 4.2),
+            'barista': (-20.0, -12.8),
+            'pharmacist': (30.0, -30.2),
+            'neighbor': (-40.0, 10.5),
+            'lot_attendant': (8.0, 2.8),
+            'amanda_friend': (-14.0, -30.0),
+        }
+        # place POI NPCs from self.pois (adds new ids + refreshes positions)
+        for poi in getattr(self, 'pois', []) or []:
+            nid = poi.get('npc_id')
+            if nid:
+                talk_spots[nid] = (poi['pos'][0], poi['pos'][2])
+        for nid, (nx, nz) in talk_spots.items():
+            spec = (self.npcs_data or {}).get(nid) or {'id': nid, 'name': nid.title(), 'greet': '...'}
+            shirt = hex_color(spec.get('color') or '#ff8fab')
+            named = nid in ('lila', 'rosa', 'yara', 'rita', 'deb')
+            npc = self._humanoid(
