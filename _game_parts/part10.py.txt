@@ -1,3 +1,7 @@
+                xz = self.house_rooms.get(rname)
+                if not xz:
+                    continue
+                d = dist_xz(pos, (xz[0], 0, xz[1]))
                 if d < best_rd:
                     best_room, best_rd = rname, d
             if best_room and (car is None or best_rd <= cd + 0.1):
@@ -251,6 +255,3 @@
             pp = portrait_texture_path(por, expr)
             tex = str(pp) if pp else None
         self.open_panel(title, node.get('text', ''), choices, portrait=True, portrait_tex=tex)
-
-    def open_talk(self, name, line, portrait_tex=None):
-        self.open_panel(name, line, [('Later.', self.close_panel)], portrait=bool(portrait_tex), portrait_tex=portrait_tex)
