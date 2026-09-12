@@ -1,3 +1,8 @@
+            scale=0.65,
+        )
+
+    # ----- tick -----------------------------------------------------------
+
     def tick(self):
         from ursina import time, held_keys, mouse, raycast, Vec3, destroy, color
         dt = min(time.dt, 0.05)
@@ -44,49 +49,62 @@
     def _walk(self, dt):
         from ursina import held_keys, mouse, raycast, Vec3
         player = self.player
-        # Play mode: keep mouse locked. Safe yard: leave free until user clicks
-        # (Windows loses WASD if we lock immediately after a UI Button).
         mode = getattr(self, 'mode', 'play')
+
+        # Free look always (locked OR unlocked OR right-mouse). Never soft-lock rotation.
+        sens = float(getattr(self, 'mouse_sens', 140) or 140)
+        player.rotation_y += mouse.velocity[0] * sens
+        self.cam_pivot.rotation_x -= mouse.velocity[1] * sens
+        self.cam_pivot.rotation_x = max(-35, min(40, self.cam_pivot.rotation_x))
+        # Q/E and arrows turn even if mouse is dead
+        if held_keys['q'] or held_keys['left arrow']:
+            player.rotation_y += 90 * dt
+        if held_keys['e'] and mode == 'safe':
+            # E is gate in safe — only turn with E if not near gate; use right arrow instead
+            pass
+        if held_keys['right arrow']:
+            player.rotation_y -= 90 * dt
+
         if mode == 'play' and not self.ui_open and not getattr(self, 'mouse_free', False):
             self._lock_mouse(True)
-        looking = getattr(mouse, 'locked', False) or held_keys['right mouse']
-        if looking:
-            sens = float(getattr(self, 'mouse_sens', 140) or 140)
-            player.rotation_y += mouse.velocity[0] * sens
-            self.cam_pivot.rotation_x -= mouse.velocity[1] * sens
-            self.cam_pivot.rotation_x = max(-35, min(40, self.cam_pivot.rotation_x))
 
-        wish = Vec3(
-            held_keys['d'] - held_keys['a'],
-            0,
-            held_keys['w'] - held_keys['s'],
-        )
+        wish_x = held_keys['d'] - held_keys['a']
+        wish_z = held_keys['w'] - held_keys['s']
+        # Arrow keys as backup movement
+        wish_x += held_keys['right arrow'] * 0  # right arrow is turn
+        wish_z += 0
+        if held_keys['up arrow']:
+            wish_z += 1
+        if held_keys['down arrow']:
+            wish_z -= 1
+        wish = Vec3(wish_x, 0, wish_z)
         if wish.length() > 0:
             wish = wish.normalized()
-            speed = 8.5
+            speed = 10.0 if mode == 'safe' else 8.5
             move = (player.forward * wish.z + player.right * wish.x) * speed * dt
-            origin = player.world_position + Vec3(0, 0.9, 0)
-            ign = list(self.ignore)
-            # Try full move, then axis slides so a curb never hard-locks you.
-            hit = raycast(origin, move.normalized(), distance=0.55 + move.length(), ignore=ign, debug=False)
-            if not hit.hit:
+            if mode == 'safe':
+                # Nuclear: no clip tests in the yard — just move and clamp.
                 player.position += move
-            else:
-                mx = Vec3(move.x, 0, 0)
-                mz = Vec3(0, 0, move.z)
-                if mx.length() > 1e-5:
-                    hx = raycast(origin, mx.normalized(), distance=0.55 + mx.length(), ignore=ign, debug=False)
-                    if not hx.hit:
-                        player.x += mx.x
-                if mz.length() > 1e-5:
-                    hz = raycast(origin, mz.normalized(), distance=0.55 + mz.length(), ignore=ign, debug=False)
-                    if not hz.hit:
-                        player.z += mz.z
-            if getattr(self, 'mode', 'play') == 'safe':
                 cx, _cy, cz = getattr(self, 'safe_yard_center', (80.0, 0.0, 80.0))
                 player.x = max(cx - 12.0, min(cx + 12.0, player.x))
                 player.z = max(cz - 12.0, min(cz + 12.0, player.z))
             else:
+                origin = player.world_position + Vec3(0, 0.9, 0)
+                ign = list(self.ignore)
+                hit = raycast(origin, move.normalized(), distance=0.55 + move.length(), ignore=ign, debug=False)
+                if not hit.hit:
+                    player.position += move
+                else:
+                    mx = Vec3(move.x, 0, 0)
+                    mz = Vec3(0, 0, move.z)
+                    if mx.length() > 1e-5:
+                        hx = raycast(origin, mx.normalized(), distance=0.55 + mx.length(), ignore=ign, debug=False)
+                        if not hx.hit:
+                            player.x += mx.x
+                    if mz.length() > 1e-5:
+                        hz = raycast(origin, mz.normalized(), distance=0.55 + mz.length(), ignore=ign, debug=False)
+                        if not hz.hit:
+                            player.z += mz.z
                 player.x = max(-55, min(58, player.x))
                 player.z = max(-55, min(28, player.z))
 
@@ -241,18 +259,3 @@
             return
         add = min(42.0, max(3.0, abs(float(impact_speed)) * 2.4))
         car.damage = min(100.0, float(getattr(car, 'damage', 0.0) or 0.0) + add)
-        if car.damage >= 100.0 and not getattr(car, 'disabled', False):
-            car.disabled = True
-            car.speed = 0.0
-            self.toast('Car totaled.')
-            if self.in_car is car:
-                # stall — force exit shortly via disabled flag in enter check
-                pass
-
-    def _update_car_damage_visual(self, car, dt=0.016):
-        dmg = float(getattr(car, 'damage', 0.0) or 0.0)
-        base = getattr(car, 'base_paint', None) or getattr(car, 'paint', None)
-        if base is not None and getattr(car, 'body', None):
-            t = min(1.0, dmg / 100.0)
-            try:
-                # darker / redder as damage rises
