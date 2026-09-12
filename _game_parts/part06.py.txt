@@ -1,3 +1,8 @@
+            'tavi': (-24.0, -20.0),
+            'rook': (26.0, 7.0),
+            'rita': (18.0, -13.0),
+            'motel_clerk': (-8.0, 4.2),
+            'barista': (-20.0, -12.8),
             'pharmacist': (30.0, -30.2),
             'neighbor': (-40.0, 10.5),
             'lot_attendant': (8.0, 2.8),
@@ -250,8 +255,3 @@
         )
 
     # ----- tick -----------------------------------------------------------
-
-    def tick(self):
-        from ursina import time, held_keys, mouse, raycast, Vec3, destroy, color
-        dt = min(time.dt, 0.05)
-        self.shoot_cd = max(0.0, self.shoot_cd - dt)
