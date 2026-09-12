@@ -1,31 +1,3 @@
-            deb.line = 'Same lot as Mira. Vanilla, chocolate, strawberry, or the black-and-white.'
-            self.npcs.append(deb)
-
-        # Extra talkable Clermont NPCs from npcs.json. Keep them off Mira.
-        talk_spots = {
-            'lila': (-14.0, 5.5),
-            'yara': (8.0, -26.5),
-            'rosa': (mx - 3.2, mz + 0.4),
-            'tavi': (-24.0, -20.0),
-            'rook': (26.0, 7.0),
-            'rita': (18.0, -13.0),
-            'motel_clerk': (-8.0, 4.2),
-            'barista': (-20.0, -12.8),
-            'pharmacist': (30.0, -30.2),
-            'neighbor': (-40.0, 10.5),
-            'lot_attendant': (8.0, 2.8),
-            'amanda_friend': (-14.0, -30.0),
-        }
-        # place POI NPCs from self.pois (adds new ids + refreshes positions)
-        for poi in getattr(self, 'pois', []) or []:
-            nid = poi.get('npc_id')
-            if nid:
-                talk_spots[nid] = (poi['pos'][0], poi['pos'][2])
-        for nid, (nx, nz) in talk_spots.items():
-            spec = (self.npcs_data or {}).get(nid) or {'id': nid, 'name': nid.title(), 'greet': '...'}
-            shirt = hex_color(spec.get('color') or '#ff8fab')
-            named = nid in ('lila', 'rosa', 'yara', 'rita', 'deb')
-            npc = self._humanoid(
                 nx, nz, shirt=shirt, pants=color.rgb32(36, 24, 40),
                 skin=color.rgb32(255, 200, 160), detail='named' if named else 'crowd',
             )
@@ -221,6 +193,14 @@
         self.hud_prompt = Text(text='', position=(0, -0.42), origin=(0, 0), color=color.rgb32(255, 240, 180), scale=0.9)
         self.hud_toast = Text(text='', position=(0, 0.32), origin=(0, 0), color=color.rgb32(255, 180, 220), scale=0.85)
         self.crosshair = Entity(parent=camera.ui, model='quad', color=color.rgb32(255, 255, 255), scale=0.008, rotation_z=45)
+        self.debug_hud = Text(
+            text='',
+            position=(-0.86, -0.36),
+            origin=(-0.5, 0.5),
+            color=color.rgb32(180, 255, 180),
+            scale=0.65,
+            enabled=True,
+        )
 
         self.panel_bg = Entity(
             parent=camera.ui,
@@ -259,3 +239,29 @@
             position=(-0.86, -0.48),
             origin=(-0.5, 0.5),
             color=color.rgb32(160, 140, 180),
+            scale=0.65,
+        )
+
+    # ----- tick -----------------------------------------------------------
+
+    def tick(self):
+        from ursina import time, held_keys, mouse, raycast, Vec3, destroy, color
+        dt = min(time.dt, 0.05)
+        self.shoot_cd = max(0.0, self.shoot_cd - dt)
+        if self.toast_timer > 0:
+            self.toast_timer -= dt
+            if self.toast_timer <= 0 and self.hud_toast:
+                self.hud_toast.text = ''
+
+        mode = getattr(self, 'mode', 'play')
+        if mode in ('menu', 'settings'):
+            # title / settings — no world sim, no walk
+            if getattr(self, 'debug_on', True):
+                try:
+                    self._debug_tick(dt)
+                except Exception:
+                    pass
+            return
+
+        self.panic_t = max(0.0, getattr(self, 'panic_t', 0.0) - dt)
+        self._wander_targets(dt)
