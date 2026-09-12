@@ -1,3 +1,8 @@
+        options.sort(key=lambda x: x[0])
+        return options[0][1]
+
+    def _actor_pos(self):
+        if self.in_car:
             p = self.in_car.world_position
             return (p.x, p.y, p.z)
         p = self.player.world_position
@@ -251,7 +256,3 @@
         if self.michelle_seen and self.house_rooms:
             best_room, best_rd = None, 2.8
             for rname in ('guest', 'garage', 'shower', 'lawn'):
-                xz = self.house_rooms.get(rname)
-                if not xz:
-                    continue
-                d = dist_xz(pos, (xz[0], 0, xz[1]))
