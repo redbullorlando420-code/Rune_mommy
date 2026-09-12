@@ -233,6 +233,13 @@ class Game:
         self.in_car = None
         self.ui_open = False
         self.mouse_free = False
+        self.debug_on = True
+        self.debug_hud = None
+        self._dbg_t = 0.0
+        self._dbg_last_key = '-'
+        self._dbg_moved = False
+        self._dbg_wish = False
+        self._dbg_stuck_t = 0.0
         self.ui_choices = []
         self.toast_timer = 0.0
         self.prompt = ''
