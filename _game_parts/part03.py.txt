@@ -1,9 +1,3 @@
-        for i in range(5):
-            tline = Text(
-                text='',
-                position=(0, 0.06 - i * 0.07),
-                origin=(0, 0),
-                color=color.rgb32(255, 230, 255),
                 scale=1.0,
                 enabled=False,
                 z=-0.1,
@@ -185,11 +179,10 @@
         self._refresh_menu_labels()
 
     def _enter_safe_zone(self, from_load=False):
+        from ursina import invoke
         self.mode = 'safe'
         self.world_paused = True
         self.ui_open = False
-        # Keep cursor free after a UI button click — locking immediately steals
-        # keyboard focus on Windows and WASD never arrives. Click to recapture.
         self.mouse_free = True
         self._set_menu_visible(False)
         self._hide_play_hud(False)
@@ -201,15 +194,39 @@
             pass
         cx, cy, cz = self.safe_yard_center
         if self.player:
-            self.player.position = (cx, 0, cz)
+            # Spawn high and drop so we never clip into floor/props.
+            self.player.position = (cx, 6.0, cz)
             self.player.rotation_y = 180
-            # lift slightly so we never spawn inside a floor collider
-            self.player.y = 0.05
-        msg = 'Safe yard — CLICK the window, then WASD. E at pink gate = Clermont.'
+            self.y_vel = 0.0
+            self.grounded = False
+        msg = 'SAFE YARD — WASD / arrows move, Q/E turn, mouse look. Esc = menu. E at pink gate = Clermont.'
         if from_load:
-            msg = 'Loaded. CLICK the window, then WASD. E at gate when ready.'
+            msg = 'Loaded. ' + msg
         self.toast(msg)
         print('[Rune Mommy]', msg)
+        # Refocus after UI button steals keyboard on Windows.
+        def _refocus():
+            try:
+                from ursina import application
+                win = application.base.win
+                props = win.get_properties() if hasattr(win, 'get_properties') else None
+                from panda3d.core import WindowProperties
+                wp = WindowProperties()
+                wp.setForeground(True)
+                win.request_properties(wp)
+            except Exception as exc:
+                print('[Rune Mommy] refocus skip:', exc)
+            try:
+                self.mouse.visible = True
+                self.mouse.locked = False
+            except Exception:
+                pass
+        try:
+            invoke(_refocus, delay=0.05)
+            invoke(_refocus, delay=0.25)
+        except Exception:
+            _refocus()
+
 
     def _leave_safe_to_world(self):
         """Gate exit: jump into Clermont, enable systems."""
@@ -242,17 +259,3 @@
 
     def _save_path(self):
         return ROOT / 'data' / 'local_save.json'
-
-    def _write_local_save(self):
-        flags = self._load_flags()
-        tutorial_done = bool(flags.get('tutorial_done')) or (not self.tutorial_active)
-        data = {
-            'gold': int(self.gold),
-            'hp': int(self.hp),
-            'breed': int(self.breed),
-            'preg': bool(self.preg),
-            'owned_pistol': bool(self.owned_pistol),
-            'pistol': bool(self.owned_pistol),
-            'ammo': int(self.ammo),
-            'pack': list(self.pack),
-            'tutorial_done': tutorial_done,
