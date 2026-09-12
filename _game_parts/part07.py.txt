@@ -1,3 +1,37 @@
+        if self.toast_timer > 0:
+            self.toast_timer -= dt
+            if self.toast_timer <= 0 and self.hud_toast:
+                self.hud_toast.text = ''
+
+        mode = getattr(self, 'mode', 'play')
+        if mode in ('menu', 'settings'):
+            # title / settings — no world sim, no walk
+            if self.hud_toast and self.toast_timer > 0:
+                pass
+            return
+
+        self.panic_t = max(0.0, getattr(self, 'panic_t', 0.0) - dt)
+        self._wander_targets(dt)
+
+        if mode == 'play':
+            tick_crowd(self, dt)
+            tick_traffic(self, dt)
+            self._tick_heat(dt)
+            self._tick_tutorial(dt)
+        # safe: skip crowd/traffic/heat; walk only
+
+        if self.ui_open:
+            self._refresh_hud()
+            return
+
+        if mode == 'play' and self.in_car:
+            self._drive(dt)
+        else:
+            self._walk(dt)
+
+        if mode == 'play':
+            self._maybe_auto_michelle()
+            self._tick_visit_quests()
             if self.pistol_drawn and self.owned_pistol and held_keys['left mouse'] and self.shoot_cd <= 0:
                 self._shoot()
 
@@ -221,7 +255,3 @@
                     b = int(base.b * 255 * (1 - 0.75 * t) + 25 * t)
                     col = self.color.rgb32(max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b)))
                 else:
-                    col = base.tint(-0.55 * t) if hasattr(base, 'tint') else base
-                car.body.color = col
-                cabin = getattr(car, 'cabin', None)
-                if cabin is not None:
