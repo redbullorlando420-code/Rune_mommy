@@ -256,3 +256,6 @@ class Game:
         self.house_vols = []
         self.sanctuary_door = None
         self.michelle = None
+        self.building_count = 0
+        self.pois = []
+        self.quest_defs = list((self.quests_data or {}).get('quests') or [])
