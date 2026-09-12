@@ -1,3 +1,12 @@
+    def _quest_hud_line(self):
+        for qid in self.quest_active:
+            q = self._quest_def(qid)
+            if not q:
+                continue
+            hud = q.get('hud') or q.get('name') or qid
+            prog = self.quest_progress.get(qid, 0)
+            if '{progress}' in hud:
+                hud = hud.replace('{progress}', str(prog))
             return f'QUEST  {hud}'
         if self.quest_completed:
             return 'QUEST  done for now'
