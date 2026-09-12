@@ -1,3 +1,64 @@
+            'pharmacist': (30.0, -30.2),
+            'neighbor': (-40.0, 10.5),
+            'lot_attendant': (8.0, 2.8),
+            'amanda_friend': (-14.0, -30.0),
+        }
+        # place POI NPCs from self.pois (adds new ids + refreshes positions)
+        for poi in getattr(self, 'pois', []) or []:
+            nid = poi.get('npc_id')
+            if nid:
+                talk_spots[nid] = (poi['pos'][0], poi['pos'][2])
+        for nid, (nx, nz) in talk_spots.items():
+            spec = (self.npcs_data or {}).get(nid) or {'id': nid, 'name': nid.title(), 'greet': '...'}
+            shirt = hex_color(spec.get('color') or '#ff8fab')
+            named = nid in ('lila', 'rosa', 'yara', 'rita', 'deb')
+            npc = self._humanoid(
+                nx, nz, shirt=shirt, pants=color.rgb32(36, 24, 40),
+                skin=color.rgb32(255, 200, 160), detail='named' if named else 'crowd',
+            )
+            npc.npc_id = nid
+            npc.npc_name = spec.get('name', nid.title())
+            npc.kind = nid if nid in ('lila', 'rosa', 'yara') else 'talk'
+            npc.line = spec.get('greet') or spec.get('lines', ['...'])[0]
+            npc.portrait_tex = None
+            rel = portrait_asset_path(nid)
+            if rel:
+                try:
+                    from ursina import load_texture
+                    tex = load_texture(rel)
+                except Exception:
+                    tex = str(pp)
+                npc.portrait_tex = tex
+                bill = Entity(
+                    parent=npc,
+                    model='quad',
+                    texture=tex,
+                    scale=(1.05, 1.4),
+                    position=(0, 1.45, -0.55),
+                    double_sided=True,
+                )
+                try:
+                    bill.billboard = True
+                except Exception:
+                    pass
+            self.npcs.append(npc)
+            self.talk_npcs.append({
+                'ent': npc,
+                'name': npc.npc_name,
+                'talk': npc.line,
+                'killable': False,
+            })
+
+    def _humanoid(self, x, z, shirt, pants, skin=None, hitbox=False, detail='crowd', style=None):
+        return make_humanoid(
+            self.Entity, self.color, x, z, shirt, pants,
+            skin=skin, hitbox=hitbox, detail=detail, style=style,
+        )
+
+    def _build_cars(self):
+        paints = [
+            self.color.rgb32(200, 30, 40),
+            self.color.rgb32(20, 20, 24),
             self.color.rgb32(230, 230, 235),
             self.color.rgb32(30, 170, 190),
             self.color.rgb32(240, 190, 40),
@@ -194,37 +255,3 @@
         from ursina import time, held_keys, mouse, raycast, Vec3, destroy, color
         dt = min(time.dt, 0.05)
         self.shoot_cd = max(0.0, self.shoot_cd - dt)
-        if self.toast_timer > 0:
-            self.toast_timer -= dt
-            if self.toast_timer <= 0 and self.hud_toast:
-                self.hud_toast.text = ''
-
-        mode = getattr(self, 'mode', 'play')
-        if mode in ('menu', 'settings'):
-            # title / settings — no world sim, no walk
-            if self.hud_toast and self.toast_timer > 0:
-                pass
-            return
-
-        self.panic_t = max(0.0, getattr(self, 'panic_t', 0.0) - dt)
-        self._wander_targets(dt)
-
-        if mode == 'play':
-            tick_crowd(self, dt)
-            tick_traffic(self, dt)
-            self._tick_heat(dt)
-            self._tick_tutorial(dt)
-        # safe: skip crowd/traffic/heat; walk only
-
-        if self.ui_open:
-            self._refresh_hud()
-            return
-
-        if mode == 'play' and self.in_car:
-            self._drive(dt)
-        else:
-            self._walk(dt)
-
-        if mode == 'play':
-            self._maybe_auto_michelle()
-            self._tick_visit_quests()
