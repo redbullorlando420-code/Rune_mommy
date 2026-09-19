@@ -285,10 +285,15 @@ def _body_nude_feminine(Entity, color, parent, skin, hip_w, torso_d, leg_gap, *,
            scale=bs, x=-bx, y=1.28, z=-0.14)
     Entity(parent=parent, model='sphere', color=_tint(skin, 0.04),
            scale=bs, x=bx, y=1.28, z=-0.14)
-    Entity(parent=parent, model='sphere', color=_rgb(color, 220, 140, 140),
-           scale=0.055 if michelle else 0.04, x=-bx, y=1.28, z=-0.26)
-    Entity(parent=parent, model='sphere', color=_rgb(color, 220, 140, 140),
-           scale=0.055 if michelle else 0.04, x=bx, y=1.28, z=-0.26)
+    # Visible nipples + soft areola (adult nude only)
+    Entity(parent=parent, model='sphere', color=_rgb(color, 210, 120, 130),
+           scale=0.10 if michelle else 0.08, x=-bx, y=1.28, z=-0.22)
+    Entity(parent=parent, model='sphere', color=_rgb(color, 210, 120, 130),
+           scale=0.10 if michelle else 0.08, x=bx, y=1.28, z=-0.22)
+    Entity(parent=parent, model='sphere', color=_rgb(color, 180, 70, 90),
+           scale=0.045 if michelle else 0.035, x=-bx, y=1.28, z=-0.28)
+    Entity(parent=parent, model='sphere', color=_rgb(color, 180, 70, 90),
+           scale=0.045 if michelle else 0.035, x=bx, y=1.28, z=-0.28)
     Entity(parent=parent, model='sphere', color=_tint(skin, -0.08),
            scale=0.04, y=1.00, z=-0.14)
     # legs already from shared bare-leg path
@@ -642,6 +647,34 @@ def attach_humanoid_parts(
     parent._parts_hitbox = bool(hitbox)
     parent._parts_ready = True
     parent._feminine_adult = bool(allow_undress)
+    # LOD: keep torso/head/legs visible at mid distance; hide untagged extras
+    try:
+        for ch in list(getattr(parent, 'children', []) or []):
+            y = float(getattr(ch, 'y', 0) or 0)
+            # core silhouette band roughly feet→head
+            if 0.05 <= y <= 1.65:
+                ch.lod_keep = True
+            else:
+                ch.lod_detail = getattr(ch, 'lod_detail', None) or 'high'
+            for gch in list(getattr(ch, 'children', []) or []):
+                gch.lod_detail = getattr(gch, 'lod_detail', None) or 'high'
+    except Exception:
+        pass
+    # Soft jiggle stubs (chest / hip) — light sine in game tick if present
+    try:
+        jiggle = []
+        for ch in list(getattr(parent, 'children', []) or []):
+            nm = str(getattr(ch, 'name', '') or '')
+            sc = getattr(ch, 'scale', None)
+            # sphere-ish breast/butt proxies
+            if getattr(ch, 'model', None) == 'sphere' and float(getattr(ch, 'y', 0) or 0) > 0.6:
+                ch.jiggle_amp = 0.012
+                ch.jiggle_base_y = float(ch.y)
+                ch.jiggle_base_z = float(getattr(ch, 'z', 0) or 0)
+                jiggle.append(ch)
+        parent.jiggle_parts = jiggle
+    except Exception:
+        parent.jiggle_parts = []
     return parent
 
 
@@ -814,3 +847,30 @@ def make_car(Entity, color, pos, yaw, paint):
     car.parked = getattr(car, 'parked', True)
     car.traffic = getattr(car, 'traffic', False)
     return car
+
+
+def tick_jiggle(ent, dt, moving=False):
+    """Tiny bust/hip bob while moving — zero cost if no jiggle_parts."""
+    parts = getattr(ent, 'jiggle_parts', None) or []
+    if not parts:
+        return
+    import math, time as _t
+    if not moving:
+        # ease back
+        for p in parts:
+            try:
+                by = getattr(p, 'jiggle_base_y', p.y)
+                p.y = by + (float(p.y) - by) * 0.85
+            except Exception:
+                pass
+        return
+    phase = (_t.time() * 9.0 + id(ent) * 0.01) % 6.28318
+    for i, p in enumerate(parts):
+        try:
+            amp = float(getattr(p, 'jiggle_amp', 0.01) or 0.01)
+            by = float(getattr(p, 'jiggle_base_y', p.y))
+            bz = float(getattr(p, 'jiggle_base_z', getattr(p, 'z', 0) or 0))
+            p.y = by + math.sin(phase + i) * amp
+            p.z = bz + math.cos(phase * 0.5 + i) * amp * 0.4
+        except Exception:
+            pass
