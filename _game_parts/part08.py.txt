@@ -1,3 +1,26 @@
+        except Exception:
+            pass
+
+        self.player.position = car.position
+        self.player.y = 0
+        self.player.rotation_y = car.rotation_y
+        if self.visual.enabled:
+            self.visual.enabled = False
+        if not self.cam_in_car:
+            self._set_camera_follow(True)
+
+    def _car_take_damage(self, car, impact_speed):
+        if getattr(car, 'traffic', False) and self.in_car is not car:
+            return
+        add = min(42.0, max(3.0, abs(float(impact_speed)) * 2.4))
+        car.damage = min(100.0, float(getattr(car, 'damage', 0.0) or 0.0) + add)
+        if car.damage >= 100.0 and not getattr(car, 'disabled', False):
+            car.disabled = True
+            car.speed = 0.0
+            self.toast('Car totaled.')
+            if self.in_car is car:
+                # stall — force exit shortly via disabled flag in enter check
+                pass
 
     def _update_car_damage_visual(self, car, dt=0.016):
         dmg = float(getattr(car, 'damage', 0.0) or 0.0)
@@ -149,6 +172,11 @@
                             pass
                     extra = f' +{xp}xp' if xp else ''
                     self.toast(f'{name} down. +{loot}g{extra}')
+                    if kind == 'gator' or getattr(tagged, 'npc_name', '') == 'alligator':
+                        try:
+                            wildlife.on_gator_killed(self, tagged)
+                        except Exception:
+                            pass
                     self._quest_event('kill', kind=kind, mob_id=getattr(tagged, 'mob_id', ''))
 
     def _refresh_hud(self):
@@ -219,6 +247,12 @@
         npc, nd = self._nearest_npc(pos, 3.0)
         stall, sd = self._nearest_stall(pos, 3.6)
         options = []
+        try:
+            ip = interiors.prompt(self, pos)
+            if ip:
+                options.append((0.05, ip))
+        except Exception:
+            pass
         if gas:
             near_car, _ncd = self._nearest_car(pos, 5.0)
             if near_car and not getattr(near_car, 'traffic', False):
@@ -245,27 +279,3 @@
             elif kind == 'gun':
                 options.append((nd, 'E  Hancock Gun Hut (Gage)'))
             elif kind not in ('target', 'mob'):
-                options.append((nd, f'E  talk to {getattr(npc, "npc_name", "NPC")}'))
-        if stall and (not npc or sd + 0.4 < nd):
-            if stall['kind'] == 'gun':
-                options.append((sd, 'E  Hancock Gun Hut'))
-            else:
-                options.append((sd, f'E  {stall["name"]}'))
-        door_xz = (self.house_rooms or {}).get('door')
-        if door_xz and not self.michelle_seen:
-            dd = dist_xz(pos, (door_xz[0], 0, door_xz[1]))
-            if dd < 3.0:
-                options.append((dd, 'E  Sanctuary Drive'))
-        for poi in getattr(self, 'pois', []) or []:
-            if poi.get('is_gas'):
-                continue
-            pd = dist_xz(pos, poi['pos'])
-            if pd < 3.4:
-                options.append((pd, f"E  {poi.get('name', 'POI')}"))
-        if not options:
-            return ''
-        options.sort(key=lambda x: x[0])
-        return options[0][1]
-
-    def _actor_pos(self):
-        if self.in_car:

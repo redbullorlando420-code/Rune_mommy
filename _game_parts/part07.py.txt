@@ -1,3 +1,23 @@
+        self.panel_choices = []
+        for i in range(4):
+            t = Text(
+                text='',
+                position=(-0.52, -0.34 - i * 0.045),
+                origin=(-0.5, 0.5),
+                color=color.rgb32(160, 230, 255),
+                enabled=False,
+                scale=0.75,
+            )
+            self.panel_choices.append(t)
+        Text(
+            text='WASD walk   mouse look   E use   1 pistol   LMB shoot   ESC quit',
+            position=(-0.86, -0.48),
+            origin=(-0.5, 0.5),
+            color=color.rgb32(160, 140, 180),
+            scale=0.65,
+        )
+
+    # ----- tick -----------------------------------------------------------
 
     def tick(self):
         from ursina import time, held_keys, mouse, raycast, Vec3, destroy, color
@@ -23,6 +43,14 @@
 
         if mode == 'play':
             tick_crowd(self, dt)
+            try:
+                life_sim.tick(self, dt)
+            except Exception:
+                pass
+            try:
+                wildlife.tick_gators(self, dt)
+            except Exception:
+                pass
             tick_traffic(self, dt)
             self._tick_heat(dt)
             self._tick_tutorial(dt)
@@ -36,6 +64,10 @@
             self._drive(dt)
         else:
             self._walk(dt)
+            try:
+                wildlife.apply_player_water(self)
+            except Exception:
+                pass
 
         if mode == 'play':
             self._maybe_auto_michelle()
@@ -247,26 +279,3 @@
             target_z = -0.15 if abs(car.speed) > 8 else 0.2
             cur = float(getattr(car.cam_pivot, 'z', 0.2) or 0.2)
             car.cam_pivot.z = cur + (target_z - cur) * min(1.0, 3.5 * dt)
-        except Exception:
-            pass
-
-        self.player.position = car.position
-        self.player.y = 0
-        self.player.rotation_y = car.rotation_y
-        if self.visual.enabled:
-            self.visual.enabled = False
-        if not self.cam_in_car:
-            self._set_camera_follow(True)
-
-    def _car_take_damage(self, car, impact_speed):
-        if getattr(car, 'traffic', False) and self.in_car is not car:
-            return
-        add = min(42.0, max(3.0, abs(float(impact_speed)) * 2.4))
-        car.damage = min(100.0, float(getattr(car, 'damage', 0.0) or 0.0) + add)
-        if car.damage >= 100.0 and not getattr(car, 'disabled', False):
-            car.disabled = True
-            car.speed = 0.0
-            self.toast('Car totaled.')
-            if self.in_car is car:
-                # stall — force exit shortly via disabled flag in enter check
-                pass

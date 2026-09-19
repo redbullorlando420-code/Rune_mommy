@@ -13,18 +13,18 @@ py -3 game.py
 
 If `py` is missing, use `python` instead of `py -3`.
 
-A window titled **Rune Mommy** opens at the title menu. Choose **Start** (or press `1`); you arrive grounded in the safe yard with WASD and mouse-look active immediately. Press `Tab` to release or recapture the cursor. Esc closes talk panels or returns to the title from the safe yard.
+A window titled **Rune Mommy** opens. **Click the window once**, then use WASD. Esc closes talk panels.
 
 ## Controls
 
-- **WASD** walk (available immediately after Start and after returning from Settings)
+- **WASD** walk (click the window first so it captures the mouse)
 - **Mouse** look
 - **Space** jump
 - **E** enter/exit car, talk, buy, refuel at a pump
 - **1** draw / holster pistol (buy from Gage at Hancock Gun Hut)
 - **LMB** shoot
 - **H** drink a shake (heals)
-- **Tab** release or recapture mouse-look; walking remains available either way
+- **Tab** free the cursor
 - **Esc** close talk panel, or quit
 - **1–4** pick dialogue choices
 
@@ -79,3 +79,13 @@ Do not empty `data/shops.json`. Michelle first name only.
 Do not empty `data/shops.json`. Keep all ten shake stalls.
 
 Portraits: `client/portraits/<npc>/<expr>.png`
+
+## New systems (local)
+
+- **Interiors** — E on orange mats (Michelle house, Quiet Spa, Club 27, gas, Walmart). Green mat exits. See `DEVNOTES.md`.
+- **Life-sim** — schedule FSM for Michelle / named NPCs / some crowd; dialogue can mention state.
+- **Food trucks** — three Hwy 50 trucks in `data/shops.json` (append-only).
+- **Lakes + gators** — deep water you can wade; alligators chase/bite; hunt for loot.
+- **Walmart** — far-east big box, enterable, shop stock in shops.json.
+
+Do not empty `data/shops.json`. Michelle first name only.

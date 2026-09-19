@@ -37,7 +37,12 @@ from models3d import (
     make_humanoid, make_car, make_house, make_shop_stall,
     make_billboard, make_street_sign, make_poi_building,
     set_world_textures,
+    make_food_truck, make_walmart, densify_hwy50,
 )
+
+import life_sim
+import interiors
+import wildlife
 
 _TEX_CACHE = {}
 
@@ -270,3 +275,7 @@ class Game:
         self.quest_completed = set()
         self.quest_progress = {}
         self.hud_quest = None
+        self.hud_mode = None
+        self.tutorial_active = False
+        self.tutorial_step = 0
+        self.tutorial_overlay = None

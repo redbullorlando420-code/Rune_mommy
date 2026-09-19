@@ -1,15 +1,3 @@
-            self.menu_lines.append(tline)
-            self.menu_ents.append(tline)
-        self.settings_lines = []
-        for i in range(5):
-            tline = Text(
-                text='',
-                position=(0, 0.08 - i * 0.07),
-                origin=(0, 0),
-                color=color.rgb32(255, 230, 255),
-                scale=1.0,
-                enabled=False,
-                z=-0.1,
             )
             self.settings_lines.append(tline)
             self.menu_ents.append(tline)
@@ -270,3 +258,24 @@
         except Exception:
             pass
         self.toast('Clermont. Michelle is at Sanctuary Drive — E to talk.')
+
+    def _save_path(self):
+        return ROOT / 'data' / 'local_save.json'
+
+    def _write_local_save(self):
+        flags = self._load_flags()
+        tutorial_done = bool(flags.get('tutorial_done')) or (not self.tutorial_active)
+        data = {
+            'gold': int(self.gold),
+            'hp': int(self.hp),
+            'breed': int(self.breed),
+            'preg': bool(self.preg),
+            'owned_pistol': bool(self.owned_pistol),
+            'pistol': bool(self.owned_pistol),
+            'ammo': int(self.ammo),
+            'pack': list(self.pack),
+            'tutorial_done': tutorial_done,
+            'intro_started': bool(self.intro_started),
+            'michelle_seen': bool(self.michelle_seen),
+            'mouse_sens': float(self.mouse_sens),
+        }

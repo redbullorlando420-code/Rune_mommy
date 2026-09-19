@@ -1,3 +1,12 @@
+        for qid in list(self.quest_active):
+            q = self._quest_def(qid)
+            if not q:
+                continue
+            qtype = q.get('type')
+            if etype == 'talk' and qtype == 'talk':
+                if kw.get('npc_id') == q.get('npc'):
+                    self._quest_complete(qid)
+            elif etype == 'buy' and qtype == 'buy':
                 if kw.get('item_id') == q.get('item'):
                     self._quest_complete(qid)
             elif etype == 'buy_pistol' and qtype == 'buy_pistol':

@@ -1,24 +1,3 @@
-
-    def _save_path(self):
-        return ROOT / 'data' / 'local_save.json'
-
-    def _write_local_save(self):
-        flags = self._load_flags()
-        tutorial_done = bool(flags.get('tutorial_done')) or (not self.tutorial_active)
-        data = {
-            'gold': int(self.gold),
-            'hp': int(self.hp),
-            'breed': int(self.breed),
-            'preg': bool(self.preg),
-            'owned_pistol': bool(self.owned_pistol),
-            'pistol': bool(self.owned_pistol),
-            'ammo': int(self.ammo),
-            'pack': list(self.pack),
-            'tutorial_done': tutorial_done,
-            'intro_started': bool(self.intro_started),
-            'michelle_seen': bool(self.michelle_seen),
-            'mouse_sens': float(self.mouse_sens),
-        }
         path = self._save_path()
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -270,3 +249,33 @@
             # Citrus Tower — US-27 north of Hwy 50
             ('citrus_tower', 36.0, 6.0, 'citrus_guide'),
             # Waterfront Park / Lake Minneola — SE of downtown slice
+            ('waterfront', 16.0, -42.0, 'park_ranger'),
+            # roadside kitsch density (buildings only — no shared NPC overwrite)
+            ('showcase_citrus', 28.0, -6.0, None),
+            ('presidents_hall', 44.0, -8.0, None),
+        )
+        for kind, x, z, npc_id in specs:
+            parts, interact, label = make_poi_building(Entity, color, Text, self._scene(), kind, x, z)
+            self.building_count += 1
+            is_gas = kind in ('gas', 'gas_hwy27') or (label or '').lower().find('gas') >= 0 or (label or '').lower().find('fuel') >= 0
+            self.pois.append({
+                'id': kind,
+                'name': label,
+                'pos': (interact[0], 0, interact[2]),
+                'npc_id': npc_id,
+                'line': None,
+                'is_gas': is_gas,
+                'pump_r': 4.2 if is_gas else 3.4,
+            })
+
+    def _build_house(self):
+        """Suburban cubes at about (-32, 0, 12). Body, teal roof, garage, door, back lawn, Sanctuary Drive."""
+        Entity = self.Entity
+        color = self.color
+        Text = self.Text
+        teal = color.rgb32(46, 196, 182)
+        body_col = color.rgb32(232, 214, 188)
+        wood = color.rgb32(90, 55, 40)
+        hx, hz = -32.0, 12.0
+        self.house_vols = []
+        self.sanctuary_pos = (hx, 0.0, hz)

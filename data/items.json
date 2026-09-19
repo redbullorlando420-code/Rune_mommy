@@ -1067,7 +1067,8 @@
     "range": 4.4,
     "speed": 1.45,
     "value": 36,
-    "icon": "pistol"
+    "icon": "pistol",
+    "ammo": "ammo_9mm"
   },
   "snub_revolver": {
     "id": "snub_revolver",
@@ -1081,7 +1082,8 @@
     "range": 4.6,
     "speed": 1.65,
     "value": 48,
-    "icon": "pistol"
+    "icon": "pistol",
+    "ammo": "ammo_38"
   },
   "nine_pistol": {
     "id": "nine_pistol",
@@ -1095,7 +1097,8 @@
     "range": 5.1,
     "speed": 1.5,
     "value": 62,
-    "icon": "pistol"
+    "icon": "pistol",
+    "ammo": "ammo_9mm"
   },
   "ammo_9mm": {
     "id": "ammo_9mm",
@@ -1754,5 +1757,423 @@
     "stack": 1,
     "value": 9,
     "icon": "bag"
+  },
+  "pistol": {
+    "id": "pistol",
+    "name": "Lot Pistol",
+    "kind": "weapon",
+    "slot": "weapon",
+    "desc": "A square, unlovely 9mm from the Hancock hut. Loud enough to end an argument.",
+    "stack": 1,
+    "atk": 9,
+    "style": "ranged",
+    "range": 5.0,
+    "speed": 1.4,
+    "ammo": "ammo",
+    "value": 55,
+    "icon": "pistol"
+  },
+  "shotgun": {
+    "id": "shotgun",
+    "name": "Pump Shotgun",
+    "kind": "weapon",
+    "slot": "weapon",
+    "desc": "Short pump, walnut stain, a muzzle that does not do nuance.",
+    "stack": 1,
+    "atk": 16,
+    "style": "ranged",
+    "range": 3.4,
+    "speed": 1.95,
+    "ammo": "ammo_shotgun",
+    "value": 95,
+    "icon": "shotgun"
+  },
+  "ammo": {
+    "id": "ammo",
+    "name": "Pistol Ammo",
+    "kind": "resource",
+    "desc": "Brass for the lot pistol. Keep it dry. Keep it counted.",
+    "stack": 50,
+    "value": 2,
+    "icon": "ammo"
+  },
+  "ammo_shotgun": {
+    "id": "ammo_shotgun",
+    "name": "Shotgun Shell",
+    "kind": "resource",
+    "desc": "Red hull, brass head. The pump eats these and nothing else.",
+    "stack": 40,
+    "value": 3,
+    "icon": "ammo"
+  },
+  "angle_grinder": {
+    "id": "angle_grinder",
+    "name": "angle grinder",
+    "kind": "tool",
+    "desc": "A widespread power tool, often used for removing excess material or polishing surfaces.",
+    "weight": "2780 g",
+    "volume": "1750 ml",
+    "value": 2,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "claw_bar": {
+    "id": "claw_bar",
+    "name": "claw bar",
+    "kind": "tool",
+    "desc": "A small prying tool with a clawed bend at one end for pulling spikes.  Use it to open locked doors without destroying them or to lift manhole covers.  You could also wield it to bash some heads in.",
+    "weight": "318 g",
+    "volume": "470 ml",
+    "value": 2,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "cordless_drill": {
+    "id": "cordless_drill",
+    "name": "cordless drill",
+    "kind": "tool",
+    "desc": "A cordless battery-powered drill with a selection of drill bits.",
+    "weight": "2721 g",
+    "volume": "750 ml",
+    "value": 2,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "hacksaw": {
+    "id": "hacksaw",
+    "name": "hacksaw",
+    "kind": "tool",
+    "desc": "A sturdy saw, useful for cutting through metal objects.",
+    "weight": "952 g",
+    "volume": "1 L",
+    "value": 1,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "tin_snips": {
+    "id": "tin_snips",
+    "name": "tin_snips",
+    "kind": "tool",
+    "desc": "A pair of tin snips, resembling a sturdy pair of scissors with beefy blades designed to cut through thin sheets of soft metal.  These cannot cut through thick metals like a hacksaw can, but are better suited to precision work and leave a cl",
+    "weight": "400 g",
+    "volume": "500 ml",
+    "value": 1,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "hammer": {
+    "id": "hammer",
+    "name": "hammer",
+    "kind": "tool",
+    "desc": "A demagnetized steel claw hammer with a wooden grip.  With a hammer, nails, and planks in your inventory, you could board up adjacent doors and windows.  It has myriad other uses as well.",
+    "weight": "566 g",
+    "volume": "320 ml",
+    "value": 1,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "hand_drill": {
+    "id": "hand_drill",
+    "name": "hand drill",
+    "kind": "tool",
+    "desc": "A primitive manual drill with a single drill bit.  It is slow to use, and will exhaust you quickly.",
+    "weight": "907 g",
+    "volume": "250 ml",
+    "value": 1,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "hose": {
+    "id": "hose",
+    "name": "rubber hose",
+    "kind": "tool",
+    "desc": "A flexible rubber hose.  It could be used for crafting or siphoning fuel from a vehicle.",
+    "weight": "544 g",
+    "volume": "500 ml",
+    "value": 1,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "jack": {
+    "id": "jack",
+    "name": "bottle jack",
+    "kind": "tool",
+    "desc": "A portable hydraulic bottle jack used for lifting vehicles.",
+    "weight": "5 kg",
+    "volume": "1500 ml",
+    "value": 5,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "jack_small": {
+    "id": "jack_small",
+    "name": "scissor jack",
+    "kind": "tool",
+    "desc": "A compact scissor jack used for lifting vehicles.",
+    "weight": "3 kg",
+    "volume": "750 ml",
+    "value": 7,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "large_repairkit": {
+    "id": "large_repairkit",
+    "name": "gunsmith repair kit",
+    "kind": "tool",
+    "desc": "A complete tool kit made to repair damaged firearms.  Powered by standard batteries, it is a vital tool for long-term firearms maintenance.  It requires 1 charge of battery power per use.",
+    "weight": "9860 g",
+    "volume": "2500 ml",
+    "value": 15,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "makeshift_hammer": {
+    "id": "makeshift_hammer",
+    "name": "makeshift hammer",
+    "kind": "tool",
+    "desc": "A crude hammer made from a piece of metal affixed to a stick.  It functions adequately, but really can't compare to a proper hammer.",
+    "weight": "1020 g",
+    "volume": "320 ml",
+    "value": 10,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "misc_repairkit": {
+    "id": "misc_repairkit",
+    "name": "miscellaneous repair kit",
+    "kind": "tool",
+    "desc": "A portable tool kit consisting of a small craft knife for precise carving of replacement parts from raw materials, a wood saw for more heavy-duty wood cutting, and a patch of soft material for cleaning surfaces.  If supplied with duct tape,",
+    "weight": "386 g",
+    "volume": "1500 ml",
+    "value": 5,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "multitool": {
+    "id": "multitool",
+    "name": "multitool",
+    "kind": "tool",
+    "desc": "A cleverly designed all-in-one tool which combines several smaller tools into the handles of a pair of pliers.",
+    "weight": "250 g",
+    "volume": "70 ml",
+    "value": 3,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "pickaxe": {
+    "id": "pickaxe",
+    "name": "pickaxe",
+    "kind": "tool",
+    "desc": "A large steel pickaxe, suitable for breaking up hard things or (with enough skill) hard targets.  Strike the earth!",
+    "weight": "4535 g",
+    "volume": "3 L",
+    "value": 12,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "pliers": {
+    "id": "pliers",
+    "name": "pliers",
+    "kind": "tool",
+    "desc": "A basic pair of slip-joint pliers, able to handle basic mechanical work.  Anything more complex will require a wrench.",
+    "weight": "225 g",
+    "volume": "107 ml",
+    "value": 1,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "screwdriver": {
+    "id": "screwdriver",
+    "name": "screwdriver",
+    "kind": "tool",
+    "desc": "A Philips-head screwdriver.  It is important for almost all electronics crafting, most mechanics crafting, and has many more uses.",
+    "weight": "170 g",
+    "volume": "40 ml",
+    "value": 50,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "screwdriver_set": {
+    "id": "screwdriver_set",
+    "name": "screwdriver set",
+    "kind": "tool",
+    "desc": "A set of screwdrivers in several sizes and blade types.  Guaranteed to have the right tools for more precise work.",
+    "weight": "340 g",
+    "volume": "500 ml",
+    "value": 2,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "soldering_iron": {
+    "id": "soldering_iron",
+    "name": "soldering iron",
+    "kind": "tool",
+    "desc": "A device with a metal tip that can get very hot.  It is necessary for advanced electronics crafting.  Has a short cable that you can plug to your grid.",
+    "weight": "90 g",
+    "volume": "120 ml",
+    "value": 1,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "lug_wrench": {
+    "id": "lug_wrench",
+    "name": "lug wrench",
+    "kind": "tool",
+    "desc": "A steel rod bent 90 degrees with a socket on the shorter end, made to hold the lug nuts of a car's wheels to either fasten or loosen for convenient removal and replacement.  Makes for a decent melee weapon in a pinch.",
+    "weight": "1565 g",
+    "volume": "460 ml",
+    "value": 3,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "welder": {
+    "id": "welder",
+    "name": "arc welder",
+    "kind": "tool",
+    "desc": "A cable-powered tool for welding metal pieces together using an electric arc.  It is an indispensable tool for construction or repair.",
+    "weight": "4200 g",
+    "volume": "2500 ml",
+    "value": 7,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "xacto": {
+    "id": "xacto",
+    "name": "X-Acto knife",
+    "kind": "tool",
+    "desc": "A small, sharp knife, designed for making precise cuts for textiles or crafts.  It could cause decent damage, but is difficult to land a solid hit with.  Its small, sharp blade allows for precision strikes in the hands of the skilled.",
+    "weight": "23 g",
+    "volume": "20 ml",
+    "value": 1,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "wrench_small": {
+    "id": "wrench_small",
+    "name": "small adjustable wrench",
+    "kind": "tool",
+    "desc": "A compact adjustable crescent wrench, with a short handle that fits in the palm of your hand.  It could be used for turning small hex-head nuts or bolts.",
+    "weight": "110 g",
+    "volume": "20 ml",
+    "value": 1,
+    "source": "cdda",
+    "skill": "mechanics"
+  },
+  "cuban_sandwich": {
+    "id": "cuban_sandwich",
+    "name": "Cuban Sandwich",
+    "kind": "consumable",
+    "desc": "Pressed pork, ham, swiss, pickles, mustard. Hwy 50 food truck classic.",
+    "stack": 8,
+    "heal": 38,
+    "value": 14,
+    "icon": "food"
+  },
+  "key_lime_empanada": {
+    "id": "key_lime_empanada",
+    "name": "Key Lime Empanada",
+    "kind": "consumable",
+    "desc": "Sweet-tart Florida pastry from a rolling cart.",
+    "stack": 10,
+    "heal": 22,
+    "value": 8,
+    "icon": "food"
+  },
+  "cafe_con_leche": {
+    "id": "cafe_con_leche",
+    "name": "Cafe Con Leche",
+    "kind": "consumable",
+    "desc": "Hot milk coffee poured from a stainless urn. Wakes the lot.",
+    "stack": 10,
+    "heal": 16,
+    "value": 5,
+    "icon": "drink"
+  },
+  "gator_bites": {
+    "id": "gator_bites",
+    "name": "Gator Bites",
+    "kind": "consumable",
+    "desc": "Fried nuggets that taste like chicken if you do not think about it.",
+    "stack": 8,
+    "heal": 30,
+    "value": 12,
+    "icon": "food"
+  },
+  "orange_slush": {
+    "id": "orange_slush",
+    "name": "Orange Grove Slush",
+    "kind": "consumable",
+    "desc": "Icy citrus from a truck parked under the power lines.",
+    "stack": 10,
+    "heal": 18,
+    "value": 6,
+    "icon": "drink"
+  },
+  "boiled_peanuts": {
+    "id": "boiled_peanuts",
+    "name": "Boiled Peanuts",
+    "kind": "consumable",
+    "desc": "Salty soft peanuts in a foam cup. Florida gas-station energy.",
+    "stack": 10,
+    "heal": 14,
+    "value": 4,
+    "icon": "food"
+  },
+  "walmart_water": {
+    "id": "walmart_water",
+    "name": "24pk Water",
+    "kind": "consumable",
+    "desc": "Bulk bottled water from the big box on the edge of town.",
+    "stack": 5,
+    "heal": 20,
+    "value": 9,
+    "icon": "drink"
+  },
+  "walmart_chips": {
+    "id": "walmart_chips",
+    "name": "Family Chips",
+    "kind": "consumable",
+    "desc": "Warehouse-size bag. Grease and salt.",
+    "stack": 8,
+    "heal": 18,
+    "value": 7,
+    "icon": "food"
+  },
+  "walmart_ammo": {
+    "id": "walmart_ammo",
+    "name": "Sporting Ammo",
+    "kind": "ammo",
+    "desc": "Value-bin 9mm from the far Walmart aisle. Do not ask.",
+    "stack": 40,
+    "value": 2,
+    "icon": "ammo"
+  },
+  "cheap_cooler": {
+    "id": "cheap_cooler",
+    "name": "Foam Cooler",
+    "kind": "misc",
+    "desc": "Blue foam cooler. Holds shakes and bad decisions.",
+    "stack": 2,
+    "value": 11,
+    "icon": "misc"
+  },
+  "gator_meat": {
+    "id": "gator_meat",
+    "name": "Gator Meat",
+    "kind": "consumable",
+    "desc": "Fresh from the lake edge. Cook it or dare someone.",
+    "stack": 8,
+    "heal": 34,
+    "value": 16,
+    "icon": "food"
+  },
+  "gator_hide": {
+    "id": "gator_hide",
+    "name": "Gator Hide",
+    "kind": "misc",
+    "desc": "Tough scute leather. Somebody downtown will buy it.",
+    "stack": 5,
+    "value": 28,
+    "icon": "misc"
   }
 }
