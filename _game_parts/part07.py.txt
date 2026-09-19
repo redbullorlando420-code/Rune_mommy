@@ -1,3 +1,4 @@
+
     def _build_traffic(self):
         spawn_traffic(self)
 
@@ -261,14 +262,48 @@
             pass
 
 
-        # Light adult jiggle (only entities that opted in; near-zero if empty)
+        # Adult jiggle — damped spring; Michelle + nearby feminine; skip culled/LOD mid-far
         try:
             moving = bool(getattr(self, '_was_moving', False))
-            if self.player:
-                _tick_jiggle(self.player, dt, moving=moving)
-            for n in list(getattr(self, 'npcs', None) or [])[:8]:
-                if n and getattr(n, 'jiggle_parts', None):
-                    _tick_jiggle(n, dt, moving=False)
+            vis = getattr(self, 'visual', None) or self.player
+            if vis is not None:
+                _tick_jiggle(vis, dt, moving=moving)
+            px = float(self.player.x); pz = float(self.player.z)
+            near_r2 = 22.0 * 22.0
+            cands = []
+            m = getattr(self, 'michelle', None)
+            if m is not None:
+                cands.append(m)
+            for n in list(getattr(self, 'npcs', None) or []):
+                if n is not None and n is not m and getattr(n, 'jiggle_parts', None):
+                    cands.append(n)
+            for n in list(getattr(self, 'crowd', None) or [])[:24]:
+                if n is not None and getattr(n, '_feminine_adult', False) and getattr(n, 'jiggle_parts', None):
+                    cands.append(n)
+            seen = set()
+            for n in cands:
+                i = id(n)
+                if i in seen:
+                    continue
+                seen.add(i)
+                if getattr(n, 'visible', True) is False or getattr(n, 'enabled', True) is False:
+                    continue
+                try:
+                    dx = float(n.x) - px; dz = float(n.z) - pz
+                    if dx * dx + dz * dz > near_r2:
+                        continue
+                except Exception:
+                    continue
+                last = getattr(n, '_jiggle_last_xz', None)
+                try:
+                    nx, nz = float(n.x), float(n.z)
+                except Exception:
+                    continue
+                n_moving = False
+                if last is not None:
+                    n_moving = (nx - last[0]) ** 2 + (nz - last[1]) ** 2 > 1e-6
+                n._jiggle_last_xz = (nx, nz)
+                _tick_jiggle(n, dt, moving=n_moving)
         except Exception:
             pass
 
@@ -283,19 +318,4 @@
         from ursina import held_keys, mouse, raycast, Vec3
         player = self.player
         mode = getattr(self, 'mode', 'play')
-
-        # Free look always (locked OR unlocked OR right-mouse). Never soft-lock rotation.
-        sens = float(getattr(self, 'mouse_sens', 140) or 140)
-        player.rotation_y += mouse.velocity[0] * sens
-        self.cam_pivot.rotation_x -= mouse.velocity[1] * sens
-        self.cam_pivot.rotation_x = max(-35, min(40, self.cam_pivot.rotation_x))
-        # Q/E and arrows turn even if mouse is dead
-        if held_keys['q'] or held_keys['left arrow']:
-            player.rotation_y += 90 * dt
-        if held_keys['e'] and mode == 'safe':
-            # E is gate in safe — only turn with E if not near gate; use right arrow instead
-            pass
-        if held_keys['right arrow']:
-            player.rotation_y -= 90 * dt
-
 
