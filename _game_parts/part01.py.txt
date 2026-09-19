@@ -279,3 +279,8 @@ class Game:
         self.tutorial_active = False
         self.tutorial_step = 0
         self.tutorial_overlay = None
+        self.tutorial_text = None
+        self.kill_quest_count = 0
+
+        self.player = None
+        self.cam_pivot = None

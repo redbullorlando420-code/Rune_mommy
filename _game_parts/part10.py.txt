@@ -1,3 +1,16 @@
+                self.open_mira('start')
+                return
+            if kind == 'michelle':
+                nid = 'door' if not self.michelle_seen else (self.michelle_node or 'door')
+                self.michelle_seen = True
+                self.michelle_auto_opened = True
+                self.open_michelle(nid)
+                self._quest_event('talk', npc_id='michelle')
+                self._tutorial_note('talk')
+                return
+            if kind == 'gun':
+                self.open_gun_shop()
+                return
             named = getattr(npc, 'npc_id', '')
             if kind in ('lila', 'rosa', 'yara') or named in ('lila', 'rosa', 'yara'):
                 self.open_vn(kind if kind in ('lila', 'rosa', 'yara') else named)
@@ -270,12 +283,3 @@
         if not choices:
             choices = [('Walk away.', self.close_panel)]
         expr = node.get('expression') or 'default'
-        por = node.get('portrait') or who
-        tex = self._tex_for(por, expr)
-        if tex is None:
-            pp = portrait_texture_path(por, expr)
-            tex = str(pp) if pp else None
-        self.open_panel(title, node.get('text', ''), choices, portrait=True, portrait_tex=tex)
-
-    def open_talk(self, name, line, portrait_tex=None):
-        try:

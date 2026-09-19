@@ -1,3 +1,11 @@
+        color = self.color
+        Text = self.Text
+        teal = color.rgb32(46, 196, 182)
+        body_col = color.rgb32(232, 214, 188)
+        wood = color.rgb32(90, 55, 40)
+        hx, hz = -32.0, 12.0
+        self.house_vols = []
+        self.sanctuary_pos = (hx, 0.0, hz)
 
         # lot grass + darker back-lawn swamp strip (west) + driveway (east)
         grass = load_tex('grass')
@@ -15,8 +23,8 @@
         Entity(model='cube', scale=(8.0, 3.2, 6.4), position=(hx, 1.6, hz), color=body_col,
                texture=stucco, texture_scale=(2.5, 1.6), collider='box')
         # A-frame roof: ridge above wall top (h=3.2 → ridge ~3.75), ±28 slopes
-        Entity(model='cube', scale=(8.6, 0.22, 3.6), position=(hx - 1.2, 3.63, hz), color=teal, rotation_z=28)
-        Entity(model='cube', scale=(8.6, 0.22, 3.6), position=(hx + 1.2, 3.63, hz), color=teal, rotation_z=-28)
+        Entity(model='cube', scale=(8.6, 0.22, 3.6), position=(hx - 1.2, 3.63, hz), color=teal, rotation_z=-28)
+        Entity(model='cube', scale=(8.6, 0.22, 3.6), position=(hx + 1.2, 3.63, hz), color=teal, rotation_z=28)
         Entity(model='cube', scale=(0.22, 0.14, 7.0), position=(hx, 3.83, hz), color=color.rgb32(245, 248, 252))
         for wz in (-1.6, 1.6):
             Entity(model='cube', scale=(0.08, 0.7, 0.7), position=(hx + 4.05, 1.7, hz + wz), color=color.rgb32(120, 200, 230))
@@ -66,14 +74,18 @@
 
         Entity(model='cube', scale=(0.14, 2.8, 0.14), position=(hx + 7.4, 1.4, hz + 3.4), color=color.rgb32(70, 60, 50))
         Entity(model='cube', scale=(2.8, 0.7, 0.08), position=(hx + 7.4, 2.7, hz + 3.4), color=teal)
-        Text(
+        _sd = Text(
             parent=self._scene(),
             text='Sanctuary Drive',
-            position=(hx + 7.4, 3.2, hz + 3.4),
+            position=(hx + 7.4, 3.4, hz + 3.4),
             origin=(0, 0),
             billboard=True,
             color=teal,
         )
+        try:
+            _sd.world_scale = 2.6
+        except Exception:
+            pass
 
         # Michelle at the door — teal shirt, not hittable
         michelle = self._humanoid(
@@ -271,11 +283,3 @@
         mira.kind = 'mira'
         mira.hittable = False
         self.talk_npcs.append({'ent': mira, 'name': 'Mama Mira', 'talk': 'Neons loud tonight.', 'killable': False})
-        if portrait:
-            bill = Entity(
-                parent=mira,
-                model='quad',
-                texture=portrait,
-                scale=(1.15, 1.55),
-                position=(0, 1.45, -0.55),
-                double_sided=True,

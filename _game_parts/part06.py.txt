@@ -1,3 +1,11 @@
+        if portrait:
+            bill = Entity(
+                parent=mira,
+                model='quad',
+                texture=portrait,
+                scale=(1.15, 1.55),
+                position=(0, 1.45, -0.55),
+                double_sided=True,
             )
             try:
                 bill.billboard = True
@@ -136,7 +144,15 @@
         return car
 
     def _build_crowd(self):
-        spawn_crowd(self)
+        try:
+            spawn_crowd(self)
+        except Exception as exc:
+            print('  spawn_crowd FAILED:', exc)
+            if not getattr(self, 'peds', None):
+                self.peds = []
+        # Ensure list exists even if spawn partially failed
+        if not hasattr(self, 'peds') or self.peds is None:
+            self.peds = []
         hx, hz = -32.0, 12.0
         for ped in self.peds:
             if not ped:
@@ -267,19 +283,3 @@
             model='quad',
             color=color.rgba32(10, 4, 18, 235),
             scale=(1.58, 0.50),
-            position=(0.06, -0.28),
-            enabled=False,
-            z=0.1,
-        )
-        self.panel_portrait = Entity(
-            parent=camera.ui,
-            model='quad',
-            scale=(0.34, 0.60),
-            position=(-0.68, -0.26),
-            enabled=False,
-            z=-0.05,
-        )
-        if self.mira_texture:
-            self.panel_portrait.texture = self.mira_texture
-        self.panel_name = Text(text='', position=(-0.52, -0.08), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 210), enabled=False)
-        self.panel_body = Text(text='', position=(-0.52, -0.13), origin=(-0.5, 0.5), color=color.rgb32(245, 230, 255), enabled=False, scale=0.8)

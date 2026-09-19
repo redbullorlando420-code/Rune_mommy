@@ -1,3 +1,8 @@
+            self.gold += gold
+        self.toast(f"Quest complete: {q.get('name', qid)}  +{gold}g")
+        self._quest_unlock_ready()
+
+    def _quest_event(self, etype, **kw):
         for qid in list(self.quest_active):
             q = self._quest_def(qid)
             if not q:

@@ -1,8 +1,3 @@
-        self.tutorial_text = None
-        self.kill_quest_count = 0
-
-        self.player = None
-        self.cam_pivot = None
         self.visual = None
         self.gun_model = None
         self.cars = []
@@ -115,6 +110,30 @@
         crowd_n = len(getattr(self, 'peds', None) or [])
         print('named_npcs=%d crowd=%d' % (named_n, crowd_n))
         self._show_menu()
+
+
+    def _tick_named_visibility(self):
+        """Keep Michelle / Mira / talk NPCs visible and on the ground near the player."""
+        player = self.player
+        if not player:
+            return
+        px, pz = float(player.x), float(player.z)
+        for npc in list(getattr(self, 'npcs', None) or []):
+            if not npc:
+                continue
+            kind = getattr(npc, 'kind', '')
+            if kind not in ('mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara'):
+                # still un-bury any npc on the list
+                pass
+            try:
+                if getattr(npc, 'y', None) is not None and float(npc.y) < -0.05:
+                    npc.y = 0.0
+                dx = float(getattr(npc, 'x', 0)) - px
+                dz = float(getattr(npc, 'z', 0)) - pz
+                if (dx * dx + dz * dz) ** 0.5 <= 52.0:
+                    set_visible(npc, True)
+            except Exception:
+                pass
 
     def _lock_mouse(self, locked):
         mouse = self.mouse
@@ -265,17 +284,3 @@
                 color=color.rgb32(255, 230, 255),
                 scale=1.0,
                 enabled=False,
-                z=-0.1,
-            )
-            self.menu_lines.append(tline)
-            self.menu_ents.append(tline)
-        self.settings_lines = []
-        for i in range(5):
-            tline = Text(
-                text='',
-                position=(0, 0.08 - i * 0.07),
-                origin=(0, 0),
-                color=color.rgb32(255, 230, 255),
-                scale=1.0,
-                enabled=False,
-                z=-0.1,

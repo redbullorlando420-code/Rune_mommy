@@ -13,6 +13,24 @@ def _tint(col, amount):
     return col
 
 
+
+def _mesh(preferred='sphere'):
+    """Ursina mesh name; fall back to cube if sphere/cylinder missing."""
+    return preferred  # resolved at Entity create time via _entity
+
+
+def _entity(Entity, *, model='cube', **kw):
+    """Create Entity; if model fails (missing sphere), retry as cube."""
+    try:
+        return Entity(model=model, **kw)
+    except Exception:
+        if model != 'cube':
+            try:
+                return Entity(model='cube', **kw)
+            except Exception:
+                pass
+        raise
+
 def _hair_from_shirt(color, shirt, style, detail):
     """Pick a readable hair color from style / shirt."""
     if style == 'michelle':
@@ -216,11 +234,15 @@ def attach_humanoid_parts(
 
     # Invisible full-body collider (keeps E-talk / combat ranges stable)
     if hitbox:
-        Entity(
+        ghost = Entity(
             parent=parent, model='cube',
             scale=(0.55, 1.60, 0.42), y=0.85,
             collider='box', visible=False,
         )
+        try:
+            ghost.hitbox_ghost = True
+        except Exception:
+            pass
 
     parent.humanoid_style = style or detail
     return parent
@@ -229,10 +251,33 @@ def attach_humanoid_parts(
 def make_humanoid(Entity, color, x, z, shirt, pants, skin=None, hitbox=False, detail='crowd', style=None):
     """Root entity at (x,0,z) with multi-part body. Named / Michelle get more parts."""
     root = Entity(position=(x, 0, z))
-    attach_humanoid_parts(
-        Entity, color, root, shirt, pants, skin=skin,
-        hitbox=hitbox, detail=detail, style=style,
-    )
+    try:
+        attach_humanoid_parts(
+            Entity, color, root, shirt, pants, skin=skin,
+            hitbox=hitbox, detail=detail, style=style,
+        )
+    except Exception as exc:
+        # Sphere/mesh failure — fall back to cube-only silhouette so NPCs still spawn
+        print('  humanoid parts fallback:', exc)
+        try:
+            for ch in list(getattr(root, 'children', []) or []):
+                try:
+                    ch.disable()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        body = Entity(parent=root, model='cube', color=shirt, scale=(0.45, 0.7, 0.28), y=1.05)
+        Entity(parent=root, model='cube', color=pants or shirt, scale=(0.4, 0.55, 0.25), y=0.45)
+        Entity(parent=root, model='cube', color=skin or shirt, scale=(0.32, 0.32, 0.32), y=1.55)
+        root.chest = body
+        if hitbox:
+            ghost = Entity(parent=root, model='cube', scale=(0.55, 1.60, 0.42), y=0.85, collider='box', visible=False)
+            try:
+                ghost.hitbox_ghost = True
+            except Exception:
+                pass
+        root.humanoid_style = style or detail
     return root
 
 
@@ -253,6 +298,12 @@ def make_car(Entity, color, pos, yaw, paint):
         parent=car, model='cube',
         color=_tint(paint, -0.18),
         scale=(1.50, 0.48, 1.55), y=1.05, z=-0.20,
+    )
+    # Distinct roof slab so vehicles read as cars (not open convertibles)
+    car.roof = Entity(
+        parent=car, model='cube',
+        color=_tint(paint, -0.30),
+        scale=(1.52, 0.10, 1.48), y=1.34, z=-0.18,
     )
     Entity(parent=car, model='cube', color=_rgb(color, 50, 90, 130), scale=(1.40, 0.32, 0.08), y=1.12, z=0.55)
     Entity(parent=car, model='cube', color=_rgb(color, 40, 70, 110), scale=(1.40, 0.28, 0.08), y=1.10, z=-0.95)

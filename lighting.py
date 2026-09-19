@@ -19,65 +19,38 @@ FOG_FAR = 95.0
 
 
 def quality() -> str:
-    # Visual quality is the product default. Low and medium remain explicit
-    # opt-ins for machines that need a smaller frame budget.
-    q = (os.environ.get('RUNE_MOMMY_QUALITY') or 'high').strip().lower()
+    q = (os.environ.get('RUNE_MOMMY_QUALITY') or 'med').strip().lower()
     if q in ('low', 'med', 'medium', 'high'):
         return 'med' if q == 'medium' else q
-    return 'high'
-
-
-def configure_renderer():
-    """Apply renderer quality before Ursina creates its window."""
-    try:
-        from panda3d.core import loadPrcFileData
-        q = quality()
-        # Anti-aliasing is especially noticeable on palm fronds, power lines,
-        # and the new low-profile particle layer.  Keep the default modest.
-        if q == 'high':
-            loadPrcFileData('', 'framebuffer-multisample 1')
-            loadPrcFileData('', 'multisamples 4')
-            loadPrcFileData('', 'texture-anisotropic-degree 4')
-        else:
-            loadPrcFileData('', 'framebuffer-multisample 0')
-            loadPrcFileData('', 'multisamples 0')
-        loadPrcFileData('', 'gl-cube-map-seamless 1')
-    except Exception:
-        pass
+    return 'med'
 
 
 def apply_lighting(color, Vec3, Sky=None, DirectionalLight=None, AmbientLight=None, PointLight=None):
-    """Install a layered Florida-blue-hour light kit without per-prop lights."""
+    """Install a small neon-dusk light kit. Shadows off unless quality=high."""
     q = quality()
-    sky = None
     if Sky is not None:
         try:
-            # Local texture avoids the incomplete Ursina-package sky_default
-            # fallback and gives the neon scene a real blue-hour horizon.
-            sky = Sky(texture='assets/textures/sky_dusk_v1.png',
-                      color=color.rgb32(235, 235, 255) if q == 'high' else color.rgb32(190, 185, 225))
+            Sky(color=color.rgb32(18, 6, 32))
         except Exception:
             pass
 
     shadows = q == 'high'
-    sun = None
     try:
         sun = DirectionalLight(shadows=shadows)
         sun.look_at(Vec3(1, -1.35, 0.35))
-        # Warm horizon key: readable pavement, cool shadows, preserved neon.
-        sun.color = color.rgb32(255, 196, 160) if q != 'low' else color.rgb32(200, 150, 170)
+        # Warm dusk key — readable without washing neon
+        sun.color = color.rgb32(255, 190, 170) if q != 'low' else color.rgb32(200, 150, 170)
         if shadows:
             try:
-                sun.shadow_map_resolution = (2048, 2048)
+                sun.shadow_map_resolution = (1024, 1024)
             except Exception:
                 pass
     except Exception:
         pass
 
     # Mid fill so silhouettes stay readable on Hwy 50
-    ambient = None
     try:
-        ambient = AmbientLight(color=color.rgb32(62, 52, 88) if q == 'low' else color.rgb32(82, 96, 142))
+        AmbientLight(color=color.rgb32(70, 48, 95) if q == 'low' else color.rgb32(95, 70, 120))
     except Exception:
         pass
 
@@ -86,15 +59,11 @@ def apply_lighting(color, Vec3, Sky=None, DirectionalLight=None, AmbientLight=No
         accents = [((0, 6, -16), (255, 100, 210))]
     else:
         accents = [
-            ((0, 6, -16), (255, 80, 205)),   # Hwy 50 neon
-            ((-28, 5, 10), (80, 210, 255)),  # Sanctuary Drive cool porch
-            ((28, 4, -42), (76, 150, 255)),  # waterfront spill
+            ((0, 6, -16), (255, 90, 210)),   # Hwy 50 neon
+            ((-28, 5, 10), (90, 220, 255)),  # Sanctuary Drive cool porch
         ]
         if q == 'high':
-            accents.extend([
-                ((22, 5, -6), (255, 160, 60)),   # Gun Hut warm
-                ((40, 5, -20), (255, 45, 150)),  # Club 27 sign wash
-            ])
+            accents.append(((22, 5, -6), (255, 160, 60)))  # Gun Hut warm
 
     lights = []
     for pos, rgb in accents:
@@ -103,36 +72,7 @@ def apply_lighting(color, Vec3, Sky=None, DirectionalLight=None, AmbientLight=No
             lights.append(pl)
         except Exception:
             pass
-    return {'quality': q, 'shadows': shadows, 'point_lights': lights, 'sun': sun, 'ambient': ambient, 'sky': sky}
-
-
-def tick_day_night(rig, color, elapsed: float):
-    """Small visual-only day/night cycle; it never creates per-frame objects."""
-    if not rig:
-        return
-    # One cycle is 7.5 real-time minutes: quick enough to notice, slow enough
-    # not to flicker during ordinary play.
-    phase = (float(elapsed) % 450.0) / 450.0
-    daylight = max(0.08, __import__('math').sin(phase * __import__('math').tau) * 0.5 + 0.5)
-    sun = rig.get('sun')
-    if sun:
-        try:
-            sun.rotation_x = -18.0 + daylight * 72.0
-            sun.color = color.rgb32(int(125 + 130 * daylight), int(80 + 125 * daylight), int(125 + 90 * daylight))
-        except Exception:
-            pass
-    ambient = rig.get('ambient')
-    if ambient:
-        try:
-            ambient.color = color.rgb32(int(34 + 58 * daylight), int(42 + 66 * daylight), int(78 + 70 * daylight))
-        except Exception:
-            pass
-    sky = rig.get('sky')
-    if sky:
-        try:
-            sky.color = color.rgba32(int(90 + 145 * daylight), int(72 + 145 * daylight), int(145 + 100 * daylight), 255)
-        except Exception:
-            pass
+    return {'quality': q, 'shadows': shadows, 'point_lights': lights}
 
 
 def apply_perf(window=None, camera=None, color=None):
@@ -162,13 +102,13 @@ def apply_perf(window=None, camera=None, color=None):
         try:
             from ursina import scene
             # Ursina Scene has fog attrs on some versions
-            scene.fog_color = color.rgb32(20, 24, 54)
-            scene.fog_density = 0.010 if q == 'med' else 0.0065
+            scene.fog_color = color.rgb32(20, 8, 34)
+            scene.fog_density = 0.012 if q == 'med' else 0.008
         except Exception:
             try:
                 camera.fog = True
-                camera.fog_color = color.rgb32(20, 24, 54)
-                camera.fog_density = 0.009
+                camera.fog_color = color.rgb32(20, 8, 34)
+                camera.fog_density = 0.01
             except Exception:
                 pass
 
@@ -186,22 +126,33 @@ def xz_dist(ax, az, bx, bz) -> float:
 
 
 def set_visible(ent, on: bool):
+    """Show/hide ent and mesh children. Hitbox ghosts stay invisible when shown."""
     if not ent:
         return
     try:
-        if getattr(ent, 'enabled', None) is not None and ent.enabled != on:
-            # Prefer .visible so we don't drop from lists; fall back to enabled
-            pass
+        if getattr(ent, 'hitbox_ghost', False):
+            ent.visible = False
+            return
+        ent.visible = on
     except Exception:
         pass
     try:
-        ent.visible = on
-    except Exception:
-        try:
-            for ch in getattr(ent, 'children', []) or []:
+        for ch in list(getattr(ent, 'children', []) or []):
+            try:
+                if getattr(ch, 'hitbox_ghost', False):
+                    ch.visible = False
+                    continue
                 ch.visible = on
-        except Exception:
-            pass
+                # one level deeper (hair/hands under limbs, etc.)
+                for gch in list(getattr(ch, 'children', []) or []):
+                    if getattr(gch, 'hitbox_ghost', False):
+                        gch.visible = False
+                    else:
+                        gch.visible = on
+            except Exception:
+                pass
+    except Exception:
+        pass
 
 
 def should_sim(px, pz, x, z, radius: float) -> bool:

@@ -10,9 +10,9 @@ def _pitched_roof(Entity, color, x, y, z, w, d, roof_col, pitch=0.35):
     """
     ridge_y = y + 0.55
     Entity(model='cube', scale=(w * 0.58, 0.16, d + 0.18), position=(x - w * 0.22, ridge_y - 0.12, z),
-           color=roof_col, rotation_z=28)
-    Entity(model='cube', scale=(w * 0.58, 0.16, d + 0.18), position=(x + w * 0.22, ridge_y - 0.12, z),
            color=roof_col, rotation_z=-28)
+    Entity(model='cube', scale=(w * 0.58, 0.16, d + 0.18), position=(x + w * 0.22, ridge_y - 0.12, z),
+           color=roof_col, rotation_z=28)
     Entity(model='cube', scale=(0.16, 0.12, d + 0.25), position=(x, ridge_y + 0.08, z),
            color=roof_col.tint(0.1) if hasattr(roof_col, 'tint') else roof_col)
 
@@ -63,7 +63,7 @@ def make_house(Entity, color, Text, scene_parent, x, z, *, w=3.6, h=2.8, d=3.2, 
         t = Text(parent=scene_parent, text=label, position=(x, h + 1.1, z), origin=(0, 0),
                  billboard=True, color=_rgb(color, 255, 210, 255))
         try:
-            t.world_scale = 1.2
+            t.world_scale = 2.4
         except Exception:
             pass
     return n
@@ -100,31 +100,35 @@ def make_shop_stall(Entity, color, Text, scene_parent, x, z, w, d, h, body_col, 
                       origin=(0, 0), billboard=True,
                       color=_rgb(color, 255, 180, 90) if is_gun else _rgb(color, 255, 210, 255))
         try:
-            label.world_scale = 1.8 if is_gun else 1.45
+            label.world_scale = 3.2 if is_gun else 2.6
         except Exception:
             pass
     return n
 
 
 def make_billboard(Entity, color, Text, scene_parent, x, z, text, face_yaw=0):
-    Entity(model='cube', scale=(0.18, 4.2, 0.18), position=(x, 2.1, z), color=_rgb(color, 50, 40, 60), collider='box')
-    Entity(model='cube', scale=(3.6, 1.8, 0.12), position=(x, 3.6, z), color=_rgb(color, 20, 8, 28), rotation_y=face_yaw)
-    Entity(model='cube', scale=(3.4, 1.5, 0.04), position=(x, 3.6, z - 0.08), color=_rgb(color, 255, 60, 180), rotation_y=face_yaw)
+    Entity(model='cube', scale=(0.22, 5.0, 0.22), position=(x, 2.5, z), color=_rgb(color, 50, 40, 60), collider='box')
+    Entity(model='cube', scale=(4.8, 2.4, 0.14), position=(x, 4.2, z), color=_rgb(color, 20, 8, 28), rotation_y=face_yaw)
+    Entity(model='cube', scale=(4.5, 2.0, 0.05), position=(x, 4.2, z - 0.08), color=_rgb(color, 255, 60, 180), rotation_y=face_yaw)
     if Text and scene_parent is not None:
-        t = Text(parent=scene_parent, text=text, position=(x, 3.6, z - 0.2), origin=(0, 0),
+        t = Text(parent=scene_parent, text=text, position=(x, 4.2, z - 0.2), origin=(0, 0),
                  billboard=True, color=_rgb(color, 255, 240, 255))
         try:
-            t.world_scale = 1.5
+            t.world_scale = 2.8
         except Exception:
             pass
     return 3
 
 
 def make_street_sign(Entity, color, Text, scene_parent, x, z, text):
-    Entity(model='cube', scale=(0.1, 2.4, 0.1), position=(x, 1.2, z), color=_rgb(color, 60, 60, 70))
-    Entity(model='cube', scale=(1.8, 0.55, 0.08), position=(x, 2.35, z), color=_rgb(color, 40, 120, 80))
+    Entity(model='cube', scale=(0.12, 2.6, 0.12), position=(x, 1.3, z), color=_rgb(color, 60, 60, 70))
+    Entity(model='cube', scale=(2.4, 0.7, 0.1), position=(x, 2.55, z), color=_rgb(color, 40, 120, 80))
     if Text and scene_parent is not None:
-        Text(parent=scene_parent, text=text, position=(x, 2.5, z), origin=(0, 0),
-             billboard=True, color=_rgb(color, 240, 255, 240))
+        t = Text(parent=scene_parent, text=text, position=(x, 2.75, z), origin=(0, 0),
+                 billboard=True, color=_rgb(color, 240, 255, 240))
+        try:
+            t.world_scale = 2.4
+        except Exception:
+            pass
     return 2
 

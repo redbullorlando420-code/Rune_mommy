@@ -1,3 +1,15 @@
+            'hp': int(self.hp),
+            'breed': int(self.breed),
+            'preg': bool(self.preg),
+            'owned_pistol': bool(self.owned_pistol),
+            'pistol': bool(self.owned_pistol),
+            'ammo': int(self.ammo),
+            'pack': list(self.pack),
+            'tutorial_done': tutorial_done,
+            'intro_started': bool(self.intro_started),
+            'michelle_seen': bool(self.michelle_seen),
+            'mouse_sens': float(self.mouse_sens),
+        }
         path = self._save_path()
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -271,11 +283,3 @@
     def _build_house(self):
         """Suburban cubes at about (-32, 0, 12). Body, teal roof, garage, door, back lawn, Sanctuary Drive."""
         Entity = self.Entity
-        color = self.color
-        Text = self.Text
-        teal = color.rgb32(46, 196, 182)
-        body_col = color.rgb32(232, 214, 188)
-        wood = color.rgb32(90, 55, 40)
-        hx, hz = -32.0, 12.0
-        self.house_vols = []
-        self.sanctuary_pos = (hx, 0.0, hz)

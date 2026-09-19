@@ -1,3 +1,19 @@
+            position=(0.06, -0.28),
+            enabled=False,
+            z=0.1,
+        )
+        self.panel_portrait = Entity(
+            parent=camera.ui,
+            model='quad',
+            scale=(0.34, 0.60),
+            position=(-0.68, -0.26),
+            enabled=False,
+            z=-0.05,
+        )
+        if self.mira_texture:
+            self.panel_portrait.texture = self.mira_texture
+        self.panel_name = Text(text='', position=(-0.52, -0.08), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 210), enabled=False)
+        self.panel_body = Text(text='', position=(-0.52, -0.13), origin=(-0.5, 0.5), color=color.rgb32(245, 230, 255), enabled=False, scale=0.8)
         self.panel_choices = []
         for i in range(4):
             t = Text(
@@ -45,6 +61,11 @@
             tick_crowd(self, dt)
             try:
                 life_sim.tick(self, dt)
+            except Exception:
+                pass
+            # Named NPCs are not in peds[] — keep them un-buried / visible near player
+            try:
+                self._tick_named_visibility()
             except Exception:
                 pass
             try:
@@ -101,8 +122,6 @@
         if held_keys['right arrow']:
             player.rotation_y -= 90 * dt
 
-        if mode == 'play' and not self.ui_open and not getattr(self, 'mouse_free', False):
-            self._lock_mouse(True)
 
         wish_x = held_keys['d'] - held_keys['a']
         wish_z = held_keys['w'] - held_keys['s']
@@ -264,18 +283,3 @@
             # stay put on impact
             nx, nz = car.x, car.z
         else:
-            car.x, car.z = nx, nz
-            car.rotation_y = nyaw
-
-        car.speed = nspd
-        car.y = 0
-        car.x = max(-48, min(52, car.x))
-        car.z = max(-52, min(22, car.z))
-
-        self._update_car_damage_visual(car, dt)
-
-        # Slight camera follow lag (lerp cam_pivot local z toward target)
-        try:
-            target_z = -0.15 if abs(car.speed) > 8 else 0.2
-            cur = float(getattr(car.cam_pivot, 'z', 0.2) or 0.2)
-            car.cam_pivot.z = cur + (target_z - cur) * min(1.0, 3.5 * dt)

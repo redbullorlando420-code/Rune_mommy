@@ -1,3 +1,12 @@
+        por = node.get('portrait') or who
+        tex = self._tex_for(por, expr)
+        if tex is None:
+            pp = portrait_texture_path(por, expr)
+            tex = str(pp) if pp else None
+        self.open_panel(title, node.get('text', ''), choices, portrait=True, portrait_tex=tex)
+
+    def open_talk(self, name, line, portrait_tex=None):
+        try:
             # If caller passed an NPC entity via getattr chain elsewhere, skip; string path stays.
             pass
         except Exception:
@@ -274,8 +283,3 @@
         self.quest_completed.add(qid)
         gold = int(q.get('reward_gold') or 0)
         if gold:
-            self.gold += gold
-        self.toast(f"Quest complete: {q.get('name', qid)}  +{gold}g")
-        self._quest_unlock_ready()
-
-    def _quest_event(self, etype, **kw):

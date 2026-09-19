@@ -1,3 +1,18 @@
+            car.x, car.z = nx, nz
+            car.rotation_y = nyaw
+
+        car.speed = nspd
+        car.y = 0
+        car.x = max(-48, min(52, car.x))
+        car.z = max(-52, min(22, car.z))
+
+        self._update_car_damage_visual(car, dt)
+
+        # Slight camera follow lag (lerp cam_pivot local z toward target)
+        try:
+            target_z = -0.15 if abs(car.speed) > 8 else 0.2
+            cur = float(getattr(car.cam_pivot, 'z', 0.2) or 0.2)
+            car.cam_pivot.z = cur + (target_z - cur) * min(1.0, 3.5 * dt)
         except Exception:
             pass
 
@@ -268,14 +283,3 @@
                     options.append((0.15, 'E  gas station'))
             else:
                 options.append((0.2, 'E  gas pump'))
-        if car and not getattr(car, 'disabled', False):
-            options.append((cd, f'E  enter car'))
-        if npc:
-            kind = getattr(npc, 'kind', '')
-            if kind == 'mira':
-                options.append((nd, 'E  talk to Mama Mira'))
-            elif kind == 'michelle':
-                options.append((nd, 'E  talk to Michelle'))
-            elif kind == 'gun':
-                options.append((nd, 'E  Hancock Gun Hut (Gage)'))
-            elif kind not in ('target', 'mob'):

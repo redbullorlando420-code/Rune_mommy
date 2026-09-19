@@ -52,7 +52,7 @@ def make_food_truck(Entity, color, Text, scene_parent, x, z, *, name='Food Truck
         t = Text(parent=scene_parent, text=name, position=(x, 3.1, z), origin=(0, 0),
                  billboard=True, color=_rgb(color, 255, 230, 180))
         try:
-            t.world_scale = 1.3
+            t.world_scale = 2.5
         except Exception:
             pass
     return n, (x, 0, z - 2.0)
@@ -97,7 +97,7 @@ def make_walmart(Entity, color, Text, scene_parent, x, z):
         t = Text(parent=scene_parent, text='WALMART', position=(x, 6.4, z - 7.0),
                  origin=(0, 0), billboard=True, color=yellow)
         try:
-            t.world_scale = 2.2
+            t.world_scale = 3.6
         except Exception:
             pass
     return n, (x, 0, z - 9.0)
@@ -141,8 +141,12 @@ def densify_hwy50(Entity, color, Text, scene_parent, building_count_ref=None):
         _pitched_roof(Entity, color, x, 2.2, z, 3.9, 3.2, _rgb(color, 60, 50, 70))
         n += 1
         if Text and scene_parent is not None:
-            Text(parent=scene_parent, text=name, position=(x, 3.4, z), origin=(0, 0),
+            kt = Text(parent=scene_parent, text=name, position=(x, 3.4, z), origin=(0, 0),
                  billboard=True, color=_rgb(color, 255, 210, 255))
+            try:
+                kt.world_scale = 2.4
+            except Exception:
+                pass
     make_street_sign(Entity, color, Text, scene_parent, 54.0, -16.0, 'E Hwy 50')
     make_street_sign(Entity, color, Text, scene_parent, -46.0, -14.0, 'W Hwy 50')
     make_billboard(Entity, color, Text, scene_parent, 58.0, -20.0, 'WALMART\nAHEAD', face_yaw=0)

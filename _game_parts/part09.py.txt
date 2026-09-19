@@ -1,3 +1,14 @@
+        if car and not getattr(car, 'disabled', False):
+            options.append((cd, f'E  enter car'))
+        if npc:
+            kind = getattr(npc, 'kind', '')
+            if kind == 'mira':
+                options.append((nd, 'E  talk to Mama Mira'))
+            elif kind == 'michelle':
+                options.append((nd, 'E  talk to Michelle'))
+            elif kind == 'gun':
+                options.append((nd, 'E  Hancock Gun Hut (Gage)'))
+            elif kind not in ('target', 'mob'):
                 options.append((nd, f'E  talk to {getattr(npc, "npc_name", "NPC")}'))
         if stall and (not npc or sd + 0.4 < nd):
             if stall['kind'] == 'gun':
@@ -149,6 +160,12 @@
             if mode == 'safe':
                 self._show_menu()
                 return
+            # Play: first Esc frees cursor (WASD still works); second Esc quits.
+            if not getattr(self, 'mouse_free', False) and getattr(self.mouse, 'locked', False):
+                self.mouse_free = True
+                self._lock_mouse(False)
+                self.toast('Cursor free — click window to look again. Esc again quits.')
+                return
             application.quit()
             return
         if self.ui_open:
@@ -266,16 +283,3 @@
         if npc and nd <= 3.0 and (car is None or nd <= cd + 0.15):
             kind = getattr(npc, 'kind', '')
             if kind == 'mira':
-                self.open_mira('start')
-                return
-            if kind == 'michelle':
-                nid = 'door' if not self.michelle_seen else (self.michelle_node or 'door')
-                self.michelle_seen = True
-                self.michelle_auto_opened = True
-                self.open_michelle(nid)
-                self._quest_event('talk', npc_id='michelle')
-                self._tutorial_note('talk')
-                return
-            if kind == 'gun':
-                self.open_gun_shop()
-                return

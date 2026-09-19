@@ -43,10 +43,11 @@ def _pitched_roof(Entity, color, x, y, z, w, d, roof_col, pitch=0.35):
     """
     ridge_y = y + 0.55
     # Left slope (+28) and right slope (-28). Flip signs if Ursina still looks inverted.
+    # Left slope (-28) / right (+28) → ridge UP in Ursina (was inverted with opposite signs)
     Entity(model='cube', scale=(w * 0.58, 0.16, d + 0.18), position=(x - w * 0.22, ridge_y - 0.12, z),
-           color=roof_col, rotation_z=28)
-    Entity(model='cube', scale=(w * 0.58, 0.16, d + 0.18), position=(x + w * 0.22, ridge_y - 0.12, z),
            color=roof_col, rotation_z=-28)
+    Entity(model='cube', scale=(w * 0.58, 0.16, d + 0.18), position=(x + w * 0.22, ridge_y - 0.12, z),
+           color=roof_col, rotation_z=28)
     # Thin ridge beam on top
     Entity(model='cube', scale=(0.16, 0.12, d + 0.25), position=(x, ridge_y + 0.08, z),
            color=roof_col.tint(0.1) if hasattr(roof_col, 'tint') else roof_col)
