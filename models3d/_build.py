@@ -1,7 +1,7 @@
 """Houses, stalls, signs."""
 from __future__ import annotations
 import random
-from models3d._base import _t, _rgb
+from models3d._base import _t, _safe_tex, _rgb, hollow_shell
 
 def _pitched_roof(Entity, color, x, y, z, w, d, roof_col, pitch=0.35):
     """Reliable A-frame: ridge above walls, left/right slopes, thin ridge beam.
@@ -70,12 +70,23 @@ def make_house(Entity, color, Text, scene_parent, x, z, *, w=3.6, h=2.8, d=3.2, 
 
 
 def make_shop_stall(Entity, color, Text, scene_parent, x, z, w, d, h, body_col, neon, trim, name, is_gun=False):
-    """Strip-mall / shake stall with neon trim, awning, counter."""
+    """Strip-mall / shake stall — walk-in south door gap + neon trim."""
     n = 0
-    stall_tex = _t('stucco') or _t('brick')
-    Entity(model='cube', scale=(w, h, d), position=(x, h / 2, z), color=body_col,
-           texture=stall_tex, texture_scale=(2.0, 1.4), collider='box')
-    n += 1
+    stall_tex = _safe_tex('stucco', 'brick')
+    if is_gun:
+        # Gun hut stays solid (counter service); shakes are walk-in
+        Entity(model='cube', scale=(w, h, d), position=(x, h / 2, z), color=body_col,
+               texture=stall_tex, texture_scale=(2.0, 1.4), collider='box')
+        n += 1
+    else:
+        hn, _d = hollow_shell(
+            Entity, color, x, z, w, d, h, body_col,
+            door_gap=min(1.4, w * 0.4), door_face='s',
+            floor_col=_rgb(color, 50, 45, 55),
+            ceil_col=neon,
+            wall_tex=stall_tex,
+        )
+        n += hn
     # flat roof + neon edge
     Entity(model='cube', scale=(w + 0.55, 0.14, d + 0.4), position=(x, h + 0.1, z), color=neon)
     n += 1
