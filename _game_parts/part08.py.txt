@@ -1,3 +1,95 @@
+        wish_x = held_keys['d'] - held_keys['a']
+        wish_z = held_keys['w'] - held_keys['s']
+        # Arrow keys as backup movement
+        wish_x += held_keys['right arrow'] * 0  # right arrow is turn
+        wish_z += 0
+        if held_keys['up arrow']:
+            wish_z += 1
+        if held_keys['down arrow']:
+            wish_z -= 1
+        wish = Vec3(wish_x, 0, wish_z)
+        if wish.length() > 0:
+            wish = wish.normalized()
+            speed = 10.0 if mode == 'safe' else 8.5
+            move = (player.forward * wish.z + player.right * wish.x) * speed * dt
+            if mode == 'safe':
+                # Nuclear: no clip tests in the yard — just move and clamp.
+                player.position += move
+                cx, _cy, cz = getattr(self, 'safe_yard_center', (80.0, 0.0, 80.0))
+                player.x = max(cx - 12.0, min(cx + 12.0, player.x))
+                player.z = max(cz - 12.0, min(cz + 12.0, player.z))
+            else:
+                origin = player.world_position + Vec3(0, 0.9, 0)
+                ign = list(self.ignore)
+                hit = raycast(origin, move.normalized(), distance=0.55 + move.length(), ignore=ign, debug=False)
+                if not hit.hit:
+                    player.position += move
+                else:
+                    mx = Vec3(move.x, 0, 0)
+                    mz = Vec3(0, 0, move.z)
+                    if mx.length() > 1e-5:
+                        hx = raycast(origin, mx.normalized(), distance=0.55 + mx.length(), ignore=ign, debug=False)
+                        if not hx.hit:
+                            player.x += mx.x
+                    if mz.length() > 1e-5:
+                        hz = raycast(origin, mz.normalized(), distance=0.55 + mz.length(), ignore=ign, debug=False)
+                        if not hz.hit:
+                            player.z += mz.z
+                player.x = max(-60, min(78, player.x))
+                player.z = max(-58, min(30, player.z))
+
+        self.y_vel -= 32 * dt
+        player.y += self.y_vel * dt
+        if player.y <= 0:
+            player.y = 0
+            self.y_vel = 0
+            self.grounded = True
+        else:
+            self.grounded = False
+
+        if held_keys['space'] and self.grounded:
+            self.y_vel = 8.2
+            self.grounded = False
+
+        if not self.visual.enabled:
+            self.visual.enabled = True
+        if self.cam_in_car:
+            self._set_camera_follow(False)
+
+
+    def _drive(self, dt):
+        from ursina import held_keys, mouse, raycast, Vec3, Entity, destroy, color
+        from vendor.vehicle import bicycle_step
+        car = self.in_car
+        if getattr(mouse, 'locked', False):
+            # Clamp mouse look while driving (pitch only on cam_pivot)
+            car.cam_pivot.rotation_x -= mouse.velocity[1] * (float(getattr(self, "mouse_sens", 140) or 140) * 0.57)
+            car.cam_pivot.rotation_x = max(-20, min(25, car.cam_pivot.rotation_x))
+
+        dmg = float(getattr(car, 'damage', 0.0) or 0.0)
+        dmg_mul = max(0.15, 1.0 - 0.5 * (dmg / 100.0))
+        wear = float(getattr(car, 'tire_wear', 0.0) or 0.0)
+        wear_n = max(0.0, min(1.0, wear / 100.0))
+        steer_gain = 1.05 * (1.0 - 0.55 * wear_n)
+        coast_drag = 3.2 + 2.8 * wear_n
+        accel_drag = 0.55 + 0.9 * wear_n
+        base_vmax, base_accel = 24.0, 16.0
+        vmax = base_vmax * dmg_mul * (1.0 - 0.18 * wear_n)
+        accel_force = base_accel * dmg_mul * (1.0 - 0.12 * wear_n)
+        brake_force = 0.0
+        accel = 0.0
+
+        fuel = float(getattr(car, 'fuel', 100.0) or 0.0)
+        out_of_gas = fuel <= 0.0 or getattr(car, 'disabled', False)
+
+        if out_of_gas:
+            brake_force = 14.0
+            if not getattr(car, 'out_of_gas_toasted', False) and fuel <= 0.0 and not getattr(car, 'disabled', False):
+                car.out_of_gas_toasted = True
+                self.toast('Out of gas. Find a pump.')
+        else:
+            if held_keys['w']:
+                accel = accel_force
             elif held_keys['s']:
                 if car.speed > 0.55:
                     brake_force = 32.0
@@ -251,61 +343,3 @@
         except Exception:
             pass
 
-    def _cycle_outfit(self, delta=1):
-        """Adult feminine NPCs / Michelle / player: clothed -> underwear -> nude."""
-        from models3d._actors import cycle_humanoid_outfit
-        if getattr(self, 'mode', 'play') not in ('play', 'safe'):
-            return
-        if getattr(self, 'ui_open', False):
-            return
-        Entity = self.Entity
-        color = self.color
-        target = None
-        # Prefer Michelle if near, else nearest feminine adult NPC, else player visual
-        try:
-            px, pz = self.player.x, self.player.z
-        except Exception:
-            return
-        best_d = 3.2
-        m = getattr(self, 'michelle', None)
-        if m is not None:
-            try:
-                d = ((m.x - px) ** 2 + (m.z - pz) ** 2) ** 0.5
-                if d <= best_d:
-                    target, best_d = m, d
-            except Exception:
-                pass
-        for npc in list(getattr(self, 'npcs', []) or []):
-            if npc is None or npc is m:
-                continue
-            if not (getattr(npc, '_feminine_adult', False) or getattr(npc, 'feminine', False)
-                    or str(getattr(npc, '_base_style', '') or getattr(npc, 'humanoid_style', '') or '').startswith(('michelle', 'anime_f'))
-                    or getattr(npc, 'kind', '') in ('michelle', 'mira', 'lila', 'rosa', 'yara')):
-                continue
-            try:
-                d = ((npc.x - px) ** 2 + (npc.z - pz) ** 2) ** 0.5
-            except Exception:
-                continue
-            if d < best_d:
-                target, best_d = npc, d
-        if target is None:
-            target = getattr(self, 'visual', None)
-            if target is None:
-                return
-            # player undress allowed (adult)
-            try:
-                target._feminine_adult = True
-                if not getattr(target, '_base_style', None):
-                    target._base_style = 'player'
-            except Exception:
-                pass
-        try:
-            nxt = cycle_humanoid_outfit(Entity, color, target, delta=delta)
-        except Exception as exc:
-            print('  outfit cycle skip:', exc)
-            return
-        label = {'clothed': 'Outfit: Clothed', 'underwear': 'Outfit: Underwear', 'nude': 'Outfit: Nude'}.get(nxt, 'Outfit')
-        who = getattr(target, 'npc_name', None) or ('Michelle' if target is m else 'You')
-        # Never print a surname / deadname
-        if isinstance(who, str) and who.lower().startswith('lewis'):
-            who = 'Michelle'
