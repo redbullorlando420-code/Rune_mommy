@@ -230,7 +230,7 @@
             return
         if self.ui_open:
             if self.hud_prompt:
-                self.hud_prompt.text = '1-4 choose    ESC close'
+                self.hud_prompt.text = '1-8 choose / click    ESC close'
             return
         prompt = self._nearest_prompt()
         if self.hud_prompt:
@@ -266,6 +266,12 @@
             ip = interiors.prompt(self, pos)
             if ip:
                 options.append((0.05, ip))
+        except Exception:
+            pass
+        try:
+            tp = tokyo.prompt_line(self)
+            if tp:
+                options.append((0.02, tp))
         except Exception:
             pass
         if gas:

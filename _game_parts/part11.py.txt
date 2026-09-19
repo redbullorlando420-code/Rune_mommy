@@ -188,7 +188,13 @@
         who = node.get('portrait') or 'michelle'
         expr = node.get('expression') or 'sassy'
         tex = self._tex_for(who, expr)
-        self.open_panel('Michelle', node.get('text', ''), choices, portrait=True, portrait_tex=tex)
+        body = node.get('text', '')
+        try:
+            from michelle_talk import decorate_michelle_text
+            body = decorate_michelle_text(self, body)
+        except Exception:
+            pass
+        self.open_panel('Michelle', body, choices, portrait=True, portrait_tex=tex)
 
     def _michelle_portrait(self):
         if self.michelle is not None and getattr(self.michelle, 'portrait_tex', None):

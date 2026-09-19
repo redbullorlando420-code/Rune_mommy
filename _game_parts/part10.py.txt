@@ -1,7 +1,11 @@
                 self.open_mira('start')
                 return
             if kind == 'michelle':
-                nid = 'door' if not self.michelle_seen else (self.michelle_node or 'door')
+                try:
+                    from michelle_talk import pick_michelle_opening
+                    nid = pick_michelle_opening(self)
+                except Exception:
+                    nid = 'door' if not self.michelle_seen else 'hi'
                 self.michelle_seen = True
                 self.michelle_auto_opened = True
                 self.open_michelle(nid)
@@ -166,13 +170,20 @@
                 self.panel_portrait.texture = None
             except Exception:
                 pass
+        shown = list(choices)[: len(self.panel_choices)]
         for i, slot in enumerate(self.panel_choices):
-            if i < len(choices):
+            if i < len(shown):
                 slot.enabled = True
-                slot.text = f'{i + 1}  {choices[i][0]}'
+                slot.text = f'{i + 1}  {shown[i][0]}'
+                # mouse-clickable choice (number keys still work via input)
+                slot.on_click = (lambda idx=i: self._pick_choice(idx))
             else:
                 slot.enabled = False
                 slot.text = ''
+                try:
+                    slot.on_click = None
+                except Exception:
+                    pass
 
     def close_panel(self):
         from ursina import mouse
@@ -185,6 +196,10 @@
         self.panel_body.enabled = False
         for slot in self.panel_choices:
             slot.enabled = False
+            try:
+                slot.on_click = None
+            except Exception:
+                pass
 
     def _pick_choice(self, index):
         if index < 0 or index >= len(self.ui_choices):

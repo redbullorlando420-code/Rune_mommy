@@ -247,6 +247,11 @@
             life_sim.boot(self)
         except Exception as exc:
             print('  life_sim skip:', exc)
+        # Tokyo / Akihabara portal + far district (after Clermont world exists)
+        try:
+            tokyo.boot(self)
+        except Exception as exc:
+            print('  tokyo skip:', exc)
 
     def _scene(self):
         from ursina import scene

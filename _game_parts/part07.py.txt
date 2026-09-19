@@ -12,21 +12,33 @@
         )
         if self.mira_texture:
             self.panel_portrait.texture = self.mira_texture
-        self.panel_name = Text(text='', position=(-0.52, -0.08), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 210), enabled=False)
-        self.panel_body = Text(text='', position=(-0.52, -0.13), origin=(-0.5, 0.5), color=color.rgb32(245, 230, 255), enabled=False, scale=0.8)
+        self.panel_name = Text(text='', position=(-0.52, -0.02), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 210), enabled=False)
+        self.panel_body = Text(text='', position=(-0.52, -0.07), origin=(-0.5, 0.5), color=color.rgb32(245, 230, 255), enabled=False, scale=0.75)
+        # Clickable dialogue choice buttons (mouse) + number keys 1-8
+        from ursina import Button
         self.panel_choices = []
-        for i in range(4):
-            t = Text(
+        for i in range(8):
+            btn = Button(
                 text='',
-                position=(-0.52, -0.34 - i * 0.045),
-                origin=(-0.5, 0.5),
-                color=color.rgb32(160, 230, 255),
+                scale=(0.78, 0.036),
+                position=(0.08, -0.22 - i * 0.042),
+                origin=(0, 0),
+                color=color.rgba32(30, 12, 48, 230),
+                highlight_color=color.rgba32(255, 70, 170, 230),
+                pressed_color=color.rgba32(180, 40, 120, 240),
+                text_color=color.rgb32(180, 235, 255),
+                parent=camera.ui,
                 enabled=False,
-                scale=0.75,
+                z=-0.02,
             )
-            self.panel_choices.append(t)
+            try:
+                btn.text_entity.scale = 0.55
+            except Exception:
+                pass
+            btn._choice_index = i
+            self.panel_choices.append(btn)
         Text(
-            text='WASD walk   mouse look   E use   1 pistol   LMB shoot   ESC quit',
+            text='WASD walk   mouse look   E use   1-8 choices   LMB shoot   ESC quit',
             position=(-0.86, -0.48),
             origin=(-0.5, 0.5),
             color=color.rgb32(160, 140, 180),
@@ -61,6 +73,10 @@
             tick_crowd(self, dt)
             try:
                 life_sim.tick(self, dt)
+            except Exception:
+                pass
+            try:
+                tokyo.tick(self, dt)
             except Exception:
                 pass
             # Named NPCs are not in peds[] — keep them un-buried / visible near player
@@ -223,7 +239,7 @@
 
         steer = float(held_keys['a'] - held_keys['d'])
         # Higher grip: less drag accelerating, more coasting
-        nx, nz, nyaw, nspd = bicycle_step(
+        nx, nz, nyaw, nspd = _bicycle_step_safe(
             car.x, car.z, car.rotation_y, car.speed,
             steer, accel, dt,
             vmax=vmax, wheelbase=2.6, drag=2.4,

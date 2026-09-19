@@ -169,7 +169,7 @@
             application.quit()
             return
         if self.ui_open:
-            if key in ('1', '2', '3', '4'):
+            if key in ('1', '2', '3', '4', '5', '6', '7', '8'):
                 self._pick_choice(int(key) - 1)
             return
         if key == 'e':
@@ -241,6 +241,8 @@
         if getattr(self, 'mode', 'play') in ('menu', 'settings'):
             return
         try:
+            if tokyo.try_interact(self):
+                return
             if interiors.try_interact(self):
                 return
         except Exception:

@@ -48,6 +48,24 @@ import life_sim
 import interiors
 import wildlife
 
+def _bicycle_step_safe(*args, **kwargs):
+    """Call vendor.bicycle_step; drop unknown kwargs for older vendor zips."""
+    import inspect
+    from vendor.vehicle import bicycle_step as _bs
+    try:
+        sig = inspect.signature(_bs)
+        if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
+            return _bs(*args, **kwargs)
+        allowed = set(sig.parameters)
+        # positional params names
+        filtered = {k: v for k, v in kwargs.items() if k in allowed}
+        return _bs(*args, **filtered)
+    except TypeError:
+        # last resort: positional-only classic signature
+        return _bs(*args[:7], **{k: kwargs[k] for k in ('vmax', 'wheelbase', 'drag') if k in kwargs})
+
+import tokyo
+
 _TEX_CACHE = {}
 
 
