@@ -41,7 +41,7 @@ except Exception:
 from models3d import (
     make_humanoid, make_car, make_house, make_shop_stall,
     make_billboard, make_street_sign, make_poi_building,
-    set_world_textures,
+    set_world_textures, hollow_shell,
     make_food_truck, make_walmart, densify_hwy50,
     make_retail_box, make_tire_shop,
 )
@@ -303,6 +303,7 @@ class Game:
         self.grounded = True
         self.in_car = None
         self.ui_open = False
+        self.talk_target = None
         self.mouse_free = False
         self.debug_on = True
         self.debug_hud = None
@@ -319,3 +320,110 @@ class Game:
         self.michelle_auto_opened = False
         self.michelle_node = 'door'
         self.michelle_open_idx = 0
+        self.mode = 'menu'  # menu | settings | safe | play
+        self.world_paused = True
+        self.intro_started = False
+        self.mouse_sens = 140.0
+        self.cam_mode = 'follow'  # follow | near | far | hood (car)
+        self.fullscreen_stub = False
+        self.menu_ents = []
+        self.menu_title = None
+        self.menu_lines = []
+        self.menu_backdrop = None
+        self.safe_gate = None
+        self.safe_yard_center = (80.0, 0.0, 80.0)
+        self.clermont_spawn = (-18.0, 0.0, 12.0)
+        self.talk_npcs = []
+        self.house_vols = []
+        self.sanctuary_door = None
+        self.michelle = None
+        self.building_count = 0
+        self.pois = []
+        self.quest_defs = list((self.quests_data or {}).get('quests') or [])
+        self.quest_active = []
+        self.quest_completed = set()
+        self.quest_progress = {}
+        self.hud_quest = None
+        self.hud_mode = None
+        self.tutorial_active = False
+        self.tutorial_step = 0
+        self.tutorial_overlay = None
+        self.tutorial_text = None
+        self.kill_quest_count = 0
+
+        self.player = None
+        self.cam_pivot = None
+        self.visual = None
+        self.gun_model = None
+        self.cars = []
+        self.npcs = []
+        self.peds = []
+        self.heat_hunters = []
+        self.drops = []
+        self.stalls = []
+        self.targets = []
+        self.ignore = []
+        self.shake_spawned = []
+        self.traffic_count = 0
+        self.parked_count = 0
+
+        self.panel_bg = None
+        self.panel_portrait = None
+        self.panel_name = None
+        self.panel_body = None
+        self.panel_choices = []
+        self.hud_gold = None
+        self.hud_hp = None
+        self.hud_heat = None
+        self.hud_ammo = None
+        self.hud_pack = None
+        self.hud_breed = None
+        self.hud_prompt = None
+        self.hud_toast = None
+        self.crosshair = None
+        self.cam_in_car = False
+
+        try:
+            mira_p = portrait_texture_path('mira')
+        except Exception:
+            mira_p = None
+        self.mira_portrait_path = mira_p  # optional; None if missing
+        self.mira_texture = None
+
+    def setup(self):
+        from ursina import DirectionalLight, AmbientLight, PointLight, destroy  # noqa: F401
+        color = self.color
+        Entity = self.Entity
+        Text = self.Text
+        camera = self.camera
+        window = self.window
+        mouse = self.mouse
+
+        window.color = color.rgb32(12, 6, 22)
+        window.exit_button.visible = True
+        try:
+            window.fps_counter.enabled = True
+        except Exception:
+            pass
+
+        self.render_opts = apply_perf(window=window, camera=camera, color=color)
+        try:
+            self.render_opts['target_fps'] = apply_fps_cap()
+        except Exception:
+            self.render_opts['target_fps'] = target_fps()
+        print('  render: quality=%s fps_target=%s' % (
+            self.render_opts.get('quality'), self.render_opts.get('target_fps')))
+        try:
+            footprints.boot(self)
+        except Exception as exc:
+            print('  footprints skip:', exc)
+        try:
+            if world_chunks is not None:
+                world_chunks.boot(self)
+        except Exception as exc:
+            print('  chunks skip:', exc)
+        try:
+            apply_lighting(
+                color, self.Vec3,
+                Sky=self.Sky,
+                DirectionalLight=DirectionalLight,
