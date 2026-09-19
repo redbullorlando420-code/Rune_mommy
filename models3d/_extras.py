@@ -1,7 +1,7 @@
 """Food trucks, Walmart box, map densify helpers. Pitched roofs use ±28 A-frame."""
 from __future__ import annotations
 import random
-from models3d._base import _t, _rgb
+from models3d._base import _t, _safe_tex, _rgb, hollow_shell
 from models3d._build import _pitched_roof, make_house, make_billboard, make_street_sign
 
 
@@ -59,30 +59,39 @@ def make_food_truck(Entity, color, Text, scene_parent, x, z, *, name='Food Truck
 
 
 def make_walmart(Entity, color, Text, scene_parent, x, z):
-    """Large big-box store footprint — enterable via interiors door."""
+    """Large big-box — true walk-in shell (south door gap, no solid front collider)."""
     n = 0
     blue = _rgb(color, 0, 113, 206)
     yellow = _rgb(color, 255, 194, 32)
     grey = _rgb(color, 210, 210, 215)
-    # main box
-    Entity(model='cube', scale=(22.0, 5.5, 14.0), position=(x, 2.75, z), color=grey,
-           texture=_t('concrete') or _t('stucco'), texture_scale=(4, 2), collider='box')
-    n += 1
-    # blue fascia band
-    Entity(model='cube', scale=(22.4, 0.8, 0.3), position=(x, 5.0, z - 7.1), color=blue)
-    Entity(model='cube', scale=(8.0, 1.4, 0.25), position=(x, 4.2, z - 7.15), color=blue)
+    w, d, h = 22.0, 14.0, 5.5
+    tex = _safe_tex('concrete', 'stucco')
+    hn, _door = hollow_shell(
+        Entity, color, x, z, w, d, h, grey,
+        door_gap=3.2, door_face='s',
+        floor_col=_rgb(color, 200, 200, 205),
+        ceil_col=_rgb(color, 235, 235, 240),
+        wall_tex=tex, floor_tex=_safe_tex('concrete'),
+    )
+    n += hn
+    # blue fascia band (outside south face)
+    Entity(model='cube', scale=(22.4, 0.8, 0.3), position=(x, 5.0, z - d / 2 - 0.1), color=blue)
+    Entity(model='cube', scale=(8.0, 1.4, 0.25), position=(x, 4.2, z - d / 2 - 0.15), color=blue)
     n += 2
     # yellow spark accent
-    Entity(model='cube', scale=(2.2, 2.2, 0.2), position=(x - 7.5, 3.8, z - 7.2), color=yellow)
+    Entity(model='cube', scale=(2.2, 2.2, 0.2), position=(x - 7.5, 3.8, z - d / 2 - 0.2), color=yellow)
     n += 1
-    # entry recess
-    Entity(model='cube', scale=(4.0, 3.2, 1.5), position=(x, 1.6, z - 7.8), color=_rgb(color, 180, 190, 200),
-           collider='box')
-    Entity(model='cube', scale=(3.2, 2.6, 0.12), position=(x, 1.4, z - 8.55), color=_rgb(color, 120, 180, 220))
-    n += 2
+    # open entry canopy (no collider — walk under)
+    Entity(model='cube', scale=(4.0, 0.2, 1.8), position=(x, 3.2, z - d / 2 - 0.9),
+           color=_rgb(color, 180, 190, 200))
+    Entity(model='cube', scale=(3.2, 2.6, 0.08), position=(x - 1.7, 1.4, z - d / 2 - 0.05),
+           color=_rgb(color, 120, 180, 220))  # glass left of door
+    Entity(model='cube', scale=(3.2, 2.6, 0.08), position=(x + 1.7, 1.4, z - d / 2 - 0.05),
+           color=_rgb(color, 120, 180, 220))
+    n += 3
     # parking lot (unique Y)
     Entity(model='cube', scale=(28.0, 0.04, 12.0), position=(x, Y_LOT, z - 14.0),
-           color=_rgb(color, 36, 34, 38), texture=_t('asphalt'), texture_scale=(8, 4))
+           color=_rgb(color, 36, 34, 38), texture=_safe_tex('asphalt'), texture_scale=(8, 4))
     n += 1
     # parking stripes
     for i in range(-4, 5):
@@ -107,7 +116,7 @@ def make_walmart(Entity, color, Text, scene_parent, x, z):
 def make_retail_box(Entity, color, Text, scene_parent, x, z, *, name='Shop',
                     w=8.0, d=6.0, h=3.4, body_rgb=(0, 70, 190), accent_rgb=(255, 242, 0),
                     yaw=0, sign_rgb=None):
-    """Enterable-ish retail big box / strip store with sidewalk pad + door face south."""
+    """Walk-in retail shell — south door gap, shelves filled by interiors.py."""
     n = 0
     body = _rgb(color, *body_rgb)
     accent = _rgb(color, *accent_rgb)
@@ -115,25 +124,36 @@ def make_retail_box(Entity, color, Text, scene_parent, x, z, *, name='Shop',
     dark = _rgb(color, 28, 28, 32)
     # lot pad (unique Y)
     Entity(model='cube', scale=(w + 4.0, 0.04, d + 5.0), position=(x, Y_LOT, z - 1.0),
-           color=_rgb(color, 42, 40, 44), texture=_t('asphalt'), texture_scale=(4, 3))
+           color=_rgb(color, 42, 40, 44), texture=_safe_tex('asphalt'), texture_scale=(4, 3))
     n += 1
     # sidewalk strip in front
     Entity(model='cube', scale=(w + 2.0, 0.05, 2.2), position=(x, Y_SIDEWALK, z - d / 2 - 1.2),
-           color=_rgb(color, 160, 158, 150), texture=_t('concrete') or _t('stucco'), texture_scale=(3, 1))
+           color=_rgb(color, 160, 158, 150), texture=_safe_tex('concrete', 'stucco'), texture_scale=(3, 1))
     n += 1
-    # building
-    Entity(model='cube', scale=(w, h, d), position=(x, h / 2, z), color=body,
-           texture=_t('stucco') or _t('metal'), texture_scale=(3, 2),
-           rotation_y=yaw, collider='box')
-    n += 1
+    # hollow walk-in shell
+    tex = _safe_tex('stucco', 'concrete')
+    hn, _door = hollow_shell(
+        Entity, color, x, z, w, d, h, body,
+        door_gap=min(1.8, w * 0.35), door_face='s',
+        floor_col=_rgb(color, 180, 180, 190),
+        ceil_col=_rgb(color, 230, 230, 235),
+        wall_tex=tex, floor_tex=_safe_tex('concrete'),
+    )
+    n += hn
     # fascia / sign band
     Entity(model='cube', scale=(w + 0.2, 0.7, 0.25), position=(x, h - 0.2, z - d / 2 - 0.05),
            color=accent, rotation_y=yaw)
     n += 1
-    # glass storefront
-    Entity(model='cube', scale=(w * 0.7, h * 0.45, 0.08), position=(x, h * 0.45, z - d / 2 - 0.08),
+    # glass panes flanking door (no collider)
+    gap = min(1.8, w * 0.35)
+    pane_w = max(0.4, (w * 0.7 - gap) / 2.0)
+    Entity(model='cube', scale=(pane_w, h * 0.45, 0.08),
+           position=(x - gap / 2 - pane_w / 2, h * 0.45, z - d / 2 - 0.08),
            color=_rgb(color, 140, 190, 220), rotation_y=yaw)
-    n += 1
+    Entity(model='cube', scale=(pane_w, h * 0.45, 0.08),
+           position=(x + gap / 2 + pane_w / 2, h * 0.45, z - d / 2 - 0.08),
+           color=_rgb(color, 140, 190, 220), rotation_y=yaw)
+    n += 2
     # ridge-up roof (A-frame ±28 via helper)
     _pitched_roof(Entity, color, x, h, z, w + 0.4, d + 0.3, dark)
     n += 1
@@ -150,25 +170,27 @@ def make_retail_box(Entity, color, Text, scene_parent, x, z, *, name='Shop',
 
 
 def make_tire_shop(Entity, color, Text, scene_parent, x, z, *, name='Tire Shop'):
-    """Garage bay tire shop with stacked tires + service apron."""
+    """Garage bay tire shop — walk-in bay gap on south face."""
     n = 0
     body = _rgb(color, 45, 45, 48)
     accent = _rgb(color, 255, 107, 0)
     # apron
     Entity(model='cube', scale=(10.0, 0.04, 8.0), position=(x, Y_LOT, z - 1.0),
-           color=_rgb(color, 38, 36, 40), texture=_t('asphalt'), texture_scale=(4, 3))
+           color=_rgb(color, 38, 36, 40), texture=_safe_tex('asphalt'), texture_scale=(4, 3))
     n += 1
     Entity(model='cube', scale=(8.0, 0.05, 2.0), position=(x, Y_SIDEWALK, z - 4.2),
            color=_rgb(color, 150, 148, 140))
     n += 1
-    # garage box
-    Entity(model='cube', scale=(7.0, 3.2, 5.5), position=(x, 1.6, z), color=body,
-           texture=_t('metal') or _t('stucco'), texture_scale=(2, 1.5), collider='box')
-    n += 1
-    # open bay (dark recess)
-    Entity(model='cube', scale=(3.2, 2.4, 0.2), position=(x - 1.2, 1.3, z - 2.85),
-           color=_rgb(color, 20, 20, 22))
-    n += 1
+    # hollow garage with wide bay
+    w, d, h = 7.0, 5.5, 3.2
+    hn, _door = hollow_shell(
+        Entity, color, x, z, w, d, h, body,
+        door_gap=3.4, door_face='s',
+        floor_col=_rgb(color, 50, 50, 55),
+        ceil_col=_rgb(color, 60, 60, 65),
+        wall_tex=_safe_tex('stucco', 'concrete'),
+    )
+    n += hn
     # sign
     Entity(model='cube', scale=(6.5, 0.6, 0.2), position=(x, 3.3, z - 2.8), color=accent)
     n += 1
