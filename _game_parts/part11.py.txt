@@ -1,3 +1,17 @@
+                    _line,
+                    getattr(npc, 'portrait_tex', None),
+                )
+                self._quest_event('talk', npc_id=getattr(npc, 'npc_id', ''))
+                return
+        if self.michelle_seen and self.house_rooms:
+            best_room, best_rd = None, 2.8
+            for rname in ('guest', 'garage', 'shower', 'lawn'):
+                xz = self.house_rooms.get(rname)
+                if not xz:
+                    continue
+                d = dist_xz(pos, (xz[0], 0, xz[1]))
+                if d < best_rd:
+                    best_room, best_rd = rname, d
             if best_room and (car is None or best_rd <= cd + 0.1):
                 if best_room in ('guest', 'shower') and self.michelle_seen:
                     # Offer intimacy mini-game from bedroom/shower after meeting Michelle
@@ -303,17 +317,4 @@
         except Exception:
             pass
         self.open_panel(name, line, [('Later.', self.close_panel)], portrait=bool(portrait_tex), portrait_tex=portrait_tex)
-
-    def open_gun_shop(self):
-        pistol = self.items.get('pistol', {})
-        ammo = self.items.get('ammo', {})
-        p_name = pistol.get('name', 'Lot Pistol')
-        a_name = ammo.get('name', 'Pistol Ammo')
-        body = "Cash on the plank. Pistol if you want polite. Ammo is not a suggestion."
-        choices = [
-            (f'{p_name}   -   70g', self._buy_pistol),
-            (f'{a_name} x12   -   48g', self._buy_ammo),
-            ('Leave.', self.close_panel),
-        ]
-        self.open_panel('Gage   ·   Hancock Gun Hut', body, choices)
 
