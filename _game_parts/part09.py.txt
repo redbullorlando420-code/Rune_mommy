@@ -1,3 +1,43 @@
+        self.cam_mode = modes[(i + int(delta)) % len(modes)]
+        self._apply_camera_mode()
+        self.toast(self._camera_mode_label(self.cam_mode))
+        self._persist_cam_pref()
+
+    def _apply_camera_mode(self):
+        from ursina import Vec3, camera
+        mode = str(getattr(self, 'cam_mode', 'follow') or 'follow').lower()
+        in_car = bool(getattr(self, 'cam_in_car', False) and self.in_car)
+        if not in_car and mode == 'hood':
+            mode = 'follow'
+            self.cam_mode = mode
+        # tuple: y, z, pitch, x_off, fov
+        if in_car:
+            table = {
+                'follow': (2.4, -10.5, 14.0, 0.0, 80.0),
+                'near': (1.55, -4.2, 10.0, 0.55, 78.0),
+                'far': (5.2, -16.5, 26.0, 0.0, 82.0),
+                'hood': (1.05, 1.85, 8.0, 0.0, 75.0),
+            }
+            parent = self.in_car.cam_pivot
+        else:
+            table = {
+                'follow': (1.65, -8.8, 12.0, 0.0, 80.0),
+                'near': (1.35, -3.4, 8.0, 0.62, 78.0),
+                'far': (4.2, -15.0, 24.0, 0.0, 82.0),
+                'hood': (1.65, -8.8, 12.0, 0.0, 80.0),
+            }
+            parent = self.cam_pivot
+        y, z, pitch, x_off, fov = table.get(mode, table['follow'])
+        if parent is None:
+            return
+        camera.parent = parent
+        camera.position = Vec3(x_off, y, z)
+        camera.rotation = Vec3(pitch, 0, 0)
+        try:
+            camera.fov = fov
+        except Exception:
+            pass
+
     def _cycle_outfit(self, delta=1):
         """Adult feminine NPCs / Michelle / player: clothed -> underwear -> nude."""
         from models3d._actors import cycle_humanoid_outfit
@@ -278,23 +318,3 @@
         door_xz = (self.house_rooms or {}).get('door')
         if door_xz and not self.michelle_seen:
             dd = dist_xz(pos, (door_xz[0], 0, door_xz[1]))
-            if dd < 3.0:
-                options.append((dd, 'E  Sanctuary Drive'))
-        for poi in getattr(self, 'pois', []) or []:
-            if poi.get('is_gas'):
-                continue
-            pd = dist_xz(pos, poi['pos'])
-            if pd < 3.4:
-                options.append((pd, f"E  {poi.get('name', 'POI')}"))
-        if not options:
-            return ''
-        options.sort(key=lambda x: x[0])
-        return options[0][1]
-
-    def _actor_pos(self):
-        if self.in_car:
-            p = self.in_car.world_position
-            return (p.x, p.y, p.z)
-        p = self.player.world_position
-        return (p.x, p.y, p.z)
-
