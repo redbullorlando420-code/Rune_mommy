@@ -1,3 +1,16 @@
+    def open_gun_shop(self):
+        pistol = self.items.get('pistol', {})
+        ammo = self.items.get('ammo', {})
+        p_name = pistol.get('name', 'Lot Pistol')
+        a_name = ammo.get('name', 'Pistol Ammo')
+        body = "Cash on the plank. Pistol if you want polite. Ammo is not a suggestion."
+        choices = [
+            (f'{p_name}   -   70g', self._buy_pistol),
+            (f'{a_name} x12   -   48g', self._buy_ammo),
+            ('Leave.', self.close_panel),
+        ]
+        self.open_panel('Gage   ·   Hancock Gun Hut', body, choices)
+
     def _buy_pistol(self):
         if self.owned_pistol:
             self.toast('You already have the lot pistol.')
@@ -305,4 +318,3 @@
             if all(r in self.quest_completed for r in reqs):
                 self.quest_active.append(qid)
                 self.quest_progress[qid] = 0
-
