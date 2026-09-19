@@ -1,154 +1,3 @@
-            if dd < 3.0:
-                options.append((dd, 'E  Sanctuary Drive'))
-        for poi in getattr(self, 'pois', []) or []:
-            if poi.get('is_gas'):
-                continue
-            pd = dist_xz(pos, poi['pos'])
-            if pd < 3.4:
-                options.append((pd, f"E  {poi.get('name', 'POI')}"))
-        if not options:
-            return ''
-        options.sort(key=lambda x: x[0])
-        return options[0][1]
-
-    def _actor_pos(self):
-        if self.in_car:
-            p = self.in_car.world_position
-            return (p.x, p.y, p.z)
-        p = self.player.world_position
-        return (p.x, p.y, p.z)
-
-    def _nearest_car(self, pos, radius):
-        best, best_d = None, radius
-        for car in self.cars:
-            if not car:
-                continue
-            if getattr(car, 'disabled', False):
-                continue
-            d = dist_xz(pos, (car.x, 0, car.z))
-            if d < best_d:
-                best, best_d = car, d
-        return best, best_d
-
-    def _nearest_gas(self, pos, radius=None):
-        best, best_d = None, 99.0
-        for poi in getattr(self, 'pois', []) or []:
-            if not poi.get('is_gas'):
-                continue
-            r = float(radius if radius is not None else poi.get('pump_r', 4.2))
-            d = dist_xz(pos, poi['pos'])
-            if d < r and d < best_d:
-                best, best_d = poi, d
-        return best
-
-    def _nearest_npc(self, pos, radius):
-        best, best_d = None, radius
-        for npc in self.npcs:
-            if not npc:
-                continue
-            kind = getattr(npc, 'kind', '')
-            talkable = bool(getattr(npc, 'talkable', False) or kind == 'talk')
-            # Crowd combat kinds skipped unless marked talkable (life_sim subset / lines)
-            if kind in ('target', 'mob', 'barrel'):
-                continue
-            if kind in ('civilian', 'lot_rat', 'walker', 'thug', 'heat_hunter') and not talkable:
-                continue
-            if getattr(npc, 'hittable', False) and not talkable:
-                continue
-            if getattr(npc, 'enabled', True) is False:
-                continue
-            if getattr(npc, 'driving', False):
-                continue
-            d = dist_xz(pos, (npc.x, 0, npc.z))
-            if d < best_d:
-                best, best_d = npc, d
-        return best, best_d
-
-    def _nearest_stall(self, pos, radius):
-        best, best_d = None, radius
-        for st in self.stalls:
-            d = dist_xz(pos, st['pos'])
-            if d < best_d:
-                best, best_d = st, d
-        return best, best_d
-
-    # ----- input ----------------------------------------------------------
-
-    def on_input(self, key):
-        from ursina import application, mouse
-        self._dbg_last_key = str(key)
-        mode = getattr(self, 'mode', 'play')
-
-        if mode in ('menu', 'settings'):
-            if key == 'escape':
-                if mode == 'settings':
-                    self._show_menu()
-                else:
-                    application.quit()
-                return
-            if mode == 'menu':
-                if key == '1':
-                    self._enter_safe_zone(from_load=False)
-                    return
-                if key == '2':
-                    self._try_load_game()
-                    return
-                if key == '3':
-                    self._enter_settings()
-                    return
-                return
-            # settings
-            if key == '1':
-                # mouse sens — bump through presets
-                presets = (80.0, 110.0, 140.0, 180.0, 220.0)
-                try:
-                    i = presets.index(float(self.mouse_sens))
-                    self.mouse_sens = presets[(i + 1) % len(presets)]
-                except ValueError:
-                    self.mouse_sens = 140.0
-                self._refresh_menu_labels()
-                self.toast('Mouse sensitivity %d' % int(self.mouse_sens))
-                return
-            if key == '2':
-                self.fullscreen_stub = not bool(getattr(self, 'fullscreen_stub', False))
-                try:
-                    self.window.fullscreen = self.fullscreen_stub
-                except Exception:
-                    pass
-                self._refresh_menu_labels()
-                self.toast('Fullscreen stub ' + ('ON' if self.fullscreen_stub else 'OFF'))
-                return
-            if key == '3':
-                self._show_menu()
-                return
-            return
-
-        if key == 'f3':
-            self.debug_on = not bool(getattr(self, 'debug_on', True))
-            if self.debug_hud:
-                self.debug_hud.enabled = self.debug_on
-            print('[Rune Mommy] debug', 'ON' if self.debug_on else 'OFF')
-            return
-
-        # Safe yard: Esc always returns to title (never soft-lock).
-        if mode == 'safe' and key == 'escape':
-            self._show_menu()
-            self.toast('Title menu.')
-            return
-
-        if key in ('enter', 'return') and getattr(self, 'tutorial_active', False) and mode == 'play':
-            self._finish_tutorial()
-            return
-        if key == 'escape':
-            if self.ui_open:
-                self.close_panel()
-                return
-            if mode == 'safe':
-                self._show_menu()
-                return
-            # Play: first Esc frees cursor (WASD still works); second Esc quits.
-            if not getattr(self, 'mouse_free', False) and getattr(self.mouse, 'locked', False):
-                self.mouse_free = True
                 self._lock_mouse(False)
                 self.toast('Cursor free — click window to look again. Esc again quits.')
                 return
@@ -289,6 +138,7 @@
         if npc and nd <= 3.0 and (car is None or nd <= cd + 0.15):
             kind = getattr(npc, 'kind', '')
             if kind == 'mira':
+                self._set_talk_target(npc)
                 self.open_mira('start')
                 return
             if kind == 'michelle':
@@ -299,15 +149,18 @@
                     nid = 'door' if not self.michelle_seen else 'hi'
                 self.michelle_seen = True
                 self.michelle_auto_opened = True
+                self._set_talk_target(npc)
                 self.open_michelle(nid)
                 self._quest_event('talk', npc_id='michelle')
                 self._tutorial_note('talk')
                 return
             if kind == 'gun':
+                self._set_talk_target(npc)
                 self.open_gun_shop()
                 return
             named = getattr(npc, 'npc_id', '')
             if kind in ('lila', 'rosa', 'yara') or named in ('lila', 'rosa', 'yara'):
+                self._set_talk_target(npc)
                 self.open_vn(kind if kind in ('lila', 'rosa', 'yara') else named)
                 return
             if kind == 'talk' or getattr(npc, 'talkable', False):
@@ -316,5 +169,173 @@
                     _line = life_sim.decorate_talk_line(npc, _line)
                 except Exception:
                     pass
+                self._set_talk_target(npc)
                 self.open_talk(
                     getattr(npc, 'npc_name', 'NPC'),
+                    _line,
+                    getattr(npc, 'portrait_tex', None),
+                )
+                self._quest_event('talk', npc_id=getattr(npc, 'npc_id', ''))
+                return
+        if self.michelle_seen and self.house_rooms:
+            best_room, best_rd = None, 2.8
+            for rname in ('guest', 'garage', 'shower', 'lawn'):
+                xz = self.house_rooms.get(rname)
+                if not xz:
+                    continue
+                d = dist_xz(pos, (xz[0], 0, xz[1]))
+                if d < best_rd:
+                    best_room, best_rd = rname, d
+            if best_room and (car is None or best_rd <= cd + 0.1):
+                if best_room in ('guest', 'shower') and self.michelle_seen:
+                    # Offer intimacy mini-game from bedroom/shower after meeting Michelle
+                    self._set_talk_target(getattr(self, 'michelle', None))
+                    self.open_panel(
+                        'Michelle',
+                        "The room's warm. Michelle's teal is already half a suggestion.\n"
+                        "First name only.",
+                        [
+                            ('Start intimacy scene', lambda: adult_minigames.start_michelle_sex(self)),
+                            ('Just talk', lambda: self.open_michelle(best_room)),
+                            ('Leave', self.close_panel),
+                        ],
+                        portrait=True,
+                        portrait_tex=self._michelle_portrait(),
+                    )
+                else:
+                    self.open_michelle(best_room)
+                self._quest_event('michelle_room', room=best_room)
+                return
+        if stall and sd <= 3.6 and (car is None or sd < cd):
+            if stall['kind'] == 'gun':
+                self.open_gun_shop()
+                return
+            if stall.get('kind') == 'tire_shop' or stall.get('id') == 'tire_shop_clermont':
+                self.open_tire_shop()
+                return
+            if stall.get('kind') == 'nail_salon' or stall.get('id') == 'nail_salon_clermont':
+                try:
+                    adult_minigames.start_nail_salon(self)
+                except Exception as exc:
+                    print('  nail interact skip:', exc)
+                return
+            if stall.get('kind') in ('food_truck', 'retail', 'big_box', 'shake') or stall.get('shop'):
+                self.open_shake_shop(stall)
+                return
+            self._buy_first_stock(stall)
+            return
+        if car:
+            self._enter_car(car)
+            return
+        self.toast('Nothing in range. Cars in the median. Mira at The Shake Bar.')
+
+    def _enter_car(self, car):
+        from ursina import camera, Vec3
+        if getattr(car, 'disabled', False) or float(getattr(car, 'damage', 0) or 0) >= 100:
+            self.toast('Car totaled.')
+            return
+        self.in_car = car
+        car.speed = 0
+        was_traffic = bool(getattr(car, 'traffic', False))
+        car.traffic = False
+        car.parked = True
+        # Kick NPC driver out when player takes the car
+        try:
+            if getattr(car, 'has_driver', False) or getattr(car, 'driver', None):
+                parking.unseat_driver(self, car, to_crowd=True)
+        except Exception:
+            car.driver = None
+            car.has_driver = False
+        if was_traffic or not hasattr(car, 'fuel'):
+            car.fuel = float(random.uniform(35, 70))
+        car.out_of_gas_toasted = False
+        self.visual.enabled = False
+        self.pistol_drawn = False
+        if self.gun_model:
+            self.gun_model.enabled = False
+        self.player.position = car.position
+        self._set_camera_follow(True)
+        self.toast('W accel  S brake/rev  Space handbrake  E exit/pump')
+
+    def _exit_car(self):
+        from ursina import camera, Vec3
+        car = self.in_car
+        if not car:
+            return
+        offset = car.right * 2.2
+        self.player.position = car.world_position + offset
+        self.player.y = 0
+        self.player.rotation_y = car.rotation_y
+        car.speed = 0
+        self.in_car = None
+        self.visual.enabled = True
+        self._set_camera_follow(False)
+        self.toast('On foot.')
+
+    # ----- Gas stations ---------------------------------------------------
+
+    def open_gas_station(self, poi, car):
+        name = (poi or {}).get('name') or 'Gas'
+        fuel = float(getattr(car, 'fuel', 0) or 0)
+        dmg = float(getattr(car, 'damage', 0) or 0)
+        need = max(0.0, 100.0 - fuel)
+        fill_cost = max(1, int(math.ceil(need / 2.0))) if need > 0.5 else 0
+        body = f'{name}\nFuel {int(fuel)}%   Damage {int(dmg)}%\n1g per 2% fuel · repair 50g'
+        choices = []
+        if fill_cost > 0:
+            choices.append((f'Fill tank ({fill_cost}g)', lambda c=car, cost=fill_cost: self._gas_fill(c, cost)))
+        else:
+            choices.append(('Tank is full.', self.close_panel))
+        if dmg >= 5:
+            choices.append(('Repair (50g)', lambda c=car: self._gas_repair(c)))
+        choices.append(('Leave.', self.close_panel))
+        self.open_panel(f'{name}   ·   pump', body, choices)
+
+    def _gas_fill(self, car, cost):
+        if not car:
+            self.close_panel()
+            return
+        cost = int(cost)
+        if self.gold < cost:
+            self.toast('Not enough gold.')
+            self.close_panel()
+            return
+        self.gold -= cost
+        car.fuel = 100.0
+        car.out_of_gas_toasted = False
+        self.toast(f'Tank filled. -{cost}g')
+        self._quest_event('refuel')
+        self.close_panel()
+
+    def _gas_repair(self, car):
+        if not car:
+            self.close_panel()
+            return
+        if self.gold < 50:
+            self.toast('Not enough gold.')
+            self.close_panel()
+            return
+        self.gold -= 50
+        before = float(getattr(car, 'damage', 0) or 0)
+        car.damage = max(0.0, before - 60.0)
+        if car.damage < 100.0:
+            car.disabled = False
+        self._update_car_damage_visual(car, 0.016)
+        self.toast(f'Repaired. DMG {int(before)}→{int(car.damage)}  -50g')
+        self.close_panel()
+
+    # ----- UI panels ------------------------------------------------------
+
+    def _set_talk_target(self, ent):
+        """Freeze this NPC while dialogue is open; face player; hold position."""
+        self._clear_talk_target()
+        self.talk_target = ent
+        if ent is None:
+            return
+        try:
+            ent.talk_frozen = True
+            ent._talk_hold_pos = (
+                float(ent.x),
+                float(getattr(ent, 'y', 0) or 0),
+                float(ent.z),
+            )
