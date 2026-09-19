@@ -1,6 +1,9 @@
 """3D mesh helpers for Rune Mommy (Ursina)."""
-from models3d._base import set_world_textures  # noqa: F401
-from models3d._actors import make_humanoid, make_car, attach_humanoid_parts, clear_humanoid_parts  # noqa: F401
+from models3d._base import set_world_textures, hollow_shell  # noqa: F401
+from models3d._actors import (  # noqa: F401
+    make_humanoid, make_car, attach_humanoid_parts, clear_humanoid_parts,
+    set_humanoid_outfit, cycle_humanoid_outfit, parse_style_outfit, OUTFITS,
+)
 from models3d._build import (  # noqa: F401
     make_house, make_shop_stall, make_billboard, make_street_sign,
 )
@@ -18,10 +21,15 @@ from models3d._tokyo import (  # noqa: F401
 
 __all__ = [
     'set_world_textures',
+    'hollow_shell',
     'make_humanoid',
     'make_car',
     'attach_humanoid_parts',
     'clear_humanoid_parts',
+    'set_humanoid_outfit',
+    'cycle_humanoid_outfit',
+    'parse_style_outfit',
+    'OUTFITS',
     'make_house',
     'make_shop_stall',
     'make_billboard',
