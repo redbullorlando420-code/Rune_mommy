@@ -34,7 +34,7 @@ def boot(game):
     try:
         n, pos = make_torii_portal(
             Entity, color, Text, scene, cx, cz,
-            label='秋葉原 / AKIHABARA',
+            label='AKIHABARA',
         )
         game.tokyo_portal = {
             'pos': pos,

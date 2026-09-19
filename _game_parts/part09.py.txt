@@ -1,3 +1,47 @@
+        self.toast('%s — %s' % (who, label))
+
+
+    def _wander_targets(self, dt):
+        from ursina import Vec3, raycast
+        for t in self.targets:
+            if getattr(t, 'kind', '') not in ('target', 'mob'):
+                continue
+            if not t or getattr(t, 'hp', 0) <= 0:
+                continue
+            t.wander_t += dt
+            if t.wander_t > 2.8:
+                t.heading = random.uniform(0, 360)
+                t.wander_t = 0
+            t.rotation_y = t.heading
+            step = t.forward * 1.15 * dt
+            t.position += step
+            t.y = 0
+            t.x = max(-40, min(40, t.x))
+            t.z = max(-40, min(8, t.z))
+
+    def _shoot(self):
+        from ursina import camera, raycast, Vec3, Entity, color, destroy, mouse
+        if not self.owned_pistol or not self.pistol_drawn:
+            return
+        if self.shoot_cd > 0:
+            return
+        if self.ammo <= 0:
+            self.toast('Empty. Buy ammo at Hancock Gun Hut.')
+            self.shoot_cd = 0.35
+            return
+        self.ammo -= 1
+        self.shoot_cd = 0.22
+        self.panic_t = max(self.panic_t, 4.5)
+        origin = camera.world_position
+        direction = camera.forward
+        ign = list(self.ignore)
+        if self.in_car:
+            ign += [self.in_car, self.in_car.body]
+        hit = raycast(origin, direction, distance=48, ignore=ign, debug=False)
+        end = hit.world_point if hit.hit else origin + direction * 48
+        mid = origin + (end - origin) * 0.5
+        length = max(0.2, (end - origin).length())
+        tracer = Entity(model='cube', color=color.rgb32(255, 230, 80), scale=(0.04, 0.04, min(length, 18)), position=mid, collider=None)
         try:
             tracer.look_at(end)
         except Exception:
@@ -265,47 +309,3 @@
                     application.quit()
                 return
             if mode == 'menu':
-                if key == '1':
-                    self._enter_safe_zone(from_load=False)
-                    return
-                if key == '2':
-                    self._try_load_game()
-                    return
-                if key == '3':
-                    self._enter_settings()
-                    return
-                return
-            # settings
-            if key == '1':
-                # mouse sens — bump through presets
-                presets = (80.0, 110.0, 140.0, 180.0, 220.0)
-                try:
-                    i = presets.index(float(self.mouse_sens))
-                    self.mouse_sens = presets[(i + 1) % len(presets)]
-                except ValueError:
-                    self.mouse_sens = 140.0
-                self._refresh_menu_labels()
-                self.toast('Mouse sensitivity %d' % int(self.mouse_sens))
-                return
-            if key == '2':
-                self.fullscreen_stub = not bool(getattr(self, 'fullscreen_stub', False))
-                try:
-                    self.window.fullscreen = self.fullscreen_stub
-                except Exception:
-                    pass
-                self._refresh_menu_labels()
-                self.toast('Fullscreen stub ' + ('ON' if self.fullscreen_stub else 'OFF'))
-                return
-            if key == '3':
-                self._show_menu()
-                return
-            return
-
-        if key == 'f3':
-            self.debug_on = not bool(getattr(self, 'debug_on', True))
-            if self.debug_hud:
-                self.debug_hud.enabled = self.debug_on
-            print('[Rune Mommy] debug', 'ON' if self.debug_on else 'OFF')
-            return
-
-        # Safe yard: Esc always returns to title (never soft-lock).

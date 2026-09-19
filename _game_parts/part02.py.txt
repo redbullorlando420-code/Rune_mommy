@@ -1,3 +1,24 @@
+        self.menu_backdrop = None
+        self.safe_gate = None
+        self.safe_yard_center = (80.0, 0.0, 80.0)
+        self.clermont_spawn = (-18.0, 0.0, 12.0)
+        self.talk_npcs = []
+        self.house_vols = []
+        self.sanctuary_door = None
+        self.michelle = None
+        self.building_count = 0
+        self.pois = []
+        self.quest_defs = list((self.quests_data or {}).get('quests') or [])
+        self.quest_active = []
+        self.quest_completed = set()
+        self.quest_progress = {}
+        self.hud_quest = None
+        self.hud_mode = None
+        self.tutorial_active = False
+        self.tutorial_step = 0
+        self.tutorial_overlay = None
+        self.tutorial_text = None
+        self.kill_quest_count = 0
 
         self.player = None
         self.cam_pivot = None
@@ -61,6 +82,15 @@
             self.render_opts['target_fps'] = target_fps()
         print('  render: quality=%s fps_target=%s' % (
             self.render_opts.get('quality'), self.render_opts.get('target_fps')))
+        try:
+            footprints.boot(self)
+        except Exception as exc:
+            print('  footprints skip:', exc)
+        try:
+            if world_chunks is not None:
+                world_chunks.boot(self)
+        except Exception as exc:
+            print('  chunks skip:', exc)
         try:
             apply_lighting(
                 color, self.Vec3,
@@ -279,33 +309,3 @@
         self.menu_ents.append(self.menu_title)
         sub = Text(
             text='Clermont  ·  click a button or press 1 / 2 / 3',
-            position=(0, 0.22),
-            origin=(0, 0),
-            color=color.rgb32(140, 230, 255),
-            scale=0.9,
-            enabled=False,
-            z=-0.1,
-        )
-        self.menu_ents.append(sub)
-        self.menu_lines = []
-        # Keep text lines for settings mode reuse
-        for i in range(5):
-            tline = Text(
-                text='',
-                position=(0, 0.06 - i * 0.07),
-                origin=(0, 0),
-                color=color.rgb32(255, 230, 255),
-                scale=1.0,
-                enabled=False,
-                z=-0.1,
-            )
-            self.menu_lines.append(tline)
-            self.menu_ents.append(tline)
-        self.settings_lines = []
-        for i in range(5):
-            tline = Text(
-                text='',
-                position=(0, 0.08 - i * 0.07),
-                origin=(0, 0),
-                color=color.rgb32(255, 230, 255),
-                scale=1.0,

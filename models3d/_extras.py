@@ -191,13 +191,21 @@ def make_tire_shop(Entity, color, Text, scene_parent, x, z, *, name='Tire Shop')
     return n, (x, 0, z - 4.5)
 
 
-def densify_hwy50(Entity, color, Text, scene_parent, building_count_ref=None):
+def densify_hwy50(Entity, color, Text, scene_parent, building_count_ref=None, game=None):
     """Expand Clermont: more grid blocks, houses, strip plazas along Hwy 50 + side streets.
 
     Unique ground Ys; ridge-up roofs. Avoids lake / parking lot cores.
+    Uses footprints AABB when `game` is provided so houses never overlap.
     """
     rng = random.Random(50)
     n = 0
+    fp = None
+    if game is not None:
+        try:
+            import footprints as _fp
+            fp = _fp.get(game)
+        except Exception:
+            fp = None
     # Fill east Hwy 50 corridor toward Walmart
     east_houses = (
         (48.0, -6.0, 'E Hwy 50'), (52.0, -10.0, 'Lakeview Ct'),
@@ -207,9 +215,14 @@ def densify_hwy50(Entity, color, Text, scene_parent, building_count_ref=None):
         (66.0, -8.0, 'East Spur'), (44.0, 10.0, 'Grove N'),
     )
     for x, z, label in east_houses:
+        w, d = rng.uniform(3.0, 4.0), rng.uniform(2.8, 3.5)
+        if fp is not None:
+            x, z, ok = fp.place(x, z, w=w, d=d, label=label)
+            if not ok:
+                continue
         make_house(
             Entity, color, Text, scene_parent, x, z,
-            w=rng.uniform(3.0, 4.0), h=rng.uniform(2.5, 3.2), d=rng.uniform(2.8, 3.5),
+            w=w, h=rng.uniform(2.5, 3.2), d=d,
             label=label, porch=True, garage=(rng.random() < 0.4), rng=rng,
         )
         n += 1
@@ -221,9 +234,14 @@ def densify_hwy50(Entity, color, Text, scene_parent, building_count_ref=None):
         (-52.0, -28.0, 'Palm Deep'), (-40.0, -32.0, 'Spa Spur'),
     )
     for x, z, label in west_houses:
+        w, d = rng.uniform(3.0, 3.8), rng.uniform(2.6, 3.4)
+        if fp is not None:
+            x, z, ok = fp.place(x, z, w=w, d=d, label=label)
+            if not ok:
+                continue
         make_house(
             Entity, color, Text, scene_parent, x, z,
-            w=rng.uniform(3.0, 3.8), h=rng.uniform(2.4, 3.0), d=rng.uniform(2.6, 3.4),
+            w=w, h=rng.uniform(2.4, 3.0), d=d,
             roof_col=_rgb(color, rng.randint(40, 100), rng.randint(80, 140), rng.randint(100, 160)),
             label=label, porch=True, rng=rng,
         )
@@ -236,10 +254,16 @@ def densify_hwy50(Entity, color, Text, scene_parent, building_count_ref=None):
         (-36.0, 6.0), (12.0, 6.5),
     )
     for i, (x, z) in enumerate(north_grid):
+        w, d = rng.uniform(2.8, 3.6), rng.uniform(2.5, 3.2)
+        label = f'Block {i + 1}'
+        if fp is not None:
+            x, z, ok = fp.place(x, z, w=w, d=d, label=label)
+            if not ok:
+                continue
         make_house(
             Entity, color, Text, scene_parent, x, z,
-            w=rng.uniform(2.8, 3.6), h=rng.uniform(2.3, 3.0), d=rng.uniform(2.5, 3.2),
-            label=f'Block {i + 1}', porch=(rng.random() < 0.55), rng=rng,
+            w=w, h=rng.uniform(2.3, 3.0), d=d,
+            label=label, porch=(rng.random() < 0.55), rng=rng,
         )
         n += 1
     # South of hwy (waterfront / lake-adjacent — keep clear of deep lake SE core ~16,-42)
@@ -250,9 +274,14 @@ def densify_hwy50(Entity, color, Text, scene_parent, building_count_ref=None):
         (12.0, -38.0, 'Boardwalk'), (48.0, -24.0, 'East Lot'),
     )
     for x, z, label in south_houses:
+        w, d = rng.uniform(2.8, 3.5), rng.uniform(2.4, 3.1)
+        if fp is not None:
+            x, z, ok = fp.place(x, z, w=w, d=d, label=label)
+            if not ok:
+                continue
         make_house(
             Entity, color, Text, scene_parent, x, z,
-            w=rng.uniform(2.8, 3.5), h=rng.uniform(2.2, 2.9), d=rng.uniform(2.4, 3.1),
+            w=w, h=rng.uniform(2.2, 2.9), d=d,
             label=label, porch=True, rng=rng,
         )
         n += 1
@@ -264,6 +293,10 @@ def densify_hwy50(Entity, color, Text, scene_parent, building_count_ref=None):
         (4.0, -8.0, 'Median Mart'), (30.0, -8.0, 'Hancock Mini'),
     )
     for x, z, name in plazas:
+        if fp is not None:
+            x, z, ok = fp.place(x, z, w=3.5, d=3.0, label=name)
+            if not ok:
+                continue
         Entity(model='cube', scale=(3.5, 2.2, 3.0), position=(x, 1.1, z),
                color=_rgb(color, rng.randint(80, 140), rng.randint(70, 120), rng.randint(90, 150)),
                texture=_t('stucco'), texture_scale=(2, 1.2), collider='box')

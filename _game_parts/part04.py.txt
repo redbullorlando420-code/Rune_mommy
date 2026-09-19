@@ -1,3 +1,35 @@
+            'pack': list(self.pack),
+            'tutorial_done': tutorial_done,
+            'intro_started': bool(self.intro_started),
+            'michelle_seen': bool(self.michelle_seen),
+            'mouse_sens': float(self.mouse_sens),
+            'cam_mode': str(getattr(self, 'cam_mode', 'follow') or 'follow'),
+        }
+        path = self._save_path()
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
+        except Exception as exc:
+            print('  local_save failed:', exc)
+
+    def _load_local_save(self):
+        path = self._save_path()
+        if not path.exists():
+            # honor flags-only as a soft save marker? require local_save for Load
+            return None
+        try:
+            return json.loads(path.read_text(encoding='utf-8')) or {}
+        except Exception:
+            return None
+
+    def _apply_local_save(self, data):
+        if not data:
+            return
+        self.gold = int(data.get('gold', self.gold))
+        self.hp = int(data.get('hp', self.hp))
+        self.breed = int(data.get('breed', self.breed))
+        self.preg = bool(data.get('preg', self.preg))
+        self.owned_pistol = bool(data.get('pistol', data.get('owned_pistol', self.owned_pistol)))
         self.ammo = int(data.get('ammo', self.ammo))
         self.pack = list(data.get('pack') or [])
         self.intro_started = bool(data.get('intro_started', False))
@@ -277,35 +309,3 @@
         # body + porch + windows + AC (composed, not a lone cube)
         Entity(model='cube', scale=(8.0, 3.2, 6.4), position=(hx, 1.6, hz), color=body_col,
                texture=stucco, texture_scale=(2.5, 1.6), collider='box')
-        # A-frame roof: ridge above wall top (h=3.2 → ridge ~3.75), ±28 slopes
-        Entity(model='cube', scale=(8.6, 0.22, 3.6), position=(hx - 1.2, 3.63, hz), color=teal, rotation_z=-28)
-        Entity(model='cube', scale=(8.6, 0.22, 3.6), position=(hx + 1.2, 3.63, hz), color=teal, rotation_z=28)
-        Entity(model='cube', scale=(0.22, 0.14, 7.0), position=(hx, 3.83, hz), color=color.rgb32(245, 248, 252))
-        for wz in (-1.6, 1.6):
-            Entity(model='cube', scale=(0.08, 0.7, 0.7), position=(hx + 4.05, 1.7, hz + wz), color=color.rgb32(120, 200, 230))
-        Entity(model='cube', scale=(2.8, 0.14, 2.2), position=(hx + 5.2, 0.1, hz),
-               color=color.rgb32(170, 160, 140), texture=concrete, texture_scale=(2, 1.5))
-        Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz + 0.9), color=wood)
-        Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz - 0.9), color=wood)
-        Entity(model='cube', scale=(0.7, 0.5, 0.55), position=(hx - 4.3, 0.4, hz + 2.2), color=color.rgb32(70, 78, 90))
-        # garage south of body
-        Entity(model='cube', scale=(5.4, 2.5, 4.6), position=(hx + 0.2, 1.25, hz - 5.4),
-               color=color.rgb32(210, 196, 176), texture=stucco, texture_scale=(2, 1.4), collider='box')
-        Entity(model='cube', scale=(5.6, 0.28, 4.8), position=(hx + 0.2, 2.62, hz - 5.4), color=teal)
-        Entity(model='cube', scale=(3.4, 1.9, 0.12), position=(hx + 2.7, 1.0, hz - 5.4), color=color.rgb32(70, 78, 90))
-        door = Entity(model='cube', scale=(0.16, 2.15, 1.05), position=(hx + 4.08, 1.12, hz), color=wood)
-        self.sanctuary_door = door
-        Entity(model='cube', scale=(1.5, 0.16, 1.7), position=(hx + 4.9, 0.1, hz), color=color.rgb32(180, 180, 175))
-        self.building_count += 2
-
-        # guest bed + shower markers inside
-        Entity(model='cube', scale=(2.2, 0.42, 1.5), position=(hx + 1.8, 0.45, hz + 1.5), color=color.rgb32(220, 210, 200))
-        Entity(model='cube', scale=(1.35, 1.9, 1.35), position=(hx - 2.1, 1.05, hz + 1.7), color=color.rgb32(180, 220, 215))
-
-        door_xz = (hx + 4.1, hz)
-        guest_xz = (hx + 1.8, hz + 1.5)
-        garage_xz = (hx + 0.2, hz - 5.4)
-        shower_xz = (hx - 2.1, hz + 1.7)
-        lawn_xz = (hx - 7.2, hz)
-        self.house_rooms = {
-            'door': door_xz,

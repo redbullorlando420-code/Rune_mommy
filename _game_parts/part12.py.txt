@@ -1,3 +1,47 @@
+        if not car:
+            self.toast('Bring a car.')
+            self.open_tire_shop()
+            return
+        if self.gold < cost:
+            self.toast('Not enough gold.')
+            self.open_tire_shop()
+            return
+        self.gold -= cost
+        wear = float(getattr(car, 'tire_wear', 0.0) or 0.0)
+        if kind == 'replace':
+            car.tire_wear = 0.0
+            car.tire_warn_mid = False
+            car.tire_warn_hi = False
+            self.toast('New tires mounted. Grip restored.')
+        else:
+            car.tire_wear = max(0.0, wear - float(amount))
+            if car.tire_wear < 55:
+                car.tire_warn_mid = False
+            if car.tire_wear < 85:
+                car.tire_warn_hi = False
+            self.toast(f'Tires serviced. Wear now {int(car.tire_wear)}%.')
+        if kind == 'patch':
+            self.pack.append('Tire Patch Kit')
+        self._quest_event('tire_service', kind=kind)
+        self.open_tire_shop()
+
+    def open_shake_shop(self, stall):
+        shop = stall.get('shop') or {}
+        greeting = shop.get('greeting') or shop.get('blurb') or stall['name']
+        stock = list(shop.get('stock') or [])
+        choices = []
+        for entry in stock[:3]:
+            item_id = entry.get('itemId')
+            price = int(entry.get('price', 10))
+            item = self.items.get(item_id, {})
+            label = f"{item.get('name', item_id)}   -   {price}g"
+
+            def make(iid=item_id, pr=price, nm=item.get('name', item_id)):
+                def cb():
+                    self._buy_item(iid, pr, nm, stall)
+                return cb
+
+            choices.append((label, make()))
         choices.append(('Leave.', self.close_panel))
         title = f"{stall.get('npc') or stall['name']}   ·   {stall['name']}"
         self.open_panel(title, greeting, choices, portrait=stall.get('id') == 'shake_bar')
@@ -265,47 +309,3 @@
                 if poi and kw.get('poi_id') == poi:
                     self._quest_complete(qid)
             elif etype == 'refuel' and qtype == 'refuel':
-                self._quest_complete(qid)
-
-    def _flags_path(self):
-        return ROOT / 'data' / 'local_flags.json'
-
-    def _load_flags(self):
-        path = self._flags_path()
-        if path.exists():
-            try:
-                return json.loads(path.read_text(encoding='utf-8')) or {}
-            except Exception:
-                return {}
-        # also honor legacy save_flags.json
-        alt = ROOT / 'data' / 'save_flags.json'
-        if alt.exists():
-            try:
-                return json.loads(alt.read_text(encoding='utf-8')) or {}
-            except Exception:
-                return {}
-        return {}
-
-    def _save_flags(self, data):
-        path = self._flags_path()
-        try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
-        except Exception as exc:
-            print('  flags save failed:', exc)
-
-    def _tick_visit_quests(self):
-        """Complete visit-type quests when player is near matching POI interact pos."""
-        if not self.quest_active:
-            return
-        pos = self._actor_pos()
-        for poi in getattr(self, 'pois', []) or []:
-            pid = poi.get('id')
-            ppos = poi.get('pos')
-            if not pid or not ppos:
-                continue
-            if dist_xz(pos, ppos) <= 4.5:
-                self._quest_event('visit', poi_id=pid)
-
-    def _init_tutorial(self):
-        flags = self._load_flags()

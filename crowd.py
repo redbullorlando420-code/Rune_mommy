@@ -164,7 +164,7 @@ def _spot(i, rng):
 
 
 def spawn_crowd(game):
-    """Spawn 50+ wanderers. Reuses game._humanoid. Does not touch named NPCs."""
+    """Spawn PED_COUNT wanderers (default 40). Reuses game._humanoid. No named NPCs."""
     color = game.color
     rng = random.Random(50)
     walker_col = (74, 99, 80)

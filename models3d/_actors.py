@@ -267,7 +267,7 @@ def _hitbox_ghost(Entity, parent):
 def _body_nude_feminine(Entity, color, parent, skin, hip_w, torso_d, leg_gap, *, michelle=False):
     """Adult nude silhouette — hourglass. Never underage."""
     waist = 0.28 if michelle else 0.32
-    bust = (0.82, 0.50, 0.56) if michelle else (0.64, 0.38, 0.42)
+    bust = (0.90, 0.54, 0.60) if michelle else (0.72, 0.42, 0.46)
     Entity(parent=parent, model='cube', color=skin,
            scale=(waist, 0.44, torso_d * 0.82), y=1.12)
     Entity(parent=parent, model='cube', color=_tint(skin, -0.04),
@@ -468,9 +468,9 @@ def attach_humanoid_parts(
 
     # --- proportions (adult) ---
     if michelle:
-        hip_w, shoulder_w, torso_d, leg_gap = 0.76, 0.38, 0.36, 0.16
+        hip_w, shoulder_w, torso_d, leg_gap = 0.82, 0.38, 0.38, 0.16
     elif anime_f or (feminine and not player):
-        hip_w, shoulder_w, torso_d, leg_gap = 0.60, 0.42, 0.34, 0.14
+        hip_w, shoulder_w, torso_d, leg_gap = 0.68, 0.40, 0.36, 0.15
     elif named and not player:
         hip_w, shoulder_w, torso_d, leg_gap = 0.48, 0.50, 0.30, 0.12
     elif player:

@@ -32,7 +32,12 @@ from loaders import (
 )
 from crowd import spawn_crowd, tick_crowd, spawn_heat_hunter
 from traffic import spawn_traffic, tick_traffic
-from lighting import apply_lighting, apply_perf, apply_fps_cap, set_visible, target_fps
+from lighting import apply_lighting, apply_perf, apply_fps_cap, pre_boot_fps_prc, set_visible, target_fps
+import footprints
+try:
+    import chunks as world_chunks
+except Exception:
+    world_chunks = None
 from models3d import (
     make_humanoid, make_car, make_house, make_shop_stall,
     make_billboard, make_street_sign, make_poi_building,
@@ -191,24 +196,40 @@ def data_report():
 
 def boot_ursina(window_type='onscreen'):
     from panda3d.core import loadPrcFileData
+    from pathlib import Path as _Path
     loadPrcFileData('', 'audio-library-name null')
     loadPrcFileData('', 'notify-level-audio fatal')
     loadPrcFileData('', 'notify-level-glgsg warning')
     if window_type in ('offscreen', 'none'):
         loadPrcFileData('', f'window-type {window_type}')
+    # PRC before ShowBase — Ursina apply_settings later forces vsync=True→MNormal
+    fps = pre_boot_fps_prc()
+    icon = str(_Path(__file__).resolve().parent / 'textures' / 'ursina.ico')
+    if not _Path(icon).is_file():
+        icon = None  # skip missing-icon spam
 
     from ursina import Ursina
-    app = Ursina(
+    kw = dict(
         title='Rune Mommy   -   Clermont / Hwy 50',
         borderless=False,
         fullscreen=False,
         development_mode=False,
-        vsync=True,
+        # False here; apply_settings still sets True→MNormal — we re-cap after
+        vsync=False,
         size=(1280, 720),
         editor_ui_enabled=False,
         show_ursina_splash=False,
         window_type=window_type,
     )
+    if icon:
+        kw['icon'] = icon
+    app = Ursina(**kw)
+    # Critical: re-assert MLimited after Ursina.apply_settings()
+    try:
+        apply_fps_cap(app)
+    except Exception as exc:
+        print('  boot fps re-cap skip:', exc)
+    print('  boot fps_target=%s (limited clock)' % fps)
     return app
 
 
@@ -288,24 +309,3 @@ class Game:
         self.menu_ents = []
         self.menu_title = None
         self.menu_lines = []
-        self.menu_backdrop = None
-        self.safe_gate = None
-        self.safe_yard_center = (80.0, 0.0, 80.0)
-        self.clermont_spawn = (-18.0, 0.0, 12.0)
-        self.talk_npcs = []
-        self.house_vols = []
-        self.sanctuary_door = None
-        self.michelle = None
-        self.building_count = 0
-        self.pois = []
-        self.quest_defs = list((self.quests_data or {}).get('quests') or [])
-        self.quest_active = []
-        self.quest_completed = set()
-        self.quest_progress = {}
-        self.hud_quest = None
-        self.hud_mode = None
-        self.tutorial_active = False
-        self.tutorial_step = 0
-        self.tutorial_overlay = None
-        self.tutorial_text = None
-        self.kill_quest_count = 0

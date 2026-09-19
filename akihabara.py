@@ -75,7 +75,7 @@ def build(game):
 
     # Neon boards
     for bx, bz, label, rgb in (
-        (ox - 14, oz + 2, '秋葉原', (80, 255, 200)),
+        (ox - 14, oz + 2, 'AKIHABARA', (80, 255, 200)),
         (ox + 14, oz - 6, 'RADIO', (255, 60, 160)),
         (ox + 6, oz + 4, 'GAMES', (120, 180, 255)),
     ):
@@ -87,12 +87,13 @@ def build(game):
 
     # Named storefronts
     store_specs = [
-        ('radio_kaikan', 'Radio Kaikan', -8.0, -2.0, 4, (45, 48, 70), (255, 90, 40), 'ラ'),
-        ('super_potato', 'Super Potato', -3.0, -6.0, 5, (50, 40, 30), (255, 200, 40), 'ポ'),
-        ('animate_akihabara', 'Animate', 4.0, -5.5, 4, (40, 55, 90), (255, 100, 180), 'ア'),
-        ('mandarake', 'Mandarake', -12.0, -8.0, 3, (60, 35, 45), (220, 60, 90), 'ま'),
-        ('yodobashi', 'Yodobashi', 18.0, -1.0, 4, (30, 50, 90), (80, 140, 255), 'ヨ'),
-        ('udx', 'UDX', 8.0, 10.0, 5, (55, 60, 75), (100, 255, 220), 'U'),
+        # ASCII signs only — Ursina default font has no CJK (avoids Text warning spam)
+        ('radio_kaikan', 'Radio Kaikan', -8.0, -2.0, 4, (45, 48, 70), (255, 90, 40), 'RK'),
+        ('super_potato', 'Super Potato', -3.0, -6.0, 5, (50, 40, 30), (255, 200, 40), 'SP'),
+        ('animate_akihabara', 'Animate', 4.0, -5.5, 4, (40, 55, 90), (255, 100, 180), 'AN'),
+        ('mandarake', 'Mandarake', -12.0, -8.0, 3, (60, 35, 45), (220, 60, 90), 'MD'),
+        ('yodobashi', 'Yodobashi', 18.0, -1.0, 4, (30, 50, 90), (80, 140, 255), 'YO'),
+        ('udx', 'UDX', 8.0, 10.0, 5, (55, 60, 75), (100, 255, 220), 'UDX'),
     ]
     for sid, name, lx, lz, floors, body, neon, sign in store_specs:
         wx, wz = oxz(lx, lz)
@@ -199,7 +200,7 @@ def build(game):
         (255, 60, 140), (60, 200, 255), (255, 220, 60), (120, 80, 255),
         (40, 220, 120), (255, 100, 80), (200, 200, 220),
     )
-    for i in range(18):
+    for i in range(8):
         lx = rng.uniform(-16, 20)
         lz = rng.uniform(-14, 6)
         wx, wz = oxz(lx, lz)

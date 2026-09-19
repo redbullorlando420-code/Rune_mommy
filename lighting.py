@@ -127,14 +127,12 @@ def apply_perf(window=None, camera=None, color=None):
     fps = target_fps()
     try:
         from panda3d.core import loadPrcFileData
-        # Lock / target FPS — floor 60 so med/high don't sit at ~20
-        loadPrcFileData('', f'clock-mode limited')
+        # Lock / target FPS — floor 60. Prefer limited clock over GPU vsync so
+        # Ursina apply_settings(vsync=True→MNormal) cannot leave us uncapped/slow.
+        loadPrcFileData('', 'clock-mode limited')
         loadPrcFileData('', f'clock-frame-rate {fps}')
-        # vsync helps cap; still set explicit limit so uncapped GPUs don't race
-        if q in ('high', 'ultra', 'med'):
-            loadPrcFileData('', 'sync-video true')
-        else:
-            loadPrcFileData('', 'sync-video false')
+        # sync-video false: MLimited is the authority (avoids 20/30Hz weirdness)
+        loadPrcFileData('', 'sync-video false')
         if q == 'low':
             loadPrcFileData('', 'framebuffer-multisample 0')
             loadPrcFileData('', 'multisamples 0')
@@ -162,9 +160,9 @@ def apply_perf(window=None, camera=None, color=None):
             window.fps_counter.enabled = True
         except Exception:
             pass
+        # Ursina: int vsync => ClockObject.MLimited + setFrameRate (post-base)
         try:
-            # Ursina / panda frame rate hint
-            window.entity.fps = fps
+            window.vsync = int(fps)
         except Exception:
             pass
 
@@ -292,15 +290,61 @@ def should_sim(px, pz, x, z, radius: float) -> bool:
 
 
 def apply_fps_cap(app=None):
-    """Re-assert FPS after Ursina boot (some builds ignore PRC until window exists)."""
+    """Re-assert FPS after Ursina boot.
+
+    Ursina window.apply_settings() forces vsync=True → ClockObject.MNormal after
+    ShowBase starts, which undoes pre-boot PRC limits and can leave frame pacing
+    to the GPU (often ~20 dt=0.050 on some Windows setups). Always re-apply
+    MLimited + setFrameRate here, and poke window.vsync with an int target.
+    """
     fps = target_fps()
     try:
+        from ursina import application
+        application.time_scale = 1.0
+    except Exception:
+        pass
+    try:
         from panda3d.core import loadPrcFileData, ClockObject
+        loadPrcFileData('', 'sync-video false')
         loadPrcFileData('', 'clock-mode limited')
         loadPrcFileData('', f'clock-frame-rate {fps}')
         clock = ClockObject.getGlobalClock()
         clock.setMode(ClockObject.MLimited)
         clock.setFrameRate(float(fps))
+        try:
+            # Average-frame / dt max so one hitch does not report forever-20
+            if hasattr(clock, 'setAverageFrameRateInterval'):
+                clock.setAverageFrameRateInterval(0.5)
+        except Exception:
+            pass
+    except Exception as exc:
+        print('  apply_fps_cap clock skip:', exc)
+    try:
+        from ursina import window
+        # int → MLimited + setFrameRate (see ursina.window.vsync setter)
+        window.vsync = int(fps)
+        try:
+            window.fps_counter.enabled = True
+        except Exception:
+            pass
+    except Exception:
+        pass
+    if app is not None:
+        try:
+            app.setFrameRateMeter(True)
+        except Exception:
+            pass
+    return fps
+
+
+def pre_boot_fps_prc():
+    """Call BEFORE Ursina() so clock-frame-rate exists before ShowBase."""
+    fps = target_fps()
+    try:
+        from panda3d.core import loadPrcFileData
+        loadPrcFileData('', 'sync-video false')
+        loadPrcFileData('', 'clock-mode limited')
+        loadPrcFileData('', f'clock-frame-rate {fps}')
     except Exception:
         pass
     return fps

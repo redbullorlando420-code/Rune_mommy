@@ -1,3 +1,47 @@
+                self._quest_complete(qid)
+
+    def _flags_path(self):
+        return ROOT / 'data' / 'local_flags.json'
+
+    def _load_flags(self):
+        path = self._flags_path()
+        if path.exists():
+            try:
+                return json.loads(path.read_text(encoding='utf-8')) or {}
+            except Exception:
+                return {}
+        # also honor legacy save_flags.json
+        alt = ROOT / 'data' / 'save_flags.json'
+        if alt.exists():
+            try:
+                return json.loads(alt.read_text(encoding='utf-8')) or {}
+            except Exception:
+                return {}
+        return {}
+
+    def _save_flags(self, data):
+        path = self._flags_path()
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
+        except Exception as exc:
+            print('  flags save failed:', exc)
+
+    def _tick_visit_quests(self):
+        """Complete visit-type quests when player is near matching POI interact pos."""
+        if not self.quest_active:
+            return
+        pos = self._actor_pos()
+        for poi in getattr(self, 'pois', []) or []:
+            pid = poi.get('id')
+            ppos = poi.get('pos')
+            if not pid or not ppos:
+                continue
+            if dist_xz(pos, ppos) <= 4.5:
+                self._quest_event('visit', poi_id=pid)
+
+    def _init_tutorial(self):
+        flags = self._load_flags()
         done = bool(flags.get('tutorial_done'))
         self.tutorial_active = not done
         self.tutorial_step = 0
@@ -112,9 +156,20 @@
         else:
             self._dbg_stuck_t = 0.0
 
-        fps = 1.0 / dt if dt > 1e-6 else 0.0
-        lag = dt > 0.08
+        # Real frame pacing (unscaled); sim `dt` may be clamped to 0.05
+        try:
+            raw_dt = float(getattr(u_time, 'dt_unscaled', None) or u_time.dt or dt)
+        except Exception:
+            raw_dt = float(dt)
+        fps = 1.0 / raw_dt if raw_dt > 1e-6 else 0.0
+        lag = raw_dt > 0.08
         stuck = self._dbg_stuck_t > 0.7
+        # Periodically re-assert FPS cap (Ursina may flip clock back to MNormal)
+        if int(self._dbg_t * 2) % 10 == 0:
+            try:
+                apply_fps_cap()
+            except Exception:
+                pass
         line = (
             "DBG mode=%s paused=%s ui=%s locked=%s free=%s fps=%.0f dt=%.3f key=%s pos=(%.1f,%.1f) stuck=%.1fs"
             % (
@@ -124,7 +179,7 @@
                 bool(getattr(mouse, 'locked', False)),
                 bool(getattr(self, 'mouse_free', False)),
                 fps,
-                dt,
+                raw_dt,
                 getattr(self, '_dbg_last_key', '-'),
                 float(self.player.x) if self.player else 0,
                 float(self.player.z) if self.player else 0,
@@ -192,12 +247,10 @@ def run():
     GAME = Game()
     GAME.setup()
     print('  spawned shakes:', len(GAME.shake_spawned), GAME.shake_spawned)
-    print('  cars:', len(GAME.cars), ' npcs:', len(GAME.npcs))
-    print('  buildings=%d quests=%d tutorial=%s' % (
-        GAME.building_count,
-        len(GAME.quest_defs),
-        'on' if GAME.tutorial_active else 'off',
-    ))
+    print('  cars:', len(GAME.cars), ' npcs:', len(GAME.npcs),
+          ' crowd=%d' % len(getattr(GAME, 'peds', []) or []),
+          ' aki_crowd=%d' % len(getattr(GAME, 'akihabara_crowd', []) or []))
+    # buildings/quests already printed once in setup()
     app.run()
 
 

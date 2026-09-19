@@ -1,3 +1,33 @@
+            position=(0, 0.22),
+            origin=(0, 0),
+            color=color.rgb32(140, 230, 255),
+            scale=0.9,
+            enabled=False,
+            z=-0.1,
+        )
+        self.menu_ents.append(sub)
+        self.menu_lines = []
+        # Keep text lines for settings mode reuse
+        for i in range(5):
+            tline = Text(
+                text='',
+                position=(0, 0.06 - i * 0.07),
+                origin=(0, 0),
+                color=color.rgb32(255, 230, 255),
+                scale=1.0,
+                enabled=False,
+                z=-0.1,
+            )
+            self.menu_lines.append(tline)
+            self.menu_ents.append(tline)
+        self.settings_lines = []
+        for i in range(5):
+            tline = Text(
+                text='',
+                position=(0, 0.08 - i * 0.07),
+                origin=(0, 0),
+                color=color.rgb32(255, 230, 255),
+                scale=1.0,
                 enabled=False,
                 z=-0.1,
             )
@@ -188,8 +218,10 @@
         msg = 'SAFE YARD — WASD / arrows move, Q/E turn, mouse look. Esc = menu. E at pink gate = Clermont.'
         if from_load:
             msg = 'Loaded. ' + msg
-        self.toast(msg)
-        print('[Rune Mommy]', msg)
+        if not getattr(self, '_safe_yard_toasted', False) or from_load:
+            self._safe_yard_toasted = True
+            self.toast(msg)
+            print('[Rune Mommy]', msg)
         # Refocus after UI button steals keyboard on Windows.
         def _refocus():
             try:
@@ -277,35 +309,3 @@
             'owned_pistol': bool(self.owned_pistol),
             'pistol': bool(self.owned_pistol),
             'ammo': int(self.ammo),
-            'pack': list(self.pack),
-            'tutorial_done': tutorial_done,
-            'intro_started': bool(self.intro_started),
-            'michelle_seen': bool(self.michelle_seen),
-            'mouse_sens': float(self.mouse_sens),
-            'cam_mode': str(getattr(self, 'cam_mode', 'follow') or 'follow'),
-        }
-        path = self._save_path()
-        try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
-        except Exception as exc:
-            print('  local_save failed:', exc)
-
-    def _load_local_save(self):
-        path = self._save_path()
-        if not path.exists():
-            # honor flags-only as a soft save marker? require local_save for Load
-            return None
-        try:
-            return json.loads(path.read_text(encoding='utf-8')) or {}
-        except Exception:
-            return None
-
-    def _apply_local_save(self, data):
-        if not data:
-            return
-        self.gold = int(data.get('gold', self.gold))
-        self.hp = int(data.get('hp', self.hp))
-        self.breed = int(data.get('breed', self.breed))
-        self.preg = bool(data.get('preg', self.preg))
-        self.owned_pistol = bool(data.get('pistol', data.get('owned_pistol', self.owned_pistol)))

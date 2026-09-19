@@ -1,3 +1,42 @@
+            skin=color.rgb32(255, 210, 175),
+            detail='named',
+            style='player',
+        )
+        self.gun_model = Entity(
+            parent=self.visual,
+            model='cube',
+            color=color.rgb32(40, 42, 48),
+            scale=(0.08, 0.16, 0.42),
+            position=(0.38, 1.05, 0.28),
+            enabled=False,
+        )
+        try:
+            self.gun_model.keep_on_outfit_swap = True
+        except Exception:
+            pass
+        Entity(parent=self.gun_model, model='cube', color=color.rgb32(30, 30, 32), scale=(0.7, 0.45, 0.35), position=(0, -0.4, -0.15))
+
+        self.cam_pivot = Entity(parent=self.player, y=1.35)
+        camera.parent = self.cam_pivot
+        camera.position = Vec3(0, 1.65, -8.8)
+        camera.rotation = Vec3(12, 0, 0)
+        camera.fov = 80
+        try:
+            flags = self._load_flags()
+            cm = str(flags.get('cam_mode') or getattr(self, 'cam_mode', 'follow') or 'follow').strip().lower()
+            if cm in ('follow', 'near', 'far', 'hood'):
+                self.cam_mode = cm
+        except Exception:
+            pass
+        try:
+            self._apply_camera_mode()
+        except Exception:
+            pass
+
+    def _build_hud(self):
+        Entity = self.Entity
+        Text = self.Text
+        color = self.color
         camera = self.camera
 
         Text(text='RUNE MOMMY', position=(-0.86, 0.48), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 210))
@@ -118,6 +157,11 @@
             except Exception:
                 pass
             tick_traffic(self, dt)
+            try:
+                if world_chunks is not None:
+                    world_chunks.tick(self, dt)
+            except Exception:
+                pass
             self._tick_heat(dt)
             self._tick_tutorial(dt)
         # safe: skip crowd/traffic/heat; walk only
@@ -265,47 +309,3 @@
         else:
             if held_keys['w']:
                 accel = accel_force
-            elif held_keys['s']:
-                if car.speed > 0.55:
-                    brake_force = 32.0
-                else:
-                    accel = -accel_force * 0.55
-            if held_keys['space']:
-                brake_force = max(brake_force, 52.0)
-
-        steer = float(held_keys['a'] - held_keys['d'])
-        nx, nz, nyaw, nspd = _bicycle_step_safe(
-            car.x, car.z, car.rotation_y, car.speed,
-            steer, accel, dt,
-            vmax=vmax, wheelbase=2.6, drag=2.4 + 1.5 * wear_n,
-            steer_gain=steer_gain, brake_force=brake_force,
-            coast_drag=coast_drag, accel_drag=accel_drag,
-        )
-        # Tire wear: speed / hard turns / off-road (lots & grass harsher than hwy asphalt)
-        try:
-            from crowd import is_on_road
-            on_hwy = is_on_road(nx, nz)
-        except Exception:
-            on_hwy = True
-        spd = abs(float(nspd))
-        hard = abs(steer) > 0.55 and spd > 6.0
-        rate = 0.35 * (spd / 24.0) ** 1.4
-        if hard:
-            rate += 1.1 * abs(steer) * (spd / 18.0)
-        if not on_hwy:
-            rate += 1.6 * (spd / 16.0)
-        if brake_force >= 40 and spd > 8:
-            rate += 0.8
-        car.tire_wear = min(100.0, wear + rate * dt)
-        if car.tire_wear >= 85.0 and not getattr(car, 'tire_warn_hi', False):
-            car.tire_warn_hi = True
-            self.toast('Tires shredded — grip gone. Find Hwy 50 Tire & Lube.')
-        elif car.tire_wear >= 55.0 and not getattr(car, 'tire_warn_mid', False):
-            car.tire_warn_mid = True
-            self.toast('Tire wear high. Handling soft — visit Rico.')
-
-        # Fuel burn ~ full tank lasts a few minutes of continuous drive
-        # k_speed=0.028, k_accel=0.045  → cruise ~3 min; floored ~1–1.5 min
-        if not getattr(car, 'traffic', False) and not out_of_gas:
-            burn = (0.028 * abs(nspd) + 0.045 * max(0.0, accel)) * dt
-            fuel = max(0.0, fuel - burn)

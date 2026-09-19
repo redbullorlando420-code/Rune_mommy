@@ -1,3 +1,35 @@
+        # A-frame roof: ridge above wall top (h=3.2 → ridge ~3.75), ±28 slopes
+        Entity(model='cube', scale=(8.6, 0.22, 3.6), position=(hx - 1.2, 3.63, hz), color=teal, rotation_z=-28)
+        Entity(model='cube', scale=(8.6, 0.22, 3.6), position=(hx + 1.2, 3.63, hz), color=teal, rotation_z=28)
+        Entity(model='cube', scale=(0.22, 0.14, 7.0), position=(hx, 3.83, hz), color=color.rgb32(245, 248, 252))
+        for wz in (-1.6, 1.6):
+            Entity(model='cube', scale=(0.08, 0.7, 0.7), position=(hx + 4.05, 1.7, hz + wz), color=color.rgb32(120, 200, 230))
+        Entity(model='cube', scale=(2.8, 0.14, 2.2), position=(hx + 5.2, 0.1, hz),
+               color=color.rgb32(170, 160, 140), texture=concrete, texture_scale=(2, 1.5))
+        Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz + 0.9), color=wood)
+        Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz - 0.9), color=wood)
+        Entity(model='cube', scale=(0.7, 0.5, 0.55), position=(hx - 4.3, 0.4, hz + 2.2), color=color.rgb32(70, 78, 90))
+        # garage south of body
+        Entity(model='cube', scale=(5.4, 2.5, 4.6), position=(hx + 0.2, 1.25, hz - 5.4),
+               color=color.rgb32(210, 196, 176), texture=stucco, texture_scale=(2, 1.4), collider='box')
+        Entity(model='cube', scale=(5.6, 0.28, 4.8), position=(hx + 0.2, 2.62, hz - 5.4), color=teal)
+        Entity(model='cube', scale=(3.4, 1.9, 0.12), position=(hx + 2.7, 1.0, hz - 5.4), color=color.rgb32(70, 78, 90))
+        door = Entity(model='cube', scale=(0.16, 2.15, 1.05), position=(hx + 4.08, 1.12, hz), color=wood)
+        self.sanctuary_door = door
+        Entity(model='cube', scale=(1.5, 0.16, 1.7), position=(hx + 4.9, 0.1, hz), color=color.rgb32(180, 180, 175))
+        self.building_count += 2
+
+        # guest bed + shower markers inside
+        Entity(model='cube', scale=(2.2, 0.42, 1.5), position=(hx + 1.8, 0.45, hz + 1.5), color=color.rgb32(220, 210, 200))
+        Entity(model='cube', scale=(1.35, 1.9, 1.35), position=(hx - 2.1, 1.05, hz + 1.7), color=color.rgb32(180, 220, 215))
+
+        door_xz = (hx + 4.1, hz)
+        guest_xz = (hx + 1.8, hz + 1.5)
+        garage_xz = (hx + 0.2, hz - 5.4)
+        shower_xz = (hx - 2.1, hz + 1.7)
+        lawn_xz = (hx - 7.2, hz)
+        self.house_rooms = {
+            'door': door_xz,
             'guest': guest_xz,
             'garage': garage_xz,
             'shower': shower_xz,
@@ -141,7 +173,7 @@
         Text = self.Text
         # densify map
         try:
-            added = densify_hwy50(Entity, color, Text, self._scene())
+            added = densify_hwy50(Entity, color, Text, self._scene(), game=self)
             self.building_count += int(added or 0)
         except Exception as exc:
             print('  densify skip:', exc)
@@ -165,6 +197,13 @@
         for sid, x, z, w, d, h, body, accent in retail_specs:
             shop = shop_lookup_early.get(sid) or {'id': sid, 'name': sid, 'stock': []}
             try:
+                try:
+                    x, z, ok = footprints.place_or_nudge(self, x, z, w=w, d=d, label=sid)
+                    if not ok:
+                        print('  retail overlap skip', sid)
+                        continue
+                except Exception:
+                    pass
                 n, interact = make_retail_box(
                     Entity, color, Text, self._scene(), x, z,
                     name=shop.get('name', sid), w=w, d=d, h=h,
@@ -270,42 +309,3 @@
             life_sim.boot(self)
         except Exception as exc:
             print('  life_sim skip:', exc)
-        # Tokyo / Akihabara portal + far district (after Clermont world exists)
-        try:
-            tokyo.boot(self)
-        except Exception as exc:
-            print('  tokyo skip:', exc)
-
-    def _scene(self):
-        from ursina import scene
-        return scene
-
-    def _build_npcs(self):
-        Entity = self.Entity
-        color = self.color
-        portrait = None
-        mp = self.mira_portrait_path
-        mp_ok = False
-        try:
-            mp_ok = Path(mp).exists() if mp else False
-        except Exception:
-            mp_ok = False
-        if mp_ok:
-            try:
-                from ursina import load_texture
-                _rel = portrait_asset_path('mira') or (str(mp) if mp else None)
-                portrait = load_texture(_rel) if _rel else None
-                self.mira_texture = portrait
-            except Exception:
-                portrait = None
-                self.mira_texture = None
-
-        shake = next((s for s in self.stalls if s['id'] == 'shake_bar'), None)
-        mx, mz = (0.0, -2.6)
-        if shake:
-            mx, mz = shake['pos'][0], shake['pos'][2] - 2.4
-
-        mira = self._humanoid(mx, mz, shirt=color.rgb32(255, 70, 180), pants=color.rgb32(40, 12, 40), skin=color.rgb32(255, 206, 166), detail='named', style='anime_f')
-        mira.npc_id = 'mira'
-        mira.npc_name = 'Mama Mira'
-        mira.kind = 'mira'
