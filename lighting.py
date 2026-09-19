@@ -27,7 +27,7 @@ LOD_TRAFFIC_MID = 48.0
 
 
 def quality() -> str:
-    q = (os.environ.get('RUNE_MOMMY_QUALITY') or 'high').strip().lower()
+    q = (os.environ.get('RUNE_MOMMY_QUALITY') or 'med').strip().lower()
     if q in ('low', 'med', 'medium', 'high', 'ultra'):
         return 'med' if q == 'medium' else q
     return 'high'
@@ -44,7 +44,7 @@ def target_fps() -> int:
 
 
 def apply_lighting(color, Vec3, Sky=None, DirectionalLight=None, AmbientLight=None, PointLight=None):
-    """Install neon-dusk light kit. Shadows on for high/ultra."""
+    """Install neon-dusk light kit. Shadows only on ultra (high stays lit, no shadow maps)."""
     q = quality()
     if Sky is not None:
         try:
@@ -52,7 +52,7 @@ def apply_lighting(color, Vec3, Sky=None, DirectionalLight=None, AmbientLight=No
         except Exception:
             pass
 
-    shadows = q in ('high', 'ultra')
+    shadows = (q == 'ultra')
     try:
         sun = DirectionalLight(shadows=shadows)
         sun.look_at(Vec3(1, -1.35, 0.35))
@@ -91,11 +91,10 @@ def apply_lighting(color, Vec3, Sky=None, DirectionalLight=None, AmbientLight=No
             ((-28, 5, 10), (90, 220, 255)),
         ]
     elif q == 'high':
+        # Cap point lights — each one is expensive with many meshes
         accents = [
             ((0, 6, -16), (255, 90, 210)),
             ((-28, 5, 10), (90, 220, 255)),
-            ((22, 5, -6), (255, 160, 60)),
-            ((40, 6, -20), (255, 70, 180)),   # Club 27
         ]
     else:  # ultra
         accents = [
@@ -200,13 +199,13 @@ def apply_perf(window=None, camera=None, color=None):
         lod_ped_near, lod_ped_mid = 26.0, 42.0
         lod_traffic_near, lod_traffic_mid = 32.0, 56.0
     elif q == 'high':
-        cull_ped, cull_traffic = 48.0, 64.0
-        lod_ped_near, lod_ped_mid = 22.0, 36.0
-        lod_traffic_near, lod_traffic_mid = 28.0, 48.0
-    elif q == 'med':
-        cull_ped, cull_traffic = 38.0, 50.0
-        lod_ped_near, lod_ped_mid = 18.0, 30.0
+        cull_ped, cull_traffic = 40.0, 52.0
+        lod_ped_near, lod_ped_mid = 16.0, 28.0
         lod_traffic_near, lod_traffic_mid = 22.0, 40.0
+    elif q == 'med':
+        cull_ped, cull_traffic = 32.0, 42.0
+        lod_ped_near, lod_ped_mid = 14.0, 24.0
+        lod_traffic_near, lod_traffic_mid = 18.0, 32.0
 
     return {
         'quality': q,
@@ -218,7 +217,7 @@ def apply_perf(window=None, camera=None, color=None):
         'lod_traffic_near': lod_traffic_near,
         'lod_traffic_mid': lod_traffic_mid,
         # Far agents tick every N frames (approx); near every frame
-        'ai_far_interval': 3 if q != 'low' else 4,
+        'ai_far_interval': 4 if q == 'ultra' else (5 if q == 'high' else 6),
     }
 
 
@@ -258,7 +257,11 @@ def set_visible(ent, on: bool):
 
 
 def set_lod(ent, level: str):
-    """level: 'near' | 'mid' | 'far' — hide detail children marked lod_detail on mid/far."""
+    """level: 'near' | 'mid' | 'far'.
+
+    Aggressive: mid hides anything not lod_keep; far hides whole ent.
+    Humanoid multipart meshes must mark core parts lod_keep=True.
+    """
     if not ent:
         return
     show_detail = level == 'near'
@@ -270,19 +273,38 @@ def set_lod(ent, level: str):
         set_visible(ent, True)
         for ch in list(getattr(ent, 'children', []) or []):
             try:
+                if getattr(ch, 'hitbox_ghost', False):
+                    ch.visible = False
+                    continue
+                keep = bool(getattr(ch, 'lod_keep', False))
                 tag = getattr(ch, 'lod_detail', None)
-                if tag == 'high':
+                if keep:
+                    ch.visible = True
+                elif tag == 'high':
                     ch.visible = show_detail
                 elif tag == 'mid':
                     ch.visible = show_mid
+                else:
+                    # Untagged extras (hair clips, props) — near only
+                    ch.visible = show_detail
                 for gch in list(getattr(ch, 'children', []) or []):
+                    if getattr(gch, 'hitbox_ghost', False):
+                        gch.visible = False
+                        continue
+                    gkeep = bool(getattr(gch, 'lod_keep', False))
                     gtag = getattr(gch, 'lod_detail', None)
-                    if gtag == 'high':
+                    if gkeep:
+                        gch.visible = True
+                    elif gtag == 'high' or gtag is None:
                         gch.visible = show_detail
+                    elif gtag == 'mid':
+                        gch.visible = show_mid
             except Exception:
                 pass
     except Exception:
         pass
+
+
 
 
 def should_sim(px, pz, x, z, radius: float) -> bool:
