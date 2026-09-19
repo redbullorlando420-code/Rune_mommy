@@ -49,6 +49,10 @@ try:
     from models3d import attach_humanoid_parts
 except ImportError:  # older zips missing re-export
     from models3d._actors import attach_humanoid_parts
+try:
+    from models3d._actors import tick_jiggle as _tick_jiggle
+except Exception:
+    def _tick_jiggle(*a, **k): pass
 
 import life_sim
 import interiors
@@ -83,18 +87,27 @@ def load_tex(name):
     key = str(name).lower().strip()
     if key in _TEX_CACHE:
         return _TEX_CACHE[key]
-    folder = ROOT / 'assets' / 'textures'
-    for ext in ('.jpg', '.jpeg', '.png', '.webp'):
-        path = folder / f'{key}{ext}'
-        if path.is_file():
-            rel = str(path.relative_to(ROOT)).replace(chr(92), '/')
-            try:
-                from ursina import load_texture
-                tex = load_texture(rel)
-            except Exception:
-                tex = rel
-            _TEX_CACHE[key] = tex
-            return tex
+    folders = (ROOT / 'assets' / 'textures', ROOT / 'textures')
+    for folder in folders:
+        for ext in ('.jpg', '.jpeg', '.png', '.webp'):
+            path = folder / f'{key}{ext}'
+            if path.is_file():
+                rel = str(path.relative_to(ROOT)).replace(chr(92), '/')
+                tex = None
+                try:
+                    from ursina import load_texture
+                    tex = load_texture(rel)
+                except Exception:
+                    tex = None
+                if tex is None:
+                    try:
+                        # Absolute path fallback — some Ursina builds want it
+                        tex = load_texture(str(path))
+                    except Exception:
+                        tex = rel  # let Entity sample the file path
+                _TEX_CACHE[key] = tex
+                return tex
+    print('  load_tex MISS:', key)
     _TEX_CACHE[key] = None
     return None
 
@@ -204,9 +217,15 @@ def boot_ursina(window_type='onscreen'):
         loadPrcFileData('', f'window-type {window_type}')
     # PRC before ShowBase — Ursina apply_settings later forces vsync=True→MNormal
     fps = pre_boot_fps_prc()
-    icon = str(_Path(__file__).resolve().parent / 'textures' / 'ursina.ico')
-    if not _Path(icon).is_file():
-        icon = None  # skip missing-icon spam
+    # Prefer tiny valid BMP-ICO we ship; skip icon entirely if missing/corrupt
+    # (bad ICO paths spam Windows "failed to open file" and cost boot time).
+    _ico = _Path(__file__).resolve().parent / 'textures' / 'ursina.ico'
+    icon = None
+    try:
+        if _ico.is_file() and _ico.stat().st_size >= 22 and _ico.read_bytes()[:4] == b'\x00\x00\x01\x00':
+            icon = str(_ico)
+    except Exception:
+        icon = None
 
     from ursina import Ursina
     kw = dict(
@@ -267,45 +286,3 @@ class Game:
         print('  oss skills:', n_skills)
         print('  oss vehicles:', n_veh)
 
-        self.gold = 200
-        self.hp = 100
-        self.max_hp = 100
-        self.heat = 0.0
-        self.breed = 0
-        self.preg = False
-        self.michelle_seen = False
-        self.house_rooms = {}
-        self.pack = []
-        self.owned_pistol = False
-        self.ammo = 0
-        self.pistol_drawn = False
-        self.shoot_cd = 0.0
-        self.y_vel = 0.0
-        self.grounded = True
-        self.in_car = None
-        self.ui_open = False
-        self.mouse_free = False
-        self.debug_on = True
-        self.debug_hud = None
-        self._dbg_t = 0.0
-        self._dbg_last_key = '-'
-        self._dbg_moved = False
-        self._dbg_wish = False
-        self._dbg_stuck_t = 0.0
-        self.ui_choices = []
-        self.toast_timer = 0.0
-        self.prompt = ''
-        self.panic_t = 0.0
-        self.heat_spawn_cd = 0.0
-        self.michelle_auto_opened = False
-        self.michelle_node = 'door'
-        self.michelle_open_idx = 0
-        self.mode = 'menu'  # menu | settings | safe | play
-        self.world_paused = True
-        self.intro_started = False
-        self.mouse_sens = 140.0
-        self.cam_mode = 'follow'  # follow | near | far | hood (car)
-        self.fullscreen_stub = False
-        self.menu_ents = []
-        self.menu_title = None
-        self.menu_lines = []
