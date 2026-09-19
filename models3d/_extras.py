@@ -247,11 +247,11 @@ def densify_hwy50(Entity, color, Text, scene_parent, building_count_ref=None, ga
         )
         n += 1
     # North residential grid (Sanctuary / side streets) — fill NPC destinations
+    # Keep densify north of Hwy 50 but OUTSIDE spawn plaza (~-18,12 r=32) / Sanctuary yard
     north_grid = (
-        (-32.0, 10.0), (-24.0, 10.0), (-16.0, 10.0), (-8.0, 10.0),
-        (0.0, 10.0), (8.0, 10.0), (16.0, 10.0), (24.0, 10.0),
-        (-28.0, 14.0), (-12.0, 14.0), (4.0, 14.0), (20.0, 14.0),
-        (-36.0, 6.0), (12.0, 6.5),
+        (-8.0, 10.0), (0.0, 10.0), (8.0, 10.0), (16.0, 10.0), (24.0, 10.0),
+        (-12.0, 14.0), (4.0, 14.0), (20.0, 14.0), (12.0, 6.5),
+        (32.0, 10.0), (28.0, 14.0), (-48.0, 14.0), (-52.0, 8.0),
     )
     for i, (x, z) in enumerate(north_grid):
         w, d = rng.uniform(2.8, 3.6), rng.uniform(2.5, 3.2)
