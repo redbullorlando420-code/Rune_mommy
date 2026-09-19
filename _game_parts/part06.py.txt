@@ -1,3 +1,4 @@
+        self.talk_npcs.append({'ent': mira, 'name': 'Mama Mira', 'talk': 'Neons loud tonight.', 'killable': False})
         if portrait:
             bill = Entity(
                 parent=mira,
@@ -283,3 +284,9 @@
             model='quad',
             color=color.rgba32(10, 4, 18, 235),
             scale=(1.58, 0.78),
+            position=(0.06, -0.28),
+            enabled=False,
+            z=0.1,
+        )
+        self.panel_portrait = Entity(
+            parent=camera.ui,

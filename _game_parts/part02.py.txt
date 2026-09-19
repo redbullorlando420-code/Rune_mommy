@@ -1,3 +1,22 @@
+        self.house_vols = []
+        self.sanctuary_door = None
+        self.michelle = None
+        self.building_count = 0
+        self.pois = []
+        self.quest_defs = list((self.quests_data or {}).get('quests') or [])
+        self.quest_active = []
+        self.quest_completed = set()
+        self.quest_progress = {}
+        self.hud_quest = None
+        self.hud_mode = None
+        self.tutorial_active = False
+        self.tutorial_step = 0
+        self.tutorial_overlay = None
+        self.tutorial_text = None
+        self.kill_quest_count = 0
+
+        self.player = None
+        self.cam_pivot = None
         self.visual = None
         self.gun_model = None
         self.cars = []
@@ -93,6 +112,10 @@
         self._build_safe_yard()
         self._build_player()
         self._build_hud()
+        try:
+            radar.boot(self)
+        except Exception as _radar_exc:
+            print('  radar skip:', _radar_exc)
         self._build_menu()
         self._init_quests()
         self._init_tutorial()
@@ -267,20 +290,3 @@
         sub = Text(
             text='Clermont  ·  click a button or press 1 / 2 / 3',
             position=(0, 0.22),
-            origin=(0, 0),
-            color=color.rgb32(140, 230, 255),
-            scale=0.9,
-            enabled=False,
-            z=-0.1,
-        )
-        self.menu_ents.append(sub)
-        self.menu_lines = []
-        # Keep text lines for settings mode reuse
-        for i in range(5):
-            tline = Text(
-                text='',
-                position=(0, 0.06 - i * 0.07),
-                origin=(0, 0),
-                color=color.rgb32(255, 230, 255),
-                scale=1.0,
-                enabled=False,

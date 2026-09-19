@@ -1,3 +1,20 @@
+            origin=(0, 0),
+            color=color.rgb32(140, 230, 255),
+            scale=0.9,
+            enabled=False,
+            z=-0.1,
+        )
+        self.menu_ents.append(sub)
+        self.menu_lines = []
+        # Keep text lines for settings mode reuse
+        for i in range(5):
+            tline = Text(
+                text='',
+                position=(0, 0.06 - i * 0.07),
+                origin=(0, 0),
+                color=color.rgb32(255, 230, 255),
+                scale=1.0,
+                enabled=False,
                 z=-0.1,
             )
             self.menu_lines.append(tline)
@@ -273,13 +290,3 @@
             print('  reveal_npcs=%d (named+crowd) after yard→gate' % n_show)
         except Exception as exc:
             print('  reveal_npcs skip:', exc)
-        self.toast('Clermont. Michelle is at Sanctuary Drive — E to talk.')
-
-    def _save_path(self):
-        return ROOT / 'data' / 'local_save.json'
-
-    def _write_local_save(self):
-        flags = self._load_flags()
-        tutorial_done = bool(flags.get('tutorial_done')) or (not self.tutorial_active)
-        data = {
-            'gold': int(self.gold),

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "Clermont / Hwy 50 / US-27 starter quests. Pins: Sanctuary Drive, shakes, Club 27 Cabaret (215 US-27), Quiet Spa, Citrus Tower, Waterfront Park. Bot girl deepens dialogue later. Shakes stay.",
+  "note": "Clermont / Hwy 50 / US-27 starter quests. Pins: Sanctuary Drive, shakes, Club 27 Cabaret (215 US-27), Quiet Spa, Citrus Tower, Waterfront Park. Bot girl deepens dialogue later. Shakes stay. Expanded NPC mission board + visit/talk chains (radar/waypoints).",
   "quests": [
     {
       "id": "tutorial_walk",
@@ -157,31 +157,387 @@
       ]
     },
     {
-      "id": "raceway_patrol",
-      "name": "Citrus Run Patrol",
-      "desc": "Clear four road thugs around the Citrus Run Raceway south-east loop.",
+      "id": "fill_er_up",
+      "name": "Fill 'Er Up",
+      "desc": "Pull into a gas station and refuel a car once.",
+      "type": "refuel",
+      "reward_gold": 20,
+      "hud": "Refuel once at a gas pump",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "mira_chat_2",
+      "name": "Neon Gossip",
+      "desc": "Swing back to Mama Mira for lot gossip.",
+      "type": "talk",
+      "npc": "mira",
+      "reward_gold": 12,
+      "hud": "Talk to Mama Mira again",
+      "requires": [
+        "cool_down"
+      ]
+    },
+    {
+      "id": "lila_intro",
+      "name": "Meet Lila",
+      "desc": "Find Lila near the strip and say hey.",
+      "type": "talk",
+      "npc": "lila",
+      "reward_gold": 18,
+      "hud": "Talk to Lila",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "rosa_intro",
+      "name": "Meet Rosa",
+      "desc": "Rosa is near Club 27 energy \u2014 talk to her.",
+      "type": "talk",
+      "npc": "rosa",
+      "reward_gold": 18,
+      "hud": "Talk to Rosa",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "yara_intro",
+      "name": "Meet Yara",
+      "desc": "Yara hangs south \u2014 go talk.",
+      "type": "talk",
+      "npc": "yara",
+      "reward_gold": 18,
+      "hud": "Talk to Yara",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "deb_special",
+      "name": "Diner Special",
+      "desc": "Ask Diner Deb what's on special.",
+      "type": "talk",
+      "npc": "deb",
+      "reward_gold": 14,
+      "hud": "Talk to Diner Deb",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "rita_pumps",
+      "name": "Pump Talk",
+      "desc": "Chat with Rita at the gas pumps.",
+      "type": "talk",
+      "npc": "rita",
+      "reward_gold": 12,
+      "hud": "Talk to Rita at gas",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "lot_boss",
+      "name": "Lot Boss",
+      "desc": "Check in with the lot attendant.",
+      "type": "talk",
+      "npc": "lot_attendant",
+      "reward_gold": 12,
+      "hud": "Talk to lot attendant",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "amanda_park",
+      "name": "Park Bench",
+      "desc": "Meet Amanda's friend at the park.",
+      "type": "talk",
+      "npc": "amanda_friend",
+      "reward_gold": 15,
+      "hud": "Talk at the park",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "citrus_guide_talk",
+      "name": "Tower Tip",
+      "desc": "Talk to the Citrus Tower guide before climbing.",
+      "type": "talk",
+      "npc": "citrus_guide",
+      "reward_gold": 16,
+      "hud": "Talk to Citrus Tower guide",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "tower_visit",
+      "name": "Tower Grounds",
+      "desc": "Visit Citrus Tower grounds.",
+      "type": "visit",
+      "poi": "citrus_tower",
+      "reward_gold": 20,
+      "hud": "Visit Citrus Tower",
+      "requires": [
+        "citrus_guide_talk"
+      ]
+    },
+    {
+      "id": "club_cover",
+      "name": "Cover Charge Chat",
+      "desc": "Talk to Club 27 host about cover.",
+      "type": "talk",
+      "npc": "club27_host",
+      "reward_gold": 20,
+      "hud": "Talk to Club 27 host",
+      "requires": [
+        "rosa_intro"
+      ]
+    },
+    {
+      "id": "spa_booking",
+      "name": "Spa Booking",
+      "desc": "Ask Quiet Spa tech about a quiet hour.",
+      "type": "talk",
+      "npc": "quiet_spa_tech",
+      "reward_gold": 18,
+      "hud": "Talk to Quiet Spa tech",
+      "requires": [
+        "cool_down"
+      ]
+    },
+    {
+      "id": "spa_visit",
+      "name": "Steam Room",
+      "desc": "Visit Quiet Spa entrance.",
+      "type": "visit",
+      "poi": "quiet_spa",
+      "reward_gold": 16,
+      "hud": "Visit Quiet Spa",
+      "requires": [
+        "spa_booking"
+      ]
+    },
+    {
+      "id": "rx_followup",
+      "name": "Rx Follow-up",
+      "desc": "Pharmacist has a follow-up.",
+      "type": "talk",
+      "npc": "pharmacist",
+      "reward_gold": 14,
+      "hud": "Talk to pharmacist again",
+      "requires": [
+        "rx_pickup"
+      ]
+    },
+    {
+      "id": "barista_extra",
+      "name": "Extra Shot",
+      "desc": "Barista wants another visit.",
+      "type": "talk",
+      "npc": "barista",
+      "reward_gold": 12,
+      "hud": "Talk to barista again",
+      "requires": [
+        "starbucks_run"
+      ]
+    },
+    {
+      "id": "motel_ice",
+      "name": "Ice Machine",
+      "desc": "Ask motel clerk about ice.",
+      "type": "talk",
+      "npc": "motel_clerk",
+      "reward_gold": 10,
+      "hud": "Talk to motel clerk again",
+      "requires": [
+        "motel_checkin"
+      ]
+    },
+    {
+      "id": "ranger_birds",
+      "name": "Bird Watch",
+      "desc": "Ranger has a bird tip at waterfront.",
+      "type": "talk",
+      "npc": "park_ranger",
+      "reward_gold": 16,
+      "hud": "Talk to park ranger",
+      "requires": [
+        "waterfront_walk"
+      ]
+    },
+    {
+      "id": "waterfront_visit",
+      "name": "Lake Loop",
+      "desc": "Walk the waterfront POI.",
+      "type": "visit",
+      "poi": "waterfront",
+      "reward_gold": 18,
+      "hud": "Visit waterfront",
+      "requires": [
+        "ranger_birds"
+      ]
+    },
+    {
+      "id": "gage_ammo",
+      "name": "Ammo Check",
+      "desc": "Ask Gage about ammo after buying heat.",
+      "type": "talk",
+      "npc": "gage",
+      "reward_gold": 15,
+      "hud": "Talk to Gage",
+      "requires": [
+        "heat_check"
+      ]
+    },
+    {
+      "id": "lot_rats_2",
+      "name": "Second Sweep",
+      "desc": "Clear 5 more lot pests.",
       "type": "kill",
       "kinds": [
-        "road_thug",
-        "thug"
+        "lot_rat",
+        "walker",
+        "dusk_walker"
       ],
-      "count": 4,
+      "count": 5,
       "reward_gold": 55,
-      "hud": "Citrus Run: clear road thugs ({progress}/4)",
+      "hud": "Kill 5 lot pests ({progress}/5)",
       "requires": [
         "lot_cleanup"
       ]
     },
     {
-      "id": "orlando_gate",
-      "name": "First Exit",
-      "desc": "Reach the Orlando Preview gate from the Hwy 50 regional spine.",
-      "type": "visit",
-      "poi": "orlando_gate",
-      "reward_gold": 35,
-      "hud": "Reach the Orlando gate",
+      "id": "michelle_checkin",
+      "name": "Porch Check-in",
+      "desc": "Check on Michelle at the door again.",
+      "type": "talk",
+      "npc": "michelle",
+      "reward_gold": 20,
+      "hud": "Talk to Michelle",
       "requires": [
-        "tutorial_walk"
+        "tutorial_walk",
+        "cool_down"
+      ]
+    },
+    {
+      "id": "michelle_lawn",
+      "name": "Back Lawn",
+      "desc": "Optional \u2014 Michelle lawn / guest room beat.",
+      "type": "michelle_room",
+      "rooms": [
+        "lawn",
+        "guest"
+      ],
+      "npc": "michelle",
+      "reward_gold": 35,
+      "hud": "Michelle lawn/guest room",
+      "requires": [
+        "michelle_checkin"
+      ],
+      "optional": true
+    },
+    {
+      "id": "lila_date",
+      "name": "Lila's Errand",
+      "desc": "Lila wants another word after you met.",
+      "type": "talk",
+      "npc": "lila",
+      "reward_gold": 22,
+      "hud": "Talk to Lila again",
+      "requires": [
+        "lila_intro",
+        "cool_down"
+      ]
+    },
+    {
+      "id": "rosa_vip",
+      "name": "Rosa's Tip",
+      "desc": "Rosa has a Club tip for you.",
+      "type": "talk",
+      "npc": "rosa",
+      "reward_gold": 22,
+      "hud": "Talk to Rosa again",
+      "requires": [
+        "rosa_intro",
+        "club_cover"
+      ]
+    },
+    {
+      "id": "yara_night",
+      "name": "Yara After Dark",
+      "desc": "Catch Yara for a night line.",
+      "type": "talk",
+      "npc": "yara",
+      "reward_gold": 22,
+      "hud": "Talk to Yara again",
+      "requires": [
+        "yara_intro"
+      ]
+    },
+    {
+      "id": "walmart_run",
+      "name": "Walmart Run",
+      "desc": "Visit the far-east Walmart lot.",
+      "type": "visit",
+      "poi": "walmart",
+      "reward_gold": 25,
+      "hud": "Visit Walmart",
+      "requires": [
+        "rita_pumps"
+      ]
+    },
+    {
+      "id": "gas27_visit",
+      "name": "US-27 Fuel",
+      "desc": "Find the Hwy 27 fuel stop.",
+      "type": "visit",
+      "poi": "gas_hwy27",
+      "reward_gold": 18,
+      "hud": "Visit Hwy 27 gas",
+      "requires": [
+        "fill_er_up"
+      ]
+    },
+    {
+      "id": "laundry_day",
+      "name": "Laundry Day",
+      "desc": "Visit the laundromat.",
+      "type": "visit",
+      "poi": "laundromat",
+      "reward_gold": 12,
+      "hud": "Visit laundromat",
+      "requires": [
+        "lot_boss"
+      ]
+    },
+    {
+      "id": "park_visit",
+      "name": "Park Loop",
+      "desc": "Visit the park greens.",
+      "type": "visit",
+      "poi": "park",
+      "reward_gold": 14,
+      "hud": "Visit park",
+      "requires": [
+        "amanda_park"
+      ]
+    },
+    {
+      "id": "club_visit",
+      "name": "Door Policy",
+      "desc": "Stand at Club 27 entrance.",
+      "type": "visit",
+      "poi": "club27",
+      "reward_gold": 20,
+      "hud": "Visit Club 27",
+      "requires": [
+        "club_cover"
       ]
     }
   ]

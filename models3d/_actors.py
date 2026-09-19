@@ -65,9 +65,9 @@ def attach_humanoid_parts(
     # --- proportions (meters-ish Ursina units) ---
     # Keep crown near y=1.55 and feet on ground so talk ranges / cam stay valid.
     # Michelle: adult hourglass — wider hips, smaller waist, fuller chest silhouette.
-    hip_w = 0.54 if michelle else (0.40 if player else 0.42)
-    shoulder_w = 0.46 if michelle else (0.54 if player else 0.50)
-    torso_d = 0.32 if michelle else 0.28
+    hip_w = 0.60 if michelle else (0.46 if (named and not player) else (0.40 if player else 0.42))
+    shoulder_w = 0.44 if michelle else (0.52 if (named and not player) else (0.54 if player else 0.50))
+    torso_d = 0.36 if michelle else (0.30 if named else 0.28)
     leg_gap = 0.14 if michelle else 0.12
 
     # Hips / pelvis
@@ -125,27 +125,27 @@ def attach_humanoid_parts(
                scale=(0.44, 0.40, torso_d), y=1.14)
         # tiny waist cinch
         Entity(parent=parent, model='cube', color=_tint(dress, -0.10),
-               scale=(0.34, 0.11, torso_d * 0.92), y=0.94)
+               scale=(0.30, 0.12, torso_d * 0.90), y=0.94)
         # hip shelf under dress
         Entity(parent=parent, model='cube', color=_tint(dress, -0.04),
                scale=(hip_w * 0.98, 0.16, 0.34), y=0.82)
         # skirt flare (knee-length A-line, rides thigh)
         Entity(parent=parent, model='cube', color=_tint(dress, 0.04),
-               scale=(0.62, 0.34, 0.38), y=0.68)
+               scale=(0.70, 0.36, 0.42), y=0.66)
         Entity(parent=parent, model='cube', color=_tint(dress, 0.08),
-               scale=(0.70, 0.16, 0.42), y=0.52)
+               scale=(0.78, 0.18, 0.46), y=0.50)
         # soft ass volume under skirt
         Entity(parent=parent, model='sphere', color=_tint(dress, -0.06),
-               scale=(0.42, 0.22, 0.28), y=0.78, z=0.10)
+               scale=(0.50, 0.26, 0.34), y=0.76, z=0.12)
         # fuller chest silhouette (tasteful NSFW — teal dress fabric)
         parent.chest = Entity(
             parent=parent, model='sphere', color=dress,
-            scale=(0.58, 0.34, 0.40), y=1.22, z=-0.06,
+            scale=(0.66, 0.40, 0.46), y=1.22, z=-0.08,
         )
         Entity(parent=parent, model='sphere', color=_tint(dress, 0.08),
-               scale=(0.24, 0.22, 0.22), x=-0.14, y=1.24, z=-0.12)
+               scale=(0.28, 0.26, 0.26), x=-0.16, y=1.25, z=-0.14)
         Entity(parent=parent, model='sphere', color=_tint(dress, 0.08),
-               scale=(0.24, 0.22, 0.22), x=0.14, y=1.24, z=-0.12)
+               scale=(0.28, 0.26, 0.26), x=0.16, y=1.25, z=-0.14)
         # cleavage / neckline skin
         Entity(parent=parent, model='cube', color=skin,
                scale=(0.26, 0.10, 0.14), y=1.36, z=-0.02)
@@ -157,6 +157,16 @@ def attach_humanoid_parts(
         # sunglasses cue (dark lenses)
         Entity(parent=parent, model='cube', color=_rgb(color, 20, 18, 22),
                scale=(0.28, 0.06, 0.06), y=1.54, z=0.14)
+        # earrings
+        Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
+               scale=0.05, x=-0.20, y=1.48, z=0.02)
+        Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
+               scale=0.05, x=0.20, y=1.48, z=0.02)
+        # thigh highlight under hem
+        Entity(parent=parent, model='cube', color=_tint(skin, 0.06),
+               scale=(0.16, 0.20, 0.12), x=-0.14, y=0.42, z=-0.02)
+        Entity(parent=parent, model='cube', color=_tint(skin, 0.06),
+               scale=(0.16, 0.20, 0.12), x=0.14, y=0.42, z=-0.02)
     else:
         # shirt torso
         torso = Entity(
@@ -179,6 +189,14 @@ def attach_humanoid_parts(
             # male / player get shoulder pads via extra cubes
             Entity(parent=parent, model='cube', color=_tint(shirt, -0.05),
                    scale=(shoulder_w, 0.10, torso_d + 0.02), y=1.30)
+        if fancy and not player:
+            # soft bust for named talk NPCs (modest vs Michelle)
+            Entity(parent=parent, model='sphere', color=_tint(shirt, 0.05),
+                   scale=(0.46, 0.22, 0.28), y=1.20, z=-0.04)
+            Entity(parent=parent, model='sphere', color=_tint(shirt, 0.10),
+                   scale=(0.16, 0.14, 0.14), x=-0.10, y=1.22, z=-0.10)
+            Entity(parent=parent, model='sphere', color=_tint(shirt, 0.10),
+                   scale=(0.16, 0.14, 0.14), x=0.10, y=1.22, z=-0.10)
 
     # Neck
     Entity(parent=parent, model='cube', color=skin,
@@ -212,6 +230,11 @@ def attach_humanoid_parts(
                scale=(0.26, 0.36, 0.20), y=head_y - 0.10, z=-0.20)
         Entity(parent=parent, model='cube', color=_tint(hair, -0.12),
                scale=(0.20, 0.40, 0.12), y=head_y - 0.22, z=-0.22)
+        # side curls
+        Entity(parent=parent, model='sphere', color=_tint(hair, -0.02),
+               scale=(0.14, 0.22, 0.14), x=-0.24, y=head_y - 0.18, z=0.02)
+        Entity(parent=parent, model='sphere', color=_tint(hair, -0.02),
+               scale=(0.14, 0.22, 0.14), x=0.24, y=head_y - 0.18, z=0.02)
         # lips cue
         Entity(parent=parent, model='cube', color=_rgb(color, 210, 90, 110),
                scale=(0.10, 0.03, 0.04), y=head_y - 0.06, z=0.16)

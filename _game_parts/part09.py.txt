@@ -1,3 +1,10 @@
+                    options.append((0.1, f'E  fill tank ({cost}g)'))
+                elif dmg >= 5:
+                    options.append((0.1, 'E  repair (50g)'))
+                else:
+                    options.append((0.15, 'E  gas station'))
+            else:
+                options.append((0.2, 'E  gas pump'))
         if car and not getattr(car, 'disabled', False):
             options.append((cd, f'E  enter car'))
         if npc:
@@ -283,5 +290,3 @@
 
         # prefer NPC / stall over car if closer
         if npc and nd <= 3.0 and (car is None or nd <= cd + 0.15):
-            kind = getattr(npc, 'kind', '')
-            if kind == 'mira':

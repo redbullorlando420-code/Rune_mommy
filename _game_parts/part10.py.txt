@@ -1,3 +1,5 @@
+            kind = getattr(npc, 'kind', '')
+            if kind == 'mira':
                 self.open_mira('start')
                 return
             if kind == 'michelle':
@@ -66,6 +68,13 @@
         was_traffic = bool(getattr(car, 'traffic', False))
         car.traffic = False
         car.parked = True
+        # Kick NPC driver out when player takes the car
+        try:
+            if getattr(car, 'has_driver', False) or getattr(car, 'driver', None):
+                parking.unseat_driver(self, car, to_crowd=True)
+        except Exception:
+            car.driver = None
+            car.has_driver = False
         if was_traffic or not hasattr(car, 'fuel'):
             car.fuel = float(random.uniform(35, 70))
         car.out_of_gas_toasted = False
@@ -281,20 +290,3 @@
         choices = []
         for ch in node.get('choices') or []:
             label = ch.get('label', '...')
-            nxt = ch.get('next')
-            action = ch.get('action')
-
-            def make(n=nxt, a=action, w=who):
-                def cb():
-                    if a == 'shop':
-                        self.close_panel()
-                    elif a == 'close' or not n:
-                        self.close_panel()
-                    else:
-                        self.open_vn(w, n)
-                return cb
-
-            choices.append((label, make()))
-        if not choices:
-            choices = [('Walk away.', self.close_panel)]
-        expr = node.get('expression') or 'default'

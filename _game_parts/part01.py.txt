@@ -65,6 +65,8 @@ def _bicycle_step_safe(*args, **kwargs):
         return _bs(*args[:7], **{k: kwargs[k] for k in ('vmax', 'wheelbase', 'drag') if k in kwargs})
 
 import tokyo
+import radar
+import parking
 
 _TEX_CACHE = {}
 
@@ -288,22 +290,3 @@ class Game:
         self.safe_yard_center = (80.0, 0.0, 80.0)
         self.clermont_spawn = (-18.0, 0.0, 12.0)
         self.talk_npcs = []
-        self.house_vols = []
-        self.sanctuary_door = None
-        self.michelle = None
-        self.building_count = 0
-        self.pois = []
-        self.quest_defs = list((self.quests_data or {}).get('quests') or [])
-        self.quest_active = []
-        self.quest_completed = set()
-        self.quest_progress = {}
-        self.hud_quest = None
-        self.hud_mode = None
-        self.tutorial_active = False
-        self.tutorial_step = 0
-        self.tutorial_overlay = None
-        self.tutorial_text = None
-        self.kill_quest_count = 0
-
-        self.player = None
-        self.cam_pivot = None

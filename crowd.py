@@ -9,7 +9,7 @@ import random
 
 from lighting import should_sim, set_visible, CULL_PED
 
-PED_COUNT = 52
+PED_COUNT = 80
 
 CIVILIAN_SHIRTS = (
     (255, 90, 180),
@@ -187,6 +187,10 @@ def tick_crowd(game, dt):
         if getattr(npc, 'enabled', True) is False:
             continue
         if getattr(npc, 'hp', 0) <= 0:
+            continue
+        if getattr(npc, 'district', None) == 'akihabara':
+            continue
+        if getattr(npc, 'driving', False):
             continue
         role = getattr(npc, 'role', 'civilian')
         kind = getattr(npc, 'kind', '')

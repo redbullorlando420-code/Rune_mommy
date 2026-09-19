@@ -1,3 +1,6 @@
+    def _build_house(self):
+        """Suburban cubes at about (-32, 0, 12). Body, teal roof, garage, door, back lawn, Sanctuary Drive."""
+        Entity = self.Entity
         color = self.color
         Text = self.Text
         teal = color.rgb32(46, 196, 182)
@@ -287,4 +290,3 @@
         mira.npc_name = 'Mama Mira'
         mira.kind = 'mira'
         mira.hittable = False
-        self.talk_npcs.append({'ent': mira, 'name': 'Mama Mira', 'talk': 'Neons loud tonight.', 'killable': False})

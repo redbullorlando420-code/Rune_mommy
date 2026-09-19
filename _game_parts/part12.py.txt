@@ -1,3 +1,19 @@
+            return f'QUEST  {hud}'
+        if self.quest_completed:
+            return 'QUEST  done for now'
+        return 'QUEST  —'
+
+    def _quest_complete(self, qid):
+        if qid in self.quest_completed:
+            return
+        q = self._quest_def(qid)
+        if not q:
+            return
+        if qid in self.quest_active:
+            self.quest_active.remove(qid)
+        self.quest_completed.add(qid)
+        gold = int(q.get('reward_gold') or 0)
+        if gold:
             self.gold += gold
         self.toast(f"Quest complete: {q.get('name', qid)}  +{gold}g")
         self._quest_unlock_ready()
