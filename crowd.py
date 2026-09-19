@@ -1,15 +1,26 @@
 """Lot crowd for Rune Mommy — procedural multi-part humanoids, wander / run crazy / panic.
 
 Named NPCs (Mira, Gage, Michelle) live in game.py and are NOT in this loot crowd.
+Pathing stays on sidewalks / lots — never camps on Hwy 50 asphalt.
 """
 from __future__ import annotations
 
 import math
 import random
 
-from lighting import should_sim, set_visible, CULL_PED
+from lighting import should_sim, set_visible, set_lod, CULL_PED
 
 PED_COUNT = 80
+
+# Hwy 50 asphalt Y-band corridor (traffic lanes ≈ -14.15 east / -17.85 west).
+# Sidewalks sit near z≈-10.6 (north) and z≈-21.4 (south).
+HWY_Z_LO = -19.5
+HWY_Z_HI = -12.5
+# Secondary asphalt strips (gas apron / plaza drive) — soft avoid
+LOT_DRIVE_BANDS = (
+    # (z_lo, z_hi, x_lo, x_hi) — empty x range = full
+    (-16.5, -13.5, None, None),  # main hwy core
+)
 
 CIVILIAN_SHIRTS = (
     (255, 90, 180),
@@ -31,6 +42,97 @@ LOT_RAT_SHIRTS = (
     (70, 55, 68),
 )
 
+# Crowd talk lines — variety beyond Michelle
+CROWD_LINES = (
+    "You seen the Cool Down line? Mira's slamming them tonight.",
+    "Don't stand in the road — Hwy 50 cooks rubber and tourists.",
+    "Heat's up. Keep your pistol low if you got one.",
+    "Walmart's still open east. Carts scream like dying birds.",
+    "Club 27 cover's twenty. Or a smile, if Nova likes you.",
+    "Quiet Spa's the only soft light on this strip.",
+    "Tire shop by Hancock — Rico'll tell you your grip's trash.",
+    "GameStop tried to sell me PowerUp again. I walked.",
+    "Best Buy open-box earbuds. One side's a rumor.",
+    "Pet store goldfish look judgmental. Same.",
+    "Gage only takes gold. Don't argue with the plank.",
+    "Michelle's on Sanctuary. Don't deadname. Don't stare.",
+    "Lot rats run crazy after dark. I'm not one. Today.",
+    "Food truck cuban's the real dinner. Neon shakes are dessert.",
+    "Akihabara portal's by the pink torii — if you trust pink.",
+    "Parking stalls fill fast. Don't block the paint.",
+    "Gators in the lake. Don't wade drunk.",
+    "I'm just walking the sidewalk. Asphalt's for cars.",
+    "You smell like gas station coffee and bad decisions.",
+    "Keep moving. Standing still gets you heat.",
+)
+
+
+def is_on_road(x, z) -> bool:
+    """True if xz sits on Hwy 50 asphalt corridor (avoid for foot traffic)."""
+    try:
+        z = float(z)
+        x = float(x)
+    except Exception:
+        return False
+    if HWY_Z_LO <= z <= HWY_Z_HI:
+        # Allow extreme east/west shoulder beyond map retail (still road though)
+        return True
+    return False
+
+
+def nearest_sidewalk_z(z) -> float:
+    """Snap toward nearest sidewalk / lot band off the hwy asphalt."""
+    z = float(z)
+    north = -10.6
+    south = -21.4
+    if abs(z - north) <= abs(z - south):
+        return north
+    return south
+
+
+def steer_off_road(ent, dt=0.016):
+    """If ent is on road asphalt, nudge toward nearest sidewalk and re-aim heading."""
+    if not ent:
+        return False
+    try:
+        x, z = float(ent.x), float(ent.z)
+    except Exception:
+        return False
+    if not is_on_road(x, z):
+        return False
+    target_z = nearest_sidewalk_z(z)
+    dz = target_z - z
+    # Push off-road quickly
+    step = max(2.8, abs(dz) * 3.0) * float(dt)
+    if dz > 0:
+        ent.z = min(target_z, z + step)
+    else:
+        ent.z = max(target_z, z - step)
+    # Face off the road
+    try:
+        ent.heading = 0.0 if dz > 0 else 180.0
+        ent.rotation_y = ent.heading
+    except Exception:
+        pass
+    # Soft x drift toward lot center if deep in corridor
+    try:
+        if abs(ent.z - target_z) > 0.4:
+            ent.x += (0.0 - float(ent.x)) * min(0.4, 1.5 * float(dt))
+    except Exception:
+        pass
+    return True
+
+
+def clamp_destination(x, z):
+    """Rewrite a path target off the hwy asphalt onto sidewalk/lot."""
+    x, z = float(x), float(z)
+    if is_on_road(x, z):
+        z = nearest_sidewalk_z(z)
+    # Prefer lot / sidewalk bands
+    if -19.0 < z < -12.8:
+        z = nearest_sidewalk_z(z)
+    return x, z
+
 
 def _atan_yaw(dx, dz):
     return math.degrees(math.atan2(dx, dz))
@@ -47,10 +149,12 @@ def _role_mix(i):
 
 
 def _spot(i, rng):
+    """Spawn on sidewalks / lots — never on hwy asphalt Y-band."""
     band = i % 5
     if band == 0:
         return rng.uniform(-22, 26), rng.uniform(-7.5, 3.5)
     if band == 1:
+        # north / south sidewalks along Hwy 50
         return rng.uniform(-38, 40), rng.choice((-10.6, -21.4)) + rng.uniform(-0.4, 0.4)
     if band == 2:
         return rng.uniform(-30, 34), rng.uniform(-40, -26)
@@ -70,6 +174,7 @@ def spawn_crowd(game):
     for i in range(PED_COUNT):
         role = _role_mix(i)
         x, z = _spot(i, rng)
+        x, z = clamp_destination(x, z)
         run_crazy = (i % 5 != 0) and (role in ('civilian', 'lot_rat', 'thug') or rng.random() < 0.45)
         if role == 'civilian':
             rgb = CIVILIAN_SHIRTS[i % len(CIVILIAN_SHIRTS)]
@@ -106,11 +211,16 @@ def spawn_crowd(game):
             walk = rng.uniform(2.0, 2.8)
 
         shirt = color.rgb32(*rgb)
-        ped = game._humanoid(x, z, shirt=shirt, pants=pants, skin=skin, hitbox=True)
+        # Adult feminine anime for civilian / lot_rat; male thug/walker stay utilitarian
+        fem = role in ('civilian', 'lot_rat')
+        style = 'anime_f' if fem else None
+        detail = 'anime_f' if fem else 'crowd'
+        ped = game._humanoid(x, z, shirt=shirt, pants=pants, skin=skin, hitbox=True, detail=detail, style=style)
         ped.npc_id = f'ped_{i}'
         ped.npc_name = name
         ped.kind = kind
         ped.role = role
+        ped.feminine = fem
         ped.hp = hp
         ped.max_hp = hp
         ped.xp = 6 if role == 'civilian' else 10
@@ -124,6 +234,9 @@ def spawn_crowd(game):
         ped.sprint_t = 0.0
         ped.melee_cd = 0.0
         ped.panic_speed = rng.uniform(7.6, 10.2) if run_crazy else rng.uniform(6.4, 8.4)
+        ped.line = CROWD_LINES[i % len(CROWD_LINES)]
+        ped.talkable = True
+        ped.ai_accum = rng.uniform(0, 1)
         game.peds.append(ped)
         game.npcs.append(ped)
         game.targets.append(ped)
@@ -138,6 +251,7 @@ def spawn_heat_hunter(game):
     ang = random.uniform(0, math.tau)
     x = max(-40, min(44, px + math.cos(ang) * 15.0))
     z = max(-44, min(12, pz + math.sin(ang) * 15.0))
+    x, z = clamp_destination(x, z)
     ped = game._humanoid(
         x, z,
         shirt=color.rgb32(90, 40, 70),
@@ -161,6 +275,7 @@ def spawn_heat_hunter(game):
     ped.sprint_t = 0
     ped.melee_cd = 0.2
     ped.panic_speed = 8.2
+    ped.line = "Heat's on you. Run or draw."
     if not hasattr(game, 'heat_hunters') or game.heat_hunters is None:
         game.heat_hunters = []
     game.heat_hunters.append(ped)
@@ -181,7 +296,14 @@ def tick_crowd(game, dt):
     heat = getattr(game, 'heat', 0.0)
     opts = getattr(game, 'render_opts', None) or {}
     cull = float(opts.get('cull_ped', CULL_PED))
-    for npc in game.peds:
+    lod_near = float(opts.get('lod_ped_near', 22.0))
+    lod_mid = float(opts.get('lod_ped_mid', 36.0))
+    far_interval = max(1, int(opts.get('ai_far_interval', 3)))
+    # frame counter for far-AI throttle
+    game._crowd_frame = int(getattr(game, '_crowd_frame', 0)) + 1
+    frame = game._crowd_frame
+
+    for idx, npc in enumerate(game.peds):
         if not npc:
             continue
         if getattr(npc, 'enabled', True) is False:
@@ -200,7 +322,22 @@ def tick_crowd(game, dt):
         if dist > cull:
             set_visible(npc, False)
             continue
-        set_visible(npc, True)
+
+        # LOD + AI throttle
+        if dist <= lod_near:
+            set_lod(npc, 'near')
+            do_ai = True
+        elif dist <= lod_mid:
+            set_lod(npc, 'mid')
+            do_ai = ((frame + idx) % 2) == 0
+        else:
+            set_lod(npc, 'mid')
+            do_ai = ((frame + idx) % far_interval) == 0
+
+        if not do_ai:
+            # Still peel off road even when AI throttled
+            steer_off_road(npc, dt)
+            continue
 
         speed = getattr(npc, 'walk_speed', 1.6)
         charging = False
@@ -225,7 +362,10 @@ def tick_crowd(game, dt):
                     npc.heading = random.uniform(0, 360)
                     npc.wander_t = random.uniform(0.28, 1.05)
                     if random.random() < 0.28:
-                        npc.heading = _atan_yaw(random.uniform(-10, 12) - npc.x, -16.0 - npc.z)
+                        # Aim at sidewalk / lot — not hwy center
+                        tx = random.uniform(-10, 12)
+                        tz = random.choice((-10.6, -21.4, -6.0, 4.0))
+                        npc.heading = _atan_yaw(tx - npc.x, tz - npc.z)
                         npc.sprint_t = random.uniform(0.7, 1.9)
                 else:
                     npc.heading = random.uniform(0, 360)
@@ -241,9 +381,13 @@ def tick_crowd(game, dt):
             rad = math.radians(npc.heading)
             npc.x += math.sin(rad) * speed * dt
             npc.z += math.cos(rad) * speed * dt
+
+        # Peel off asphalt if we drifted onto Hwy 50
+        if steer_off_road(npc, dt):
+            pass
         npc.y = 0
-        npc.x = max(-46, min(50, npc.x))
-        npc.z = max(-50, min(16, npc.z))
+        npc.x = max(-55, min(72, npc.x))
+        npc.z = max(-55, min(22, npc.z))
 
         if charging and dist < 1.45 and hasattr(game, '_hurt'):
             npc.melee_cd = getattr(npc, 'melee_cd', 0.0) - dt

@@ -1,10 +1,3 @@
-                    break
-
-        if hit_something:
-            self._car_take_damage(car, impact_speed)
-            nspd *= -0.25
-            # stay put on impact
-            nx, nz = car.x, car.z
         else:
             car.x, car.z = nx, nz
             car.rotation_y = nyaw
@@ -227,7 +220,8 @@
             if self.in_car:
                 fuel = int(getattr(self.in_car, 'fuel', 0) or 0)
                 dmg = int(getattr(self.in_car, 'damage', 0) or 0)
-                self.hud_mode.text = f'DRIVE   FUEL {fuel}%   DMG {dmg}%'
+                tw = int(getattr(self.in_car, 'tire_wear', 0) or 0)
+                self.hud_mode.text = f'DRIVE   FUEL {fuel}%   DMG {dmg}%   TIRES {tw}%'
             else:
                 self.hud_mode.text = 'WALK'
         if self.gun_model:
@@ -290,3 +284,28 @@
                 cost = max(1, int(math.ceil(need / 2.0))) if need > 0.5 else 0
                 dmg = float(getattr(near_car, 'damage', 0) or 0)
                 if need > 0.5:
+                    options.append((0.1, f'E  fill tank ({cost}g)'))
+                elif dmg >= 5:
+                    options.append((0.1, 'E  repair (50g)'))
+                else:
+                    options.append((0.15, 'E  gas station'))
+            else:
+                options.append((0.2, 'E  gas pump'))
+        if car and not getattr(car, 'disabled', False):
+            options.append((cd, f'E  enter car'))
+        if npc:
+            kind = getattr(npc, 'kind', '')
+            if kind == 'mira':
+                options.append((nd, 'E  talk to Mama Mira'))
+            elif kind == 'michelle':
+                options.append((nd, 'E  talk to Michelle'))
+            elif kind == 'gun':
+                options.append((nd, 'E  Hancock Gun Hut (Gage)'))
+            elif kind not in ('target', 'mob'):
+                options.append((nd, f'E  talk to {getattr(npc, "npc_name", "NPC")}'))
+        if stall and (not npc or sd + 0.4 < nd):
+            if stall['kind'] == 'gun':
+                options.append((sd, 'E  Hancock Gun Hut'))
+            else:
+                options.append((sd, f'E  {stall["name"]}'))
+        door_xz = (self.house_rooms or {}).get('door')

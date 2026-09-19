@@ -99,6 +99,21 @@ def build_all(game):
         dict(id='walmart', title='Walmart Supercenter', door=(62.0, -27.0),
              label='Walmart', origin=(185.0, 0.0, 120.0), style='walmart',
              shop_id='walmart_clermont', w=16.0, d=12.0),
+        dict(id='pet_store', title='Paws on 50 — Aisles', door=(-22.0, 5.2),
+             label='Pet Store', origin=(200.0, 0.0, 120.0), style='retail',
+             shop_id='pet_store_clermont', w=10.0, d=8.0),
+        dict(id='bestbuy', title='Best Buy — Floor', door=(28.0, 5.8),
+             label='Best Buy', origin=(215.0, 0.0, 120.0), style='retail',
+             shop_id='bestbuy_clermont', w=12.0, d=9.0),
+        dict(id='gamestop', title='GameStop — Floor', door=(8.0, 4.6),
+             label='GameStop', origin=(230.0, 0.0, 120.0), style='retail',
+             shop_id='gamestop_clermont', w=8.0, d=7.0),
+        dict(id='tire_shop', title='Hwy 50 Tire & Lube', door=(42.0, -8.8),
+             label='Tire Shop', origin=(245.0, 0.0, 120.0), style='tire',
+             shop_id='tire_shop_clermont', w=10.0, d=8.0),
+        dict(id='nail_salon', title='Neon Toes Nail Salon', door=(-14.0, 5.8),
+             label='Nail Salon', origin=(260.0, 0.0, 120.0), style='nail',
+             shop_id='nail_salon_clermont', w=9.0, d=7.0),
     ]
 
     for spec in specs:
@@ -113,6 +128,12 @@ def build_all(game):
             wall, floor = _rgb(color, 40, 16, 48), _rgb(color, 30, 12, 36)
         elif spec['style'] == 'walmart':
             wall, floor = _rgb(color, 240, 240, 245), _rgb(color, 200, 200, 205)
+        elif spec['style'] == 'retail':
+            wall, floor = _rgb(color, 235, 235, 240), _rgb(color, 180, 180, 190)
+        elif spec['style'] == 'tire':
+            wall, floor = _rgb(color, 70, 70, 75), _rgb(color, 50, 50, 55)
+        elif spec['style'] == 'nail':
+            wall, floor = _rgb(color, 255, 220, 235), _rgb(color, 240, 200, 220)
         elif spec['style'] == 'house':
             wall, floor = _rgb(color, 232, 214, 188), _rgb(color, 140, 110, 80)
 
@@ -142,6 +163,23 @@ def build_all(game):
             parts.append(Entity(model='cube', scale=(3.5, 0.8, 0.1),
                                 position=(ox, 2.8, oz + d / 2 - 0.25),
                                 color=_rgb(color, 255, 194, 32)))
+        elif spec['style'] == 'retail':
+            for dx in (-3.0, 0.0, 3.0):
+                parts.append(_prop(Entity, (ox + dx, 1.0, oz + 0.8), (1.0, 1.8, 4.0), _rgb(color, 220, 220, 230)))
+            parts.append(_prop(Entity, (ox, 0.55, oz - 2.5), (3.5, 0.9, 0.9), _rgb(color, 40, 40, 50)))
+        elif spec['style'] == 'tire':
+            parts.append(_prop(Entity, (ox, 0.7, oz + 1.0), (4.0, 1.2, 2.0), _rgb(color, 60, 60, 65)))
+            for dx in (-2.0, 2.0):
+                for k in range(3):
+                    parts.append(_prop(Entity, (ox + dx, 0.25 + k * 0.22, oz - 1.5), (0.6, 0.2, 0.6), _rgb(color, 20, 20, 20)))
+            parts.append(_prop(Entity, (ox, 0.55, oz - 2.8), (3.0, 0.9, 0.8), _rgb(color, 255, 107, 0)))
+        elif spec['style'] == 'nail':
+            # pedicure chairs
+            for dx in (-2.5, 0.0, 2.5):
+                parts.append(_prop(Entity, (ox + dx, 0.55, oz + 1.0), (1.2, 0.9, 1.4), _rgb(color, 255, 150, 190)))
+            parts.append(_prop(Entity, (ox, 0.45, oz - 2.0), (3.0, 0.7, 0.8), _rgb(color, 255, 105, 180)))
+            parts.append(Entity(model='cube', scale=(2.5, 0.15, 0.15),
+                                position=(ox, 2.6, oz + 2.0), color=_rgb(color, 255, 80, 180)))
 
         dx, dz = spec['door']
         marker = _make_door(Entity, color, dx, dz, spec['label'], iid)
@@ -178,6 +216,10 @@ def prompt(game, pos):
         ex = inter.get('exit')
         if ex and math.hypot(pos[0] - ex.x, pos[2] - ex.z) < 2.2:
             return 'E  exit outside'
+        if inter.get('shop_id') == 'tire_shop_clermont':
+            return 'E  tire service'
+        if inter.get('shop_id') == 'nail_salon_clermont':
+            return 'E  pedicure lounge'
         if inter.get('shop_id'):
             return 'E  shop shelves'
         return ''
@@ -240,10 +282,20 @@ def _open_shop(game, shop_id):
     if not shop:
         game.toast('Shelves empty.')
         return
+    if shop_id == 'tire_shop_clermont' and hasattr(game, 'open_tire_shop'):
+        game.open_tire_shop()
+        return
+    if shop_id == 'nail_salon_clermont':
+        try:
+            import adult_minigames
+            adult_minigames.start_nail_salon(game)
+            return
+        except Exception as exc:
+            print('  nail salon open skip:', exc)
     stall = {
         'id': shop_id,
         'name': shop.get('name', shop_id),
-        'kind': 'big_box',
+        'kind': shop.get('kind') or 'big_box',
         'pos': game._actor_pos(),
         'shop': shop,
         'npc': shop.get('npcName', 'Greeter'),

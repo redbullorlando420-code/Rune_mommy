@@ -2175,5 +2175,230 @@
     "stack": 5,
     "value": 28,
     "icon": "misc"
+  },
+  "aki_mecha_fig": {
+    "id": "aki_mecha_fig",
+    "name": "Mecha Figure",
+    "kind": "loot",
+    "blurb": "Box-fresh anime mecha from Animate Akihabara.",
+    "value": 40
+  },
+  "aki_retro_cart": {
+    "id": "aki_retro_cart",
+    "name": "Retro Game Cart",
+    "kind": "loot",
+    "blurb": "Dusty cart from Super Potato's glass case.",
+    "value": 55
+  },
+  "aki_idol_poster": {
+    "id": "aki_idol_poster",
+    "name": "Idol Poster",
+    "kind": "loot",
+    "blurb": "Mandarake find \u2014 creased but iconic.",
+    "value": 18
+  },
+  "aki_ramune": {
+    "id": "aki_ramune",
+    "name": "Ramune",
+    "kind": "food",
+    "blurb": "Marble soda. +20 HP.",
+    "heal": 20,
+    "value": 8
+  },
+  "aki_pocky": {
+    "id": "aki_pocky",
+    "name": "Pocky Box",
+    "kind": "food",
+    "blurb": "Donki impulse buy. +12 HP.",
+    "heal": 12,
+    "value": 6
+  },
+  "aki_usb_gadget": {
+    "id": "aki_usb_gadget",
+    "name": "Odd USB Gadget",
+    "kind": "loot",
+    "blurb": "Radio Kaikan special \u2014 blinks for no reason.",
+    "value": 25
+  },
+  "aki_camera_strap": {
+    "id": "aki_camera_strap",
+    "name": "Camera Strap",
+    "kind": "loot",
+    "blurb": "Yodobashi impulse accessory.",
+    "value": 15
+  },
+  "pet_kibble": {
+    "id": "pet_kibble",
+    "name": "Bag of Kibble",
+    "kind": "misc",
+    "desc": "Chicken-flavor dry food. Dogs and desperate lot rats approve.",
+    "stack": 10,
+    "value": 9,
+    "icon": "food"
+  },
+  "pet_treats": {
+    "id": "pet_treats",
+    "name": "Pet Treats",
+    "kind": "consumable",
+    "desc": "Soft chews. Somehow edible. +8 HP if you're that hungry.",
+    "stack": 20,
+    "heal": 8,
+    "value": 6,
+    "icon": "food"
+  },
+  "pet_leash": {
+    "id": "pet_leash",
+    "name": "Nylon Leash",
+    "kind": "tool",
+    "desc": "Six-foot leash. Also a terrible whip.",
+    "stack": 5,
+    "value": 14,
+    "icon": "tool"
+  },
+  "pet_goldfish": {
+    "id": "pet_goldfish",
+    "name": "Feeder Goldfish",
+    "kind": "misc",
+    "desc": "Bagged. Do not flush on Hwy 50.",
+    "stack": 5,
+    "value": 4,
+    "icon": "loot"
+  },
+  "bb_earbuds": {
+    "id": "bb_earbuds",
+    "name": "Open-Box Earbuds",
+    "kind": "loot",
+    "desc": "One side quieter. Still beats Mira's neon hum.",
+    "stack": 5,
+    "value": 22,
+    "icon": "loot"
+  },
+  "bb_charger": {
+    "id": "bb_charger",
+    "name": "USB-C Brick",
+    "kind": "tool",
+    "desc": "Charges phones and questionable gadgets.",
+    "stack": 10,
+    "value": 11,
+    "icon": "tool"
+  },
+  "bb_powerbank": {
+    "id": "bb_powerbank",
+    "name": "Power Bank",
+    "kind": "tool",
+    "desc": "10000mAh. Half charge left. Classic.",
+    "stack": 5,
+    "value": 19,
+    "icon": "tool"
+  },
+  "bb_hdmi": {
+    "id": "bb_hdmi",
+    "name": "HDMI Cable",
+    "kind": "misc",
+    "desc": "Six feet of digital hope.",
+    "stack": 10,
+    "value": 7,
+    "icon": "loot"
+  },
+  "gs_preowned": {
+    "id": "gs_preowned",
+    "name": "Pre-Owned Game",
+    "kind": "loot",
+    "desc": "Case scuffed. Save file belongs to 'xXDarkAlecXx'.",
+    "stack": 10,
+    "value": 16,
+    "icon": "loot"
+  },
+  "gs_energy": {
+    "id": "gs_energy",
+    "name": "GameFuel Can",
+    "kind": "consumable",
+    "desc": "Tastes like battery acid and XP. +15 HP.",
+    "stack": 15,
+    "heal": 15,
+    "value": 4,
+    "icon": "drink"
+  },
+  "gs_controller": {
+    "id": "gs_controller",
+    "name": "Used Controller",
+    "kind": "loot",
+    "desc": "Stick drift included free.",
+    "stack": 5,
+    "value": 28,
+    "icon": "loot"
+  },
+  "gs_poster": {
+    "id": "gs_poster",
+    "name": "Promo Poster",
+    "kind": "loot",
+    "desc": "Rolled tight. Michelle would not hang this.",
+    "stack": 10,
+    "value": 7,
+    "icon": "loot"
+  },
+  "tire_patch_kit": {
+    "id": "tire_patch_kit",
+    "name": "Tire Patch Kit",
+    "kind": "tool",
+    "desc": "Plug + glue. Cuts tire wear ~40% when applied at Rico's.",
+    "stack": 5,
+    "value": 12,
+    "icon": "tool"
+  },
+  "tire_set_new": {
+    "id": "tire_set_new",
+    "name": "New Tire Set",
+    "kind": "tool",
+    "desc": "Four fresh tires. Full reset at Hwy 50 Tire & Lube.",
+    "stack": 2,
+    "value": 45,
+    "icon": "tool"
+  },
+  "tire_balance": {
+    "id": "tire_balance",
+    "name": "Balance & Rotate",
+    "kind": "service",
+    "desc": "Service slip \u2014 Rico spins them true. Softens handling penalty.",
+    "stack": 5,
+    "value": 18,
+    "icon": "tool"
+  },
+  "nail_polish_rose": {
+    "id": "nail_polish_rose",
+    "name": "Rose Gel Polish",
+    "kind": "misc",
+    "desc": "Sticky rose gel. French tips optional.",
+    "stack": 10,
+    "value": 9,
+    "icon": "loot"
+  },
+  "nail_polish_french": {
+    "id": "nail_polish_french",
+    "name": "French Tip Kit",
+    "kind": "misc",
+    "desc": "White tips + nude base. Michelle already owns a set.",
+    "stack": 5,
+    "value": 11,
+    "icon": "loot"
+  },
+  "pedicure_oil": {
+    "id": "pedicure_oil",
+    "name": "Pedicure Oil",
+    "kind": "consumable",
+    "desc": "Warm oil for soles. Adult lounge only.",
+    "stack": 10,
+    "heal": 5,
+    "value": 14,
+    "icon": "loot"
+  },
+  "toe_separator": {
+    "id": "toe_separator",
+    "name": "Toe Separators",
+    "kind": "misc",
+    "desc": "Foam wedges. Keep polish clean.",
+    "stack": 20,
+    "value": 4,
+    "icon": "loot"
   }
 }

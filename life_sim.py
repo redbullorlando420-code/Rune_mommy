@@ -12,6 +12,7 @@ from typing import Any
 
 from lighting import set_visible
 from vendor.fsm import FSM
+from crowd import is_on_road, steer_off_road, clamp_destination, CROWD_LINES
 
 # Accelerated clock: 1 real second ~= 45 in-game seconds
 CLOCK_SCALE = 45.0
@@ -91,6 +92,14 @@ def _pick_slot(schedule, hour: float):
 
 
 def _move_toward(ent, tx, tz, speed, dt):
+    tx, tz = clamp_destination(tx, tz)
+    # If currently on asphalt, prioritize sidewalk peel
+    try:
+        if is_on_road(ent.x, ent.z):
+            steer_off_road(ent, dt)
+            return False
+    except Exception:
+        pass
     dx = tx - float(ent.x)
     dz = tz - float(ent.z)
     dist = math.hypot(dx, dz)
@@ -105,6 +114,11 @@ def _move_toward(ent, tx, tz, speed, dt):
     ent.z += dz / dist * step
     try:
         ent.rotation_y = math.degrees(math.atan2(dx, dz))
+    except Exception:
+        pass
+    try:
+        if is_on_road(ent.x, ent.z):
+            steer_off_road(ent, dt)
     except Exception:
         pass
     return False
@@ -177,24 +191,39 @@ def boot(game):
 
     # Subset of crowd: every 4th ped gets a simple home/work/wander loop
     game.life_sim_crowd = []
+    # Sidewalk / lot / plaza destinations across expanded Clermont (off hwy asphalt)
     anchors = [
         (-20.0, -10.0), (8.0, -12.0), (24.0, -8.0), (-8.0, 4.0),
-        (16.0, -28.0), (-30.0, -18.0), (32.0, -20.0), (0.0, -30.0),
+        (16.0, -28.0), (-30.0, -20.0), (32.0, -20.0), (0.0, -30.0),
+        (40.0, -20.0), (-36.0, -16.0), (36.0, 6.0), (16.0, -42.0),
+        (62.0, -22.0), (-8.0, 6.5), (-20.0, -10.5), (30.0, -28.0),
+        (18.0, -8.0), (8.0, 5.0), (-14.0, -28.0), (44.0, -8.0),
+        (-22.0, 6.5), (8.0, 6.0), (28.0, 7.5), (42.0, -6.5),  # pet/gs/bb/tire
+        (-48.0, -10.0), (-44.0, 6.0), (52.0, -8.0), (56.0, 4.0),
+        (-10.0, -36.0), (20.0, -36.0), (48.0, -28.0), (-28.0, 8.0),
+        (12.0, -10.6), (-24.0, -21.4), (34.0, -10.6), (-40.0, -21.4),
+        (70.0, -12.0), (-52.0, -20.0), (4.0, 8.0), (-16.0, 8.0),
     ]
     for i, ped in enumerate(getattr(game, 'peds', []) or []):
-        if i % 4 != 0:
+        if i % 3 != 0:
             continue
         ax, az = anchors[i % len(anchors)]
-        ped.life_home = (ax + random.uniform(-2, 2), az + random.uniform(-2, 2))
-        ped.life_work = (random.uniform(-30, 34), random.uniform(-20, -6))
+        ax, az = clamp_destination(ax, az)
+        ped.life_home = clamp_destination(ax + random.uniform(-2, 2), az + random.uniform(-2, 2))
+        wx, wz = clamp_destination(random.uniform(-40, 55), random.choice((-10.6, -21.4, -6.0, 4.0, 7.0, -28.0)))
+        ped.life_work = (wx, wz)
+        sx, sz = clamp_destination(random.uniform(-24, 48), random.choice((-10.6, -8.0, 5.0, 6.5, -21.4)))
+        line = CROWD_LINES[i % len(CROWD_LINES)]
         ped.life_schedule = (
-            (0, 8, 'home', ped.life_home[0], ped.life_home[1], 'A local loiters near home.'),
+            (0, 8, 'home', ped.life_home[0], ped.life_home[1], line),
             (8, 17, 'work', ped.life_work[0], ped.life_work[1], 'A local is on a shift errand.'),
-            (17, 21, 'shop', random.uniform(-16, 20), random.uniform(-14, -4), 'A local ducks into a shop strip.'),
-            (21, 24, 'wander', ped.life_home[0], ped.life_home[1], 'A local wanders the lot.'),
+            (17, 21, 'shop', sx, sz, 'A local ducks into a shop strip.'),
+            (21, 24, 'wander', ped.life_home[0], ped.life_home[1], 'A local wanders the lot sidewalk.'),
         )
         ped.talkable = True
-        ped.life_line = '…'
+        ped.life_line = line
+        if not getattr(ped, 'line', None):
+            ped.line = line
         _ensure_fsm(ped, 'wander')
         # Make a few talkable for E
         if not getattr(ped, 'npc_name', None) or ped.npc_name in ('lot civilian', 'lot rat'):
@@ -227,6 +256,7 @@ def tick(game, dt: float):
         if not sched:
             continue
         state, tx, tz, line = _pick_slot(sched, hour)
+        tx, tz = clamp_destination(tx, tz)
         prev = getattr(ent, 'life_state', None)
         ent.life_state = state
         ent.life_line = line
@@ -247,23 +277,33 @@ def tick(game, dt: float):
         dist = math.hypot(float(ent.x) - px, float(ent.z) - pz)
         if dist < 48.0:
             set_visible(ent, True)
+        # Far life-sim agents: lower update rate (LOD-ish)
+        far = dist > 36.0
+        if far and int(getattr(game, '_crowd_frame', 0)) % 2 != 0:
+            continue
         speed = 1.7 if state == 'wander' else 1.35
         if state == 'work':
             speed = 1.1
         _move_toward(ent, tx, tz, speed, dt)
 
-        # Soft clamp
+        # Soft clamp — expanded Clermont bounds
         try:
-            ent.x = max(-50, min(70, float(ent.x)))
-            ent.z = max(-55, min(30, float(ent.z)))
+            ent.x = max(-58, min(78, float(ent.x)))
+            ent.z = max(-58, min(28, float(ent.z)))
             ent.y = 0.0
         except Exception:
             pass
 
 
 def decorate_talk_line(ent, base: str) -> str:
-    """Prefix / suffix dialogue with schedule flavor."""
+    """Prefix / suffix dialogue with schedule flavor + crowd variety."""
     extra = state_line(ent)
+    line = getattr(ent, 'line', None)
+    if line and line not in (base or ''):
+        if not base or base in ('...', '…', '.'):
+            base = line
+        elif line not in base:
+            base = f"{base}\n\n{line}"
     if not extra:
         return base
     if not base:

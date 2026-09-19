@@ -11,29 +11,33 @@ Y_LOT = 0.02
 Y_PAINT = 0.12
 
 # lot_id -> stalls (x, z, yaw_deg)
+# Edge lots only — keep downtown / Hwy 50 plaza clear for NPCs & retail.
+# Each lot sits in open space with an exit toward a main road (Hwy 50 or side arterial).
 LOTS: dict[str, list[tuple[float, float, float]]] = {
-    'plaza': [
-        (-10.0, -11.2, 90), (-6.5, -11.2, 90), (-3.0, -11.2, 90),
-        (0.5, -11.2, 90), (4.0, -11.2, 90), (7.5, -11.2, 90),
-        (11.0, -11.2, 90), (14.5, -11.2, 90),
-        (-10.0, -13.8, -90), (-6.5, -13.8, -90), (-3.0, -13.8, -90),
-        (0.5, -13.8, -90), (4.0, -13.8, -90), (7.5, -13.8, -90),
+    # NW edge — exits south onto W Hwy 50 approach
+    'edge_nw': [
+        (-54.0, 10.0, 180), (-50.5, 10.0, 180), (-47.0, 10.0, 180), (-43.5, 10.0, 180),
+        (-54.0, 7.0, 0), (-50.5, 7.0, 0), (-47.0, 7.0, 0), (-43.5, 7.0, 0),
     ],
-    'gas': [
-        (16.0, -10.5, 0), (18.5, -10.5, 0), (21.0, -10.5, 0),
-        (16.0, -15.5, 180), (18.5, -15.5, 180), (21.0, -15.5, 180),
+    # SW edge — exits north/east toward W Hwy 50
+    'edge_sw': [
+        (-54.0, -40.0, 90), (-50.5, -40.0, 90), (-47.0, -40.0, 90), (-43.5, -40.0, 90),
+        (-54.0, -43.5, -90), (-50.5, -43.5, -90), (-47.0, -43.5, -90),
     ],
-    'club27': [
-        (36.0, -20.0, 90), (39.5, -20.0, 90), (43.0, -20.0, 90),
-        (36.0, -26.0, -90), (39.5, -26.0, -90), (43.0, -26.0, -90),
+    # NE edge — exits south onto E spur / toward Best Buy row
+    'edge_ne': [
+        (68.0, 12.0, 180), (71.5, 12.0, 180), (75.0, 12.0, 180), (78.5, 12.0, 180),
+        (68.0, 8.5, 0), (71.5, 8.5, 0), (75.0, 8.5, 0), (78.5, 8.5, 0),
     ],
-    'spa': [
-        (-38.0, -14.0, 0), (-34.5, -14.0, 0), (-31.0, -14.0, 0),
-        (-38.0, -20.0, 180), (-34.5, -20.0, 180),
+    # SE edge past Walmart — exits west onto E Hwy 50
+    'edge_se': [
+        (70.0, -42.0, 90), (73.5, -42.0, 90), (77.0, -42.0, 90), (80.5, -42.0, 90),
+        (70.0, -45.5, -90), (73.5, -45.5, -90), (77.0, -45.5, -90),
     ],
-    'walmart': [
-        (54.0, -28.0, 90), (57.5, -28.0, 90), (61.0, -28.0, 90),
-        (54.0, -32.0, -90), (57.5, -32.0, -90), (61.0, -32.0, -90),
+    # Far-east highway shoulder lot (not downtown) — direct onto E Hwy 50
+    'edge_hwy_e': [
+        (74.0, -12.0, 0), (77.5, -12.0, 0), (81.0, -12.0, 0),
+        (74.0, -20.0, 180), (77.5, -20.0, 180), (81.0, -20.0, 180),
     ],
 }
 
@@ -53,11 +57,20 @@ def boot(game) -> int:
     color = game.color
     n = 0
     pads = (
-        ('plaza', 0.0, -12.5, 28.0, 8.0),
-        ('gas', 18.5, -13.0, 10.0, 8.0),
-        ('club27', 39.5, -23.0, 14.0, 10.0),
-        ('spa', -34.5, -17.0, 12.0, 9.0),
-        ('walmart', 57.5, -30.0, 14.0, 8.0),
+        # Open-space pads at map edge (no downtown / central Hwy 50 plaza stack)
+        ('edge_nw', -48.5, 8.5, 16.0, 8.0),
+        ('edge_sw', -48.5, -41.5, 16.0, 8.0),
+        ('edge_ne', 73.0, 10.0, 16.0, 8.0),
+        ('edge_se', 75.0, -43.5, 16.0, 8.0),
+        ('edge_hwy_e', 77.5, -16.0, 12.0, 12.0),
+    )
+    # Painted exit arrows toward main roads (visual only)
+    exits = (
+        (-48.5, 5.5, 0),      # NW -> south to W Hwy
+        (-40.0, -41.5, 90),   # SW -> east
+        (73.0, 6.0, 0),       # NE -> south
+        (68.0, -43.5, -90),   # SE -> west to E Hwy
+        (70.0, -16.0, -90),   # hwy_e -> west onto E Hwy 50
     )
     for _lid, cx, cz, w, d in pads:
         try:
@@ -73,6 +86,16 @@ def boot(game) -> int:
             n += 2
         except Exception as exc:
             print('  parking pad skip', _lid, exc)
+    for cx, cz, yaw in exits:
+        try:
+            Entity(
+                model='cube', scale=(1.8, 0.06, 0.35),
+                position=(cx, Y_PAINT, cz), rotation_y=yaw,
+                color=_rgb(color, 80, 200, 120),
+            )
+            n += 1
+        except Exception:
+            pass
     for _lid, _i, x, z, yaw in all_stalls():
         try:
             Entity(

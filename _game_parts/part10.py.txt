@@ -1,41 +1,3 @@
-            kind = getattr(npc, 'kind', '')
-            if kind == 'mira':
-                self.open_mira('start')
-                return
-            if kind == 'michelle':
-                try:
-                    from michelle_talk import pick_michelle_opening
-                    nid = pick_michelle_opening(self)
-                except Exception:
-                    nid = 'door' if not self.michelle_seen else 'hi'
-                self.michelle_seen = True
-                self.michelle_auto_opened = True
-                self.open_michelle(nid)
-                self._quest_event('talk', npc_id='michelle')
-                self._tutorial_note('talk')
-                return
-            if kind == 'gun':
-                self.open_gun_shop()
-                return
-            named = getattr(npc, 'npc_id', '')
-            if kind in ('lila', 'rosa', 'yara') or named in ('lila', 'rosa', 'yara'):
-                self.open_vn(kind if kind in ('lila', 'rosa', 'yara') else named)
-                return
-            if kind == 'talk':
-                _line = getattr(npc, 'line', '...')
-                try:
-                    _line = life_sim.decorate_talk_line(npc, _line)
-                except Exception:
-                    pass
-                self.open_talk(
-                    getattr(npc, 'npc_name', 'NPC'),
-                    _line,
-                    getattr(npc, 'portrait_tex', None),
-                )
-                self._quest_event('talk', npc_id=getattr(npc, 'npc_id', ''))
-                return
-        if self.michelle_seen and self.house_rooms:
-            best_room, best_rd = None, 2.8
             for rname in ('guest', 'garage', 'shower', 'lawn'):
                 xz = self.house_rooms.get(rname)
                 if not xz:
@@ -44,12 +6,39 @@
                 if d < best_rd:
                     best_room, best_rd = rname, d
             if best_room and (car is None or best_rd <= cd + 0.1):
-                self.open_michelle(best_room)
+                if best_room in ('guest', 'shower') and self.michelle_seen:
+                    # Offer intimacy mini-game from bedroom/shower after meeting Michelle
+                    self.open_panel(
+                        'Michelle',
+                        "The room's warm. Michelle's teal is already half a suggestion.\n"
+                        "First name only.",
+                        [
+                            ('Start intimacy scene', lambda: adult_minigames.start_michelle_sex(self)),
+                            ('Just talk', lambda: self.open_michelle(best_room)),
+                            ('Leave', self.close_panel),
+                        ],
+                        portrait=True,
+                        portrait_tex=self._michelle_portrait(),
+                    )
+                else:
+                    self.open_michelle(best_room)
                 self._quest_event('michelle_room', room=best_room)
                 return
         if stall and sd <= 3.6 and (car is None or sd < cd):
             if stall['kind'] == 'gun':
                 self.open_gun_shop()
+                return
+            if stall.get('kind') == 'tire_shop' or stall.get('id') == 'tire_shop_clermont':
+                self.open_tire_shop()
+                return
+            if stall.get('kind') == 'nail_salon' or stall.get('id') == 'nail_salon_clermont':
+                try:
+                    adult_minigames.start_nail_salon(self)
+                except Exception as exc:
+                    print('  nail interact skip:', exc)
+                return
+            if stall.get('kind') in ('food_truck', 'retail', 'big_box', 'shake') or stall.get('shop'):
+                self.open_shake_shop(stall)
                 return
             self._buy_first_stock(stall)
             return
@@ -290,3 +279,33 @@
         choices = []
         for ch in node.get('choices') or []:
             label = ch.get('label', '...')
+            nxt = ch.get('next')
+            action = ch.get('action')
+
+            def make(n=nxt, a=action, w=who):
+                def cb():
+                    if a == 'shop':
+                        self.close_panel()
+                    elif a == 'close' or not n:
+                        self.close_panel()
+                    else:
+                        self.open_vn(w, n)
+                return cb
+
+            choices.append((label, make()))
+        if not choices:
+            choices = [('Walk away.', self.close_panel)]
+        expr = node.get('expression') or 'default'
+        por = node.get('portrait') or who
+        tex = self._tex_for(por, expr)
+        if tex is None:
+            pp = portrait_texture_path(por, expr)
+            tex = str(pp) if pp else None
+        self.open_panel(title, node.get('text', ''), choices, portrait=True, portrait_tex=tex)
+
+    def open_talk(self, name, line, portrait_tex=None):
+        try:
+            # If caller passed an NPC entity via getattr chain elsewhere, skip; string path stays.
+            pass
+        except Exception:
+            pass

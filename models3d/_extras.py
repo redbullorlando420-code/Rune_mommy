@@ -103,15 +103,108 @@ def make_walmart(Entity, color, Text, scene_parent, x, z):
     return n, (x, 0, z - 9.0)
 
 
+
+def make_retail_box(Entity, color, Text, scene_parent, x, z, *, name='Shop',
+                    w=8.0, d=6.0, h=3.4, body_rgb=(0, 70, 190), accent_rgb=(255, 242, 0),
+                    yaw=0, sign_rgb=None):
+    """Enterable-ish retail big box / strip store with sidewalk pad + door face south."""
+    n = 0
+    body = _rgb(color, *body_rgb)
+    accent = _rgb(color, *accent_rgb)
+    sign_c = _rgb(color, *(sign_rgb or accent_rgb))
+    dark = _rgb(color, 28, 28, 32)
+    # lot pad (unique Y)
+    Entity(model='cube', scale=(w + 4.0, 0.04, d + 5.0), position=(x, Y_LOT, z - 1.0),
+           color=_rgb(color, 42, 40, 44), texture=_t('asphalt'), texture_scale=(4, 3))
+    n += 1
+    # sidewalk strip in front
+    Entity(model='cube', scale=(w + 2.0, 0.05, 2.2), position=(x, Y_SIDEWALK, z - d / 2 - 1.2),
+           color=_rgb(color, 160, 158, 150), texture=_t('concrete') or _t('stucco'), texture_scale=(3, 1))
+    n += 1
+    # building
+    Entity(model='cube', scale=(w, h, d), position=(x, h / 2, z), color=body,
+           texture=_t('stucco') or _t('metal'), texture_scale=(3, 2),
+           rotation_y=yaw, collider='box')
+    n += 1
+    # fascia / sign band
+    Entity(model='cube', scale=(w + 0.2, 0.7, 0.25), position=(x, h - 0.2, z - d / 2 - 0.05),
+           color=accent, rotation_y=yaw)
+    n += 1
+    # glass storefront
+    Entity(model='cube', scale=(w * 0.7, h * 0.45, 0.08), position=(x, h * 0.45, z - d / 2 - 0.08),
+           color=_rgb(color, 140, 190, 220), rotation_y=yaw)
+    n += 1
+    # ridge-up roof (A-frame ±28 via helper)
+    _pitched_roof(Entity, color, x, h, z, w + 0.4, d + 0.3, dark)
+    n += 1
+    if Text and scene_parent is not None:
+        t = Text(parent=scene_parent, text=name, position=(x, h + 1.1, z - d / 2),
+                 origin=(0, 0), billboard=True, color=sign_c)
+        try:
+            t.world_scale = 3.2
+        except Exception:
+            pass
+    # interact point: front sidewalk
+    interact = (x, 0, z - d / 2 - 1.6)
+    return n, interact
+
+
+def make_tire_shop(Entity, color, Text, scene_parent, x, z, *, name='Tire Shop'):
+    """Garage bay tire shop with stacked tires + service apron."""
+    n = 0
+    body = _rgb(color, 45, 45, 48)
+    accent = _rgb(color, 255, 107, 0)
+    # apron
+    Entity(model='cube', scale=(10.0, 0.04, 8.0), position=(x, Y_LOT, z - 1.0),
+           color=_rgb(color, 38, 36, 40), texture=_t('asphalt'), texture_scale=(4, 3))
+    n += 1
+    Entity(model='cube', scale=(8.0, 0.05, 2.0), position=(x, Y_SIDEWALK, z - 4.2),
+           color=_rgb(color, 150, 148, 140))
+    n += 1
+    # garage box
+    Entity(model='cube', scale=(7.0, 3.2, 5.5), position=(x, 1.6, z), color=body,
+           texture=_t('metal') or _t('stucco'), texture_scale=(2, 1.5), collider='box')
+    n += 1
+    # open bay (dark recess)
+    Entity(model='cube', scale=(3.2, 2.4, 0.2), position=(x - 1.2, 1.3, z - 2.85),
+           color=_rgb(color, 20, 20, 22))
+    n += 1
+    # sign
+    Entity(model='cube', scale=(6.5, 0.6, 0.2), position=(x, 3.3, z - 2.8), color=accent)
+    n += 1
+    _pitched_roof(Entity, color, x, 3.2, z, 7.4, 5.8, _rgb(color, 30, 30, 34))
+    n += 1
+    # stacked tire props
+    for i, (dx, dz) in enumerate(((-2.8, -3.2), (-2.8, -3.6), (2.6, -3.0))):
+        for k in range(3):
+            Entity(model='cube', scale=(0.55, 0.18, 0.55),
+                   position=(x + dx, 0.2 + k * 0.2, z + dz),
+                   color=_rgb(color, 18, 18, 18))
+            n += 1
+    if Text and scene_parent is not None:
+        t = Text(parent=scene_parent, text=name, position=(x, 4.2, z - 2.8),
+                 origin=(0, 0), billboard=True, color=accent)
+        try:
+            t.world_scale = 3.0
+        except Exception:
+            pass
+    return n, (x, 0, z - 4.5)
+
+
 def densify_hwy50(Entity, color, Text, scene_parent, building_count_ref=None):
-    """Extra houses / strip POIs along Hwy 50 / Clermont gaps. Pitched ±28 roofs."""
+    """Expand Clermont: more grid blocks, houses, strip plazas along Hwy 50 + side streets.
+
+    Unique ground Ys; ridge-up roofs. Avoids lake / parking lot cores.
+    """
     rng = random.Random(50)
     n = 0
     # Fill east Hwy 50 corridor toward Walmart
     east_houses = (
         (48.0, -6.0, 'E Hwy 50'), (52.0, -10.0, 'Lakeview Ct'),
         (56.0, -4.0, 'Orange Ave'), (46.0, 4.0, 'Hancock N'),
-        (50.0, 8.0, 'Citrus Edge'),
+        (50.0, 8.0, 'Citrus Edge'), (60.0, 2.0, 'Spar Blvd'),
+        (54.0, -28.0, 'Lake Spur'), (58.0, -8.0, 'Cart Path'),
+        (66.0, -8.0, 'East Spur'), (44.0, 10.0, 'Grove N'),
     )
     for x, z, label in east_houses:
         make_house(
@@ -124,6 +217,8 @@ def densify_hwy50(Entity, color, Text, scene_parent, building_count_ref=None):
     west_houses = (
         (-44.0, -10.0, 'W Hwy 50'), (-48.0, -18.0, 'Serenity Ln'),
         (-42.0, -24.0, 'Palm Ct'), (-50.0, 6.0, 'Grove St'),
+        (-54.0, -8.0, 'Cypress W'), (-46.0, 10.0, 'Sanctuary W'),
+        (-52.0, -28.0, 'Palm Deep'), (-40.0, -32.0, 'Spa Spur'),
     )
     for x, z, label in west_houses:
         make_house(
@@ -133,8 +228,42 @@ def densify_hwy50(Entity, color, Text, scene_parent, building_count_ref=None):
             label=label, porch=True, rng=rng,
         )
         n += 1
+    # North residential grid (Sanctuary / side streets) — fill NPC destinations
+    north_grid = (
+        (-32.0, 10.0), (-24.0, 10.0), (-16.0, 10.0), (-8.0, 10.0),
+        (0.0, 10.0), (8.0, 10.0), (16.0, 10.0), (24.0, 10.0),
+        (-28.0, 14.0), (-12.0, 14.0), (4.0, 14.0), (20.0, 14.0),
+        (-36.0, 6.0), (12.0, 6.5),
+    )
+    for i, (x, z) in enumerate(north_grid):
+        make_house(
+            Entity, color, Text, scene_parent, x, z,
+            w=rng.uniform(2.8, 3.6), h=rng.uniform(2.3, 3.0), d=rng.uniform(2.5, 3.2),
+            label=f'Block {i + 1}', porch=(rng.random() < 0.55), rng=rng,
+        )
+        n += 1
+    # South of hwy (waterfront / lake-adjacent — keep clear of deep lake SE core ~16,-42)
+    south_houses = (
+        (-24.0, -28.0, 'S Lot'), (-12.0, -32.0, 'Canal St'),
+        (4.0, -34.0, 'Pond Side'), (24.0, -30.0, 'Bait Row'),
+        (36.0, -28.0, 'Club Spur'), (-32.0, -36.0, 'Wetland'),
+        (12.0, -38.0, 'Boardwalk'), (48.0, -24.0, 'East Lot'),
+    )
+    for x, z, label in south_houses:
+        make_house(
+            Entity, color, Text, scene_parent, x, z,
+            w=rng.uniform(2.8, 3.5), h=rng.uniform(2.2, 2.9), d=rng.uniform(2.4, 3.1),
+            label=label, porch=True, rng=rng,
+        )
+        n += 1
     # Strip plazas (flat roof ok for plazas; add A-frame kiosk)
-    for x, z, name in ((-28.0, -8.0, 'Plaza Kiosk'), (10.0, -24.0, 'Lot Snacks'), (34.0, -32.0, 'Bait Shed')):
+    plazas = (
+        (-28.0, -8.0, 'Plaza Kiosk'), (10.0, -24.0, 'Lot Snacks'), (34.0, -32.0, 'Bait Shed'),
+        (-8.0, -24.0, 'S Strip'), (20.0, 4.0, 'N Kiosk'), (-18.0, 4.0, 'Yard Mart'),
+        (52.0, -22.0, 'Cart Hut'), (-40.0, -8.0, 'Spa Strip'),
+        (4.0, -8.0, 'Median Mart'), (30.0, -8.0, 'Hancock Mini'),
+    )
+    for x, z, name in plazas:
         Entity(model='cube', scale=(3.5, 2.2, 3.0), position=(x, 1.1, z),
                color=_rgb(color, rng.randint(80, 140), rng.randint(70, 120), rng.randint(90, 150)),
                texture=_t('stucco'), texture_scale=(2, 1.2), collider='box')
@@ -147,10 +276,19 @@ def densify_hwy50(Entity, color, Text, scene_parent, building_count_ref=None):
                 kt.world_scale = 2.4
             except Exception:
                 pass
+    # Sidewalk ribbons (visual only) along hwy shoulders — unique Y
+    for z in (-10.6, -21.4):
+        Entity(model='cube', scale=(110.0, 0.04, 1.6), position=(8.0, Y_SIDEWALK, z),
+               color=_rgb(color, 155, 152, 145), texture=_t('concrete') or _t('stucco'),
+               texture_scale=(20, 1))
+        n += 1
     make_street_sign(Entity, color, Text, scene_parent, 54.0, -16.0, 'E Hwy 50')
     make_street_sign(Entity, color, Text, scene_parent, -46.0, -14.0, 'W Hwy 50')
+    make_street_sign(Entity, color, Text, scene_parent, -22.0, 6.0, 'Pet Plaza')
+    make_street_sign(Entity, color, Text, scene_parent, 28.0, 6.0, 'Electronics Row')
     make_billboard(Entity, color, Text, scene_parent, 58.0, -20.0, 'WALMART\nAHEAD', face_yaw=0)
-    n += 3
+    make_billboard(Entity, color, Text, scene_parent, 24.0, 4.0, 'BEST BUY\nOPEN-BOX', face_yaw=180)
+    n += 6
     if isinstance(building_count_ref, list) and building_count_ref:
         building_count_ref[0] += n
     return n

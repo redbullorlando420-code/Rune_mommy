@@ -1,33 +1,3 @@
-            nxt = ch.get('next')
-            action = ch.get('action')
-
-            def make(n=nxt, a=action, w=who):
-                def cb():
-                    if a == 'shop':
-                        self.close_panel()
-                    elif a == 'close' or not n:
-                        self.close_panel()
-                    else:
-                        self.open_vn(w, n)
-                return cb
-
-            choices.append((label, make()))
-        if not choices:
-            choices = [('Walk away.', self.close_panel)]
-        expr = node.get('expression') or 'default'
-        por = node.get('portrait') or who
-        tex = self._tex_for(por, expr)
-        if tex is None:
-            pp = portrait_texture_path(por, expr)
-            tex = str(pp) if pp else None
-        self.open_panel(title, node.get('text', ''), choices, portrait=True, portrait_tex=tex)
-
-    def open_talk(self, name, line, portrait_tex=None):
-        try:
-            # If caller passed an NPC entity via getattr chain elsewhere, skip; string path stays.
-            pass
-        except Exception:
-            pass
         self.open_panel(name, line, [('Later.', self.close_panel)], portrait=bool(portrait_tex), portrait_tex=portrait_tex)
 
     def open_gun_shop(self):
@@ -69,6 +39,64 @@
         self.ammo += 12
         self.toast('12 pistol rounds.')
         self.open_gun_shop()
+
+    def open_tire_shop(self):
+        """Rico — patch / balance / full set. Needs a nearby player car."""
+        pos = self._actor_pos()
+        car = self.in_car
+        if car is None:
+            car, cd = self._nearest_car(pos, 6.0)
+            if car and getattr(car, 'traffic', False):
+                car = None
+        wear = float(getattr(car, 'tire_wear', 0.0) or 0.0) if car else 0.0
+        if car:
+            body = (
+                "Rico's Tire & Lube. Speed, hard turns, and off-road chew rubber.\n"
+                f"This car tire wear: {int(wear)}% — steer/grip fall off as it climbs."
+            )
+        else:
+            body = "Rico's. Bring a car onto the apron (or drive in)."
+        choices = []
+        if car:
+            def _patch(c=car):
+                self._tire_service(c, 'patch', 25, 40.0)
+            def _balance(c=car):
+                self._tire_service(c, 'balance', 35, 22.0)
+            def _replace(c=car):
+                self._tire_service(c, 'replace', 90, 100.0)
+            choices.append(('Patch plug   -   25g  (-40 wear)', _patch))
+            choices.append(('Balance & rotate   -   35g  (-22 wear)', _balance))
+            choices.append(('New tire set   -   90g  (reset)', _replace))
+        choices.append(('Leave.', self.close_panel))
+        self.open_panel("Rico   ·   Hwy 50 Tire & Lube", body, choices)
+
+    def _tire_service(self, car, kind, cost, amount):
+        if not car:
+            self.toast('Bring a car.')
+            self.open_tire_shop()
+            return
+        if self.gold < cost:
+            self.toast('Not enough gold.')
+            self.open_tire_shop()
+            return
+        self.gold -= cost
+        wear = float(getattr(car, 'tire_wear', 0.0) or 0.0)
+        if kind == 'replace':
+            car.tire_wear = 0.0
+            car.tire_warn_mid = False
+            car.tire_warn_hi = False
+            self.toast('New tires mounted. Grip restored.')
+        else:
+            car.tire_wear = max(0.0, wear - float(amount))
+            if car.tire_wear < 55:
+                car.tire_warn_mid = False
+            if car.tire_wear < 85:
+                car.tire_warn_hi = False
+            self.toast(f'Tires serviced. Wear now {int(car.tire_wear)}%.')
+        if kind == 'patch':
+            self.pack.append('Tire Patch Kit')
+        self._quest_event('tire_service', kind=kind)
+        self.open_tire_shop()
 
     def open_shake_shop(self, stall):
         shop = stall.get('shop') or {}
@@ -193,6 +221,18 @@
                             self.open_michelle(n)
                         else:
                             self.open_michelle('preg')
+                    elif a == 'sex_minigame' or a == 'intimacy':
+                        try:
+                            adult_minigames.start_michelle_sex(self)
+                        except Exception as exc:
+                            print('  michelle sex minigame skip:', exc)
+                            if n:
+                                self.open_michelle(n)
+                    elif a == 'nail_salon':
+                        try:
+                            adult_minigames.start_nail_salon(self)
+                        except Exception as exc:
+                            print('  nail minigame skip:', exc)
                     elif a == 'close' or not n:
                         self.close_panel()
                     else:
@@ -269,24 +309,3 @@
         for q in self.quest_defs:
             if q.get('id') == qid:
                 return q
-        return None
-
-    def _quest_unlock_ready(self):
-        for q in self.quest_defs:
-            qid = q.get('id')
-            if not qid or qid in self.quest_completed or qid in self.quest_active:
-                continue
-            reqs = q.get('requires') or []
-            if all(r in self.quest_completed for r in reqs):
-                self.quest_active.append(qid)
-                self.quest_progress[qid] = 0
-
-    def _quest_hud_line(self):
-        for qid in self.quest_active:
-            q = self._quest_def(qid)
-            if not q:
-                continue
-            hud = q.get('hud') or q.get('name') or qid
-            prog = self.quest_progress.get(qid, 0)
-            if '{progress}' in hud:
-                hud = hud.replace('{progress}', str(prog))

@@ -8,15 +8,16 @@ from __future__ import annotations
 import math
 import random
 
-from lighting import should_sim, set_visible, CULL_TRAFFIC
+from lighting import should_sim, set_visible, set_lod, CULL_TRAFFIC
 import parking
 
 TRAFFIC_COUNT = 22
 LOT_WPS = (
-    (-18.0, -8.8),
-    (18.0, -8.8),
-    (20.0, -23.2),
-    (-18.0, -23.2),
+    # Cruise loops near edge lots / hwy shoulders — not downtown plaza pads
+    (-44.0, -10.6),
+    (44.0, -10.6),
+    (70.0, -16.0),
+    (-48.0, 6.0),
 )
 
 PAINTS = (
@@ -164,10 +165,26 @@ def tick_traffic(game, dt):
         if not getattr(car, 'traffic', False):
             continue
 
-        if player and not should_sim(px, pz, car.x, car.z, cull):
+        dist = 0.0
+        if player:
+            dist = ((car.x - px) ** 2 + (car.z - pz) ** 2) ** 0.5
+        if player and dist > cull:
             set_visible(car, False)
             continue
-        set_visible(car, True)
+        lod_near = float(opts.get('lod_traffic_near', 28.0))
+        lod_mid = float(opts.get('lod_traffic_mid', 48.0))
+        far_interval = max(1, int(opts.get('ai_far_interval', 3)))
+        if dist <= lod_near:
+            set_lod(car, 'near')
+            do_ai = True
+        elif dist <= lod_mid:
+            set_lod(car, 'mid')
+            do_ai = (int(getattr(game, '_crowd_frame', 0)) % 2) == 0
+        else:
+            set_lod(car, 'mid')
+            do_ai = (int(getattr(game, '_crowd_frame', 0)) % far_interval) == 0
+        if not do_ai:
+            continue
 
         # No driver → seek lot / stay still
         if not _has_live_driver(car):

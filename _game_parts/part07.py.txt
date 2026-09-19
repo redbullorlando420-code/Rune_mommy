@@ -1,14 +1,3 @@
-            model='quad',
-            scale=(0.34, 0.60),
-            position=(-0.68, -0.26),
-            enabled=False,
-            z=-0.05,
-        )
-        if self.mira_texture:
-            self.panel_portrait.texture = self.mira_texture
-        self.panel_name = Text(text='', position=(-0.52, -0.02), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 210), enabled=False)
-        self.panel_body = Text(text='', position=(-0.52, -0.07), origin=(-0.5, 0.5), color=color.rgb32(245, 230, 255), enabled=False, scale=0.75)
-        # Clickable dialogue choice buttons (mouse) + number keys 1-8
         from ursina import Button
         self.panel_choices = []
         for i in range(8):
@@ -175,8 +164,8 @@
                         hz = raycast(origin, mz.normalized(), distance=0.55 + mz.length(), ignore=ign, debug=False)
                         if not hz.hit:
                             player.z += mz.z
-                player.x = max(-55, min(58, player.x))
-                player.z = max(-55, min(28, player.z))
+                player.x = max(-60, min(78, player.x))
+                player.z = max(-58, min(30, player.z))
 
         self.y_vel -= 32 * dt
         player.y += self.y_vel * dt
@@ -208,9 +197,14 @@
 
         dmg = float(getattr(car, 'damage', 0.0) or 0.0)
         dmg_mul = max(0.15, 1.0 - 0.5 * (dmg / 100.0))
+        wear = float(getattr(car, 'tire_wear', 0.0) or 0.0)
+        wear_n = max(0.0, min(1.0, wear / 100.0))
+        steer_gain = 1.05 * (1.0 - 0.55 * wear_n)
+        coast_drag = 3.2 + 2.8 * wear_n
+        accel_drag = 0.55 + 0.9 * wear_n
         base_vmax, base_accel = 24.0, 16.0
-        vmax = base_vmax * dmg_mul
-        accel_force = base_accel * dmg_mul
+        vmax = base_vmax * dmg_mul * (1.0 - 0.18 * wear_n)
+        accel_force = base_accel * dmg_mul * (1.0 - 0.12 * wear_n)
         brake_force = 0.0
         accel = 0.0
 
@@ -218,7 +212,6 @@
         out_of_gas = fuel <= 0.0 or getattr(car, 'disabled', False)
 
         if out_of_gas:
-            # Speed decays to 0; no throttle / reverse
             brake_force = 14.0
             if not getattr(car, 'out_of_gas_toasted', False) and fuel <= 0.0 and not getattr(car, 'disabled', False):
                 car.out_of_gas_toasted = True
@@ -227,24 +220,43 @@
             if held_keys['w']:
                 accel = accel_force
             elif held_keys['s']:
-                # S brakes if moving forward; hold for reverse when nearly stopped
                 if car.speed > 0.55:
                     brake_force = 32.0
                 else:
                     accel = -accel_force * 0.55
             if held_keys['space']:
-                # Stronger handbrake
                 brake_force = max(brake_force, 52.0)
 
         steer = float(held_keys['a'] - held_keys['d'])
-        # Higher grip: less drag accelerating, more coasting
         nx, nz, nyaw, nspd = _bicycle_step_safe(
             car.x, car.z, car.rotation_y, car.speed,
             steer, accel, dt,
-            vmax=vmax, wheelbase=2.6, drag=2.4,
-            steer_gain=1.05, brake_force=brake_force,
-            coast_drag=3.2, accel_drag=0.55,
+            vmax=vmax, wheelbase=2.6, drag=2.4 + 1.5 * wear_n,
+            steer_gain=steer_gain, brake_force=brake_force,
+            coast_drag=coast_drag, accel_drag=accel_drag,
         )
+        # Tire wear: speed / hard turns / off-road (lots & grass harsher than hwy asphalt)
+        try:
+            from crowd import is_on_road
+            on_hwy = is_on_road(nx, nz)
+        except Exception:
+            on_hwy = True
+        spd = abs(float(nspd))
+        hard = abs(steer) > 0.55 and spd > 6.0
+        rate = 0.35 * (spd / 24.0) ** 1.4
+        if hard:
+            rate += 1.1 * abs(steer) * (spd / 18.0)
+        if not on_hwy:
+            rate += 1.6 * (spd / 16.0)
+        if brake_force >= 40 and spd > 8:
+            rate += 0.8
+        car.tire_wear = min(100.0, wear + rate * dt)
+        if car.tire_wear >= 85.0 and not getattr(car, 'tire_warn_hi', False):
+            car.tire_warn_hi = True
+            self.toast('Tires shredded — grip gone. Find Hwy 50 Tire & Lube.')
+        elif car.tire_wear >= 55.0 and not getattr(car, 'tire_warn_mid', False):
+            car.tire_warn_mid = True
+            self.toast('Tire wear high. Handling soft — visit Rico.')
 
         # Fuel burn ~ full tank lasts a few minutes of continuous drive
         # k_speed=0.028, k_accel=0.045  → cruise ~3 min; floored ~1–1.5 min
@@ -290,3 +302,10 @@
                 d = dist_xz((nx, 0, nz), (other.x, 0, other.z))
                 if d < 2.6:
                     hit_something = True
+                    break
+
+        if hit_something:
+            self._car_take_damage(car, impact_speed)
+            nspd *= -0.25
+            # stay put on impact
+            nx, nz = car.x, car.z

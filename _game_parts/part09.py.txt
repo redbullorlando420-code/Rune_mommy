@@ -1,28 +1,3 @@
-                    options.append((0.1, f'E  fill tank ({cost}g)'))
-                elif dmg >= 5:
-                    options.append((0.1, 'E  repair (50g)'))
-                else:
-                    options.append((0.15, 'E  gas station'))
-            else:
-                options.append((0.2, 'E  gas pump'))
-        if car and not getattr(car, 'disabled', False):
-            options.append((cd, f'E  enter car'))
-        if npc:
-            kind = getattr(npc, 'kind', '')
-            if kind == 'mira':
-                options.append((nd, 'E  talk to Mama Mira'))
-            elif kind == 'michelle':
-                options.append((nd, 'E  talk to Michelle'))
-            elif kind == 'gun':
-                options.append((nd, 'E  Hancock Gun Hut (Gage)'))
-            elif kind not in ('target', 'mob'):
-                options.append((nd, f'E  talk to {getattr(npc, "npc_name", "NPC")}'))
-        if stall and (not npc or sd + 0.4 < nd):
-            if stall['kind'] == 'gun':
-                options.append((sd, 'E  Hancock Gun Hut'))
-            else:
-                options.append((sd, f'E  {stall["name"]}'))
-        door_xz = (self.house_rooms or {}).get('door')
         if door_xz and not self.michelle_seen:
             dd = dist_xz(pos, (door_xz[0], 0, door_xz[1]))
             if dd < 3.0:
@@ -74,11 +49,17 @@
             if not npc:
                 continue
             kind = getattr(npc, 'kind', '')
-            if kind in ('target', 'mob', 'civilian', 'lot_rat', 'walker', 'thug', 'heat_hunter', 'barrel'):
+            talkable = bool(getattr(npc, 'talkable', False) or kind == 'talk')
+            # Crowd combat kinds skipped unless marked talkable (life_sim subset / lines)
+            if kind in ('target', 'mob', 'barrel'):
                 continue
-            if getattr(npc, 'hittable', False):
+            if kind in ('civilian', 'lot_rat', 'walker', 'thug', 'heat_hunter') and not talkable:
+                continue
+            if getattr(npc, 'hittable', False) and not talkable:
                 continue
             if getattr(npc, 'enabled', True) is False:
+                continue
+            if getattr(npc, 'driving', False):
                 continue
             d = dist_xz(pos, (npc.x, 0, npc.z))
             if d < best_d:
@@ -290,3 +271,41 @@
 
         # prefer NPC / stall over car if closer
         if npc and nd <= 3.0 and (car is None or nd <= cd + 0.15):
+            kind = getattr(npc, 'kind', '')
+            if kind == 'mira':
+                self.open_mira('start')
+                return
+            if kind == 'michelle':
+                try:
+                    from michelle_talk import pick_michelle_opening
+                    nid = pick_michelle_opening(self)
+                except Exception:
+                    nid = 'door' if not self.michelle_seen else 'hi'
+                self.michelle_seen = True
+                self.michelle_auto_opened = True
+                self.open_michelle(nid)
+                self._quest_event('talk', npc_id='michelle')
+                self._tutorial_note('talk')
+                return
+            if kind == 'gun':
+                self.open_gun_shop()
+                return
+            named = getattr(npc, 'npc_id', '')
+            if kind in ('lila', 'rosa', 'yara') or named in ('lila', 'rosa', 'yara'):
+                self.open_vn(kind if kind in ('lila', 'rosa', 'yara') else named)
+                return
+            if kind == 'talk' or getattr(npc, 'talkable', False):
+                _line = getattr(npc, 'line', None) or getattr(npc, 'life_line', None) or '...'
+                try:
+                    _line = life_sim.decorate_talk_line(npc, _line)
+                except Exception:
+                    pass
+                self.open_talk(
+                    getattr(npc, 'npc_name', 'NPC'),
+                    _line,
+                    getattr(npc, 'portrait_tex', None),
+                )
+                self._quest_event('talk', npc_id=getattr(npc, 'npc_id', ''))
+                return
+        if self.michelle_seen and self.house_rooms:
+            best_room, best_rd = None, 2.8

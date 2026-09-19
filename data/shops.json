@@ -500,7 +500,7 @@
       "city": "Clermont",
       "npcName": "Luz",
       "npcTitle": "night cooker",
-      "blurb": "Late truck by the motel — chips, water, and whatever is still warm.",
+      "blurb": "Late truck by the motel \u2014 chips, water, and whatever is still warm.",
       "examine": "String lights and a speaker humming reggaeton at half volume.",
       "greeting": "Tamale sold out. I still got chips, water, soda. Do not wake the motel.",
       "tileX": 12,
@@ -811,7 +811,7 @@
       "city": "Akihabara",
       "npcName": "Floor staff",
       "npcTitle": "electronics",
-      "blurb": "Megastore energy — cameras, cables, and everything in between.",
+      "blurb": "Megastore energy \u2014 cameras, cables, and everything in between.",
       "examine": "Glass and steel sprawl beside the station.",
       "greeting": "Yodobashi. If it plugs in, we probably sell it.",
       "tileX": 205,
@@ -852,7 +852,7 @@
       "city": "Akihabara",
       "npcName": "Floor staff",
       "npcTitle": "electronics",
-      "blurb": "Megastore energy — cameras, cables, and everything in between.",
+      "blurb": "Megastore energy \u2014 cameras, cables, and everything in between.",
       "examine": "Glass and steel sprawl beside the station.",
       "greeting": "Yodobashi. If it plugs in, we probably sell it.",
       "tileX": 205,
@@ -918,6 +918,227 @@
         {
           "itemId": "aki_idol_poster",
           "price": 22
+        }
+      ]
+    },
+    {
+      "id": "pet_store_clermont",
+      "name": "Paws on 50 Pet Store",
+      "flagship": false,
+      "kind": "retail",
+      "address": "E Hwy 50 plaza",
+      "city": "Clermont",
+      "npcName": "Kenzie",
+      "npcTitle": "pet clerk",
+      "blurb": "Leashes, kibble, and a tank of feeder goldfish humming under neon.",
+      "examine": "Glass front with paw-print decals. A parrot squawks somewhere in back.",
+      "greeting": "Welcome to Paws. Treats up front, litter in back. Gold only \u2014 card reader's chewed.",
+      "tileX": 52,
+      "tileY": 6,
+      "w": 5,
+      "h": 4,
+      "world": {
+        "x": -22.0,
+        "z": 6.5,
+        "yaw": 0
+      },
+      "palette": [
+        "#7ec8e3",
+        "#ff9f1c",
+        "#2b2d42"
+      ],
+      "stock": [
+        {
+          "itemId": "pet_kibble",
+          "price": 18
+        },
+        {
+          "itemId": "pet_treats",
+          "price": 12
+        },
+        {
+          "itemId": "pet_leash",
+          "price": 28
+        },
+        {
+          "itemId": "pet_goldfish",
+          "price": 9
+        }
+      ]
+    },
+    {
+      "id": "bestbuy_clermont",
+      "name": "Best Buy",
+      "flagship": false,
+      "kind": "retail",
+      "address": "E Hwy 50 electronics",
+      "city": "Clermont",
+      "npcName": "Devon",
+      "npcTitle": "blue-shirt",
+      "blurb": "Yellow-tag electronics box \u2014 chargers, earbuds, a dubious 'gaming PC'.",
+      "examine": "Blue-and-yellow spar. Carts full of empty boxes. Geek Squad desk abandoned.",
+      "greeting": "Best Buy Clermont. Open-box deals if you don't ask where they came from. Gold at register.",
+      "tileX": 70,
+      "tileY": 5,
+      "w": 8,
+      "h": 6,
+      "world": {
+        "x": 28.0,
+        "z": 7.5,
+        "yaw": 0
+      },
+      "palette": [
+        "#0046be",
+        "#fff200",
+        "#111111"
+      ],
+      "stock": [
+        {
+          "itemId": "bb_earbuds",
+          "price": 45
+        },
+        {
+          "itemId": "bb_charger",
+          "price": 22
+        },
+        {
+          "itemId": "bb_powerbank",
+          "price": 38
+        },
+        {
+          "itemId": "bb_hdmi",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "gamestop_clermont",
+      "name": "GameStop",
+      "flagship": false,
+      "kind": "retail",
+      "address": "Strip plaza E Hwy 50",
+      "city": "Clermont",
+      "npcName": "Jules",
+      "npcTitle": "associate",
+      "blurb": "Pre-owned carts, energy drinks, and a PowerUp pitch nobody asked for.",
+      "examine": "Black-and-red storefront. Trade-in counter sticky with soda.",
+      "greeting": "GameStop. Pre-owned's cheaper. We buy your soul for store credit \u2014 gold works too.",
+      "tileX": 58,
+      "tileY": 8,
+      "w": 4,
+      "h": 3,
+      "world": {
+        "x": 8.0,
+        "z": 6.0,
+        "yaw": 0
+      },
+      "palette": [
+        "#000000",
+        "#e31837",
+        "#ffffff"
+      ],
+      "stock": [
+        {
+          "itemId": "gs_preowned",
+          "price": 32
+        },
+        {
+          "itemId": "gs_energy",
+          "price": 8
+        },
+        {
+          "itemId": "gs_controller",
+          "price": 55
+        },
+        {
+          "itemId": "gs_poster",
+          "price": 14
+        }
+      ]
+    },
+    {
+      "id": "tire_shop_clermont",
+      "name": "Hwy 50 Tire & Lube",
+      "flagship": false,
+      "kind": "tire_shop",
+      "address": "N Hancock / Hwy 50",
+      "city": "Clermont",
+      "npcName": "Rico",
+      "npcTitle": "tire tech",
+      "blurb": "Mount, balance, patch. Bring the car \u2014 sidewalks don't need tires.",
+      "examine": "Garage bay with stacked rubber and a hydraulic jack. Smells like hot asphalt.",
+      "greeting": "Rico's. Worn tires kill grip. Patch for cheap, full set if you're bleeding gold.",
+      "tileX": 78,
+      "tileY": 9,
+      "w": 5,
+      "h": 4,
+      "world": {
+        "x": 42.0,
+        "z": -6.5,
+        "yaw": 0
+      },
+      "palette": [
+        "#2d2d2d",
+        "#ff6b00",
+        "#c0c0c0"
+      ],
+      "stock": [
+        {
+          "itemId": "tire_patch_kit",
+          "price": 25
+        },
+        {
+          "itemId": "tire_set_new",
+          "price": 90
+        },
+        {
+          "itemId": "tire_balance",
+          "price": 35
+        }
+      ]
+    },
+    {
+      "id": "nail_salon_clermont",
+      "name": "Neon Toes Nail Salon",
+      "flagship": false,
+      "kind": "nail_salon",
+      "address": "Sanctuary / Hwy 50 strip",
+      "city": "Clermont",
+      "npcName": "Vee",
+      "npcTitle": "nail tech",
+      "blurb": "Adult pedicure lounge \u2014 polish, soak, private worship chairs.",
+      "examine": "Pink neon toes on the glass. Soft chairs. Smells like acetone and lotion.",
+      "greeting": "Welcome to Neon Toes. Pedicure menu upstairs in your head. Gold on the tray.",
+      "tileX": 48,
+      "tileY": 9,
+      "w": 4,
+      "h": 3,
+      "world": {
+        "x": -14.0,
+        "z": 7.2,
+        "yaw": 0
+      },
+      "palette": [
+        "#ff69b4",
+        "#fff0f5",
+        "#2b1a24"
+      ],
+      "stock": [
+        {
+          "itemId": "nail_polish_rose",
+          "price": 18
+        },
+        {
+          "itemId": "nail_polish_french",
+          "price": 22
+        },
+        {
+          "itemId": "pedicure_oil",
+          "price": 28
+        },
+        {
+          "itemId": "toe_separator",
+          "price": 8
         }
       ]
     }

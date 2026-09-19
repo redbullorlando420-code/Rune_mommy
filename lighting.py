@@ -4,7 +4,9 @@ Patterns from Panda3D public docs (render attributes, light counts, fog, MSAA,
 anisotropic filtering) and common MIT/BSD game-perf practice.
 
 Quality via RUNE_MOMMY_QUALITY: low | med | high | ultra
-  ultra / high: shadows, more accent lights, MSAA, anisotropic filtering (NVIDIA-friendly PRC).
+FPS via RUNE_MOMMY_FPS: target FPS (default 60, minimum 60). Caps via vsync /
+  explicit frame pacing so med/high/ultra aim ≥60 on strong NVIDIA.
+  ultra: keep fancy graphics; rely on cull/LOD/AI throttle for budget.
 No Project Zomboid code.
 """
 from __future__ import annotations
@@ -17,6 +19,11 @@ CULL_TRAFFIC = 55.0
 # Soft fog so distant cubes melt into dusk instead of popping.
 FOG_NEAR = 28.0
 FOG_FAR = 95.0
+# LOD bands (near = full mesh/AI, mid = throttled AI, far = hide)
+LOD_PED_NEAR = 22.0
+LOD_PED_MID = 36.0
+LOD_TRAFFIC_NEAR = 28.0
+LOD_TRAFFIC_MID = 48.0
 
 
 def quality() -> str:
@@ -24,6 +31,16 @@ def quality() -> str:
     if q in ('low', 'med', 'medium', 'high', 'ultra'):
         return 'med' if q == 'medium' else q
     return 'high'
+
+
+def target_fps() -> int:
+    """Hard floor 60. RUNE_MOMMY_FPS raises the cap/target (e.g. 72, 120)."""
+    raw = (os.environ.get('RUNE_MOMMY_FPS') or '60').strip()
+    try:
+        fps = int(float(raw))
+    except Exception:
+        fps = 60
+    return max(60, fps)
 
 
 def apply_lighting(color, Vec3, Sky=None, DirectionalLight=None, AmbientLight=None, PointLight=None):
@@ -90,6 +107,8 @@ def apply_lighting(color, Vec3, Sky=None, DirectionalLight=None, AmbientLight=No
             ((36, 8, 6), (255, 210, 90)),      # Citrus Tower
             ((16, 5, -42), (80, 180, 255)),    # Waterfront
             ((62, 6, -18), (255, 220, 100)),   # Walmart
+            ((28, 6, 8), (0, 70, 190)),        # Best Buy
+            ((42, 5, -6), (255, 100, 30)),     # Tire shop
         ]
 
     lights = []
@@ -103,10 +122,19 @@ def apply_lighting(color, Vec3, Sky=None, DirectionalLight=None, AmbientLight=No
 
 
 def apply_perf(window=None, camera=None, color=None):
-    """Frame budget + fog + MSAA / anisotropic (NVIDIA-friendly PRC)."""
+    """Frame budget + fog + MSAA / anisotropic + FPS lock (≥60)."""
     q = quality()
+    fps = target_fps()
     try:
         from panda3d.core import loadPrcFileData
+        # Lock / target FPS — floor 60 so med/high don't sit at ~20
+        loadPrcFileData('', f'clock-mode limited')
+        loadPrcFileData('', f'clock-frame-rate {fps}')
+        # vsync helps cap; still set explicit limit so uncapped GPUs don't race
+        if q in ('high', 'ultra', 'med'):
+            loadPrcFileData('', 'sync-video true')
+        else:
+            loadPrcFileData('', 'sync-video false')
         if q == 'low':
             loadPrcFileData('', 'framebuffer-multisample 0')
             loadPrcFileData('', 'multisamples 0')
@@ -119,15 +147,12 @@ def apply_perf(window=None, camera=None, color=None):
             loadPrcFileData('', 'framebuffer-multisample 1')
             loadPrcFileData('', 'multisamples 4')
             loadPrcFileData('', 'texture-anisotropic-degree 8')
-            loadPrcFileData('', 'sync-video true')
-        else:  # ultra — push quality for strong PCs / NVIDIA
+        else:  # ultra — push quality for strong PCs / NVIDIA; LOD keeps 60
             loadPrcFileData('', 'framebuffer-multisample 1')
             loadPrcFileData('', 'multisamples 8')
             loadPrcFileData('', 'texture-anisotropic-degree 16')
-            loadPrcFileData('', 'sync-video true')
             loadPrcFileData('', 'texture-minfilter linear-mipmap-linear')
             loadPrcFileData('', 'texture-magfilter linear')
-            # Prefer compressed textures off so neon/albedo stay crisp
             loadPrcFileData('', 'compressed-textures 0')
     except Exception:
         pass
@@ -135,6 +160,11 @@ def apply_perf(window=None, camera=None, color=None):
     if window is not None:
         try:
             window.fps_counter.enabled = True
+        except Exception:
+            pass
+        try:
+            # Ursina / panda frame rate hint
+            window.entity.fps = fps
         except Exception:
             pass
 
@@ -160,17 +190,37 @@ def apply_perf(window=None, camera=None, color=None):
 
     cull_ped = CULL_PED
     cull_traffic = CULL_TRAFFIC
+    lod_ped_near, lod_ped_mid = LOD_PED_NEAR, LOD_PED_MID
+    lod_traffic_near, lod_traffic_mid = LOD_TRAFFIC_NEAR, LOD_TRAFFIC_MID
     if q == 'low':
-        cull_ped, cull_traffic = 32.0, 40.0
+        cull_ped, cull_traffic = 28.0, 36.0
+        lod_ped_near, lod_ped_mid = 14.0, 22.0
+        lod_traffic_near, lod_traffic_mid = 18.0, 28.0
     elif q == 'ultra':
+        # Keep long draw for ultra beauty, but mid LOD still throttles AI
         cull_ped, cull_traffic = 56.0, 72.0
+        lod_ped_near, lod_ped_mid = 26.0, 42.0
+        lod_traffic_near, lod_traffic_mid = 32.0, 56.0
     elif q == 'high':
         cull_ped, cull_traffic = 48.0, 64.0
+        lod_ped_near, lod_ped_mid = 22.0, 36.0
+        lod_traffic_near, lod_traffic_mid = 28.0, 48.0
+    elif q == 'med':
+        cull_ped, cull_traffic = 38.0, 50.0
+        lod_ped_near, lod_ped_mid = 18.0, 30.0
+        lod_traffic_near, lod_traffic_mid = 22.0, 40.0
 
     return {
         'quality': q,
+        'target_fps': fps,
         'cull_ped': cull_ped,
         'cull_traffic': cull_traffic,
+        'lod_ped_near': lod_ped_near,
+        'lod_ped_mid': lod_ped_mid,
+        'lod_traffic_near': lod_traffic_near,
+        'lod_traffic_mid': lod_traffic_mid,
+        # Far agents tick every N frames (approx); near every frame
+        'ai_far_interval': 3 if q != 'low' else 4,
     }
 
 
@@ -209,5 +259,48 @@ def set_visible(ent, on: bool):
         pass
 
 
+def set_lod(ent, level: str):
+    """level: 'near' | 'mid' | 'far' — hide detail children marked lod_detail on mid/far."""
+    if not ent:
+        return
+    show_detail = level == 'near'
+    show_mid = level in ('near', 'mid')
+    try:
+        if not show_mid:
+            set_visible(ent, False)
+            return
+        set_visible(ent, True)
+        for ch in list(getattr(ent, 'children', []) or []):
+            try:
+                tag = getattr(ch, 'lod_detail', None)
+                if tag == 'high':
+                    ch.visible = show_detail
+                elif tag == 'mid':
+                    ch.visible = show_mid
+                for gch in list(getattr(ch, 'children', []) or []):
+                    gtag = getattr(gch, 'lod_detail', None)
+                    if gtag == 'high':
+                        gch.visible = show_detail
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
 def should_sim(px, pz, x, z, radius: float) -> bool:
     return xz_dist(px, pz, x, z) <= radius
+
+
+def apply_fps_cap(app=None):
+    """Re-assert FPS after Ursina boot (some builds ignore PRC until window exists)."""
+    fps = target_fps()
+    try:
+        from panda3d.core import loadPrcFileData, ClockObject
+        loadPrcFileData('', 'clock-mode limited')
+        loadPrcFileData('', f'clock-frame-rate {fps}')
+        clock = ClockObject.getGlobalClock()
+        clock.setMode(ClockObject.MLimited)
+        clock.setFrameRate(float(fps))
+    except Exception:
+        pass
+    return fps

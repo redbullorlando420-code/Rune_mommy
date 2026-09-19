@@ -32,12 +32,13 @@ from loaders import (
 )
 from crowd import spawn_crowd, tick_crowd, spawn_heat_hunter
 from traffic import spawn_traffic, tick_traffic
-from lighting import apply_lighting, apply_perf, set_visible
+from lighting import apply_lighting, apply_perf, apply_fps_cap, set_visible, target_fps
 from models3d import (
     make_humanoid, make_car, make_house, make_shop_stall,
     make_billboard, make_street_sign, make_poi_building,
     set_world_textures,
     make_food_truck, make_walmart, densify_hwy50,
+    make_retail_box, make_tire_shop,
 )
 try:
     from models3d import attach_humanoid_parts
@@ -67,6 +68,7 @@ def _bicycle_step_safe(*args, **kwargs):
 import tokyo
 import radar
 import parking
+import adult_minigames
 
 _TEX_CACHE = {}
 
@@ -290,3 +292,20 @@ class Game:
         self.safe_yard_center = (80.0, 0.0, 80.0)
         self.clermont_spawn = (-18.0, 0.0, 12.0)
         self.talk_npcs = []
+        self.house_vols = []
+        self.sanctuary_door = None
+        self.michelle = None
+        self.building_count = 0
+        self.pois = []
+        self.quest_defs = list((self.quests_data or {}).get('quests') or [])
+        self.quest_active = []
+        self.quest_completed = set()
+        self.quest_progress = {}
+        self.hud_quest = None
+        self.hud_mode = None
+        self.tutorial_active = False
+        self.tutorial_step = 0
+        self.tutorial_overlay = None
+        self.tutorial_text = None
+        self.kill_quest_count = 0
+
