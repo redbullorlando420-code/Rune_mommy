@@ -1,140 +1,3 @@
-        # Free look always (locked OR unlocked OR right-mouse). Never soft-lock rotation.
-        sens = float(getattr(self, 'mouse_sens', 140) or 140)
-        player.rotation_y += mouse.velocity[0] * sens
-        self.cam_pivot.rotation_x -= mouse.velocity[1] * sens
-        self.cam_pivot.rotation_x = max(-35, min(40, self.cam_pivot.rotation_x))
-        # Q/E and arrows turn even if mouse is dead
-        if held_keys['q'] or held_keys['left arrow']:
-            player.rotation_y += 90 * dt
-        if held_keys['e'] and mode == 'safe':
-            # E is gate in safe — only turn with E if not near gate; use right arrow instead
-            pass
-        if held_keys['right arrow']:
-            player.rotation_y -= 90 * dt
-
-
-        wish_x = held_keys['d'] - held_keys['a']
-        wish_z = held_keys['w'] - held_keys['s']
-        # Arrow keys as backup movement
-        wish_x += held_keys['right arrow'] * 0  # right arrow is turn
-        wish_z += 0
-        if held_keys['up arrow']:
-            wish_z += 1
-        if held_keys['down arrow']:
-            wish_z -= 1
-        wish = Vec3(wish_x, 0, wish_z)
-        self._was_moving = bool(wish.length() > 0)
-        if wish.length() > 0:
-            wish = wish.normalized()
-            speed = 10.0 if mode == 'safe' else 8.5
-            move = (player.forward * wish.z + player.right * wish.x) * speed * dt
-            if mode == 'safe':
-                # Nuclear: no clip tests in the yard — just move and clamp.
-                player.position += move
-                cx, _cy, cz = getattr(self, 'safe_yard_center', (80.0, 0.0, 80.0))
-                player.x = max(cx - 12.0, min(cx + 12.0, player.x))
-                player.z = max(cz - 12.0, min(cz + 12.0, player.z))
-            else:
-                origin = player.world_position + Vec3(0, 0.9, 0)
-                ign = list(self.ignore)
-                hit = raycast(origin, move.normalized(), distance=0.55 + move.length(), ignore=ign, debug=False)
-                if not hit.hit:
-                    player.position += move
-                else:
-                    mx = Vec3(move.x, 0, 0)
-                    mz = Vec3(0, 0, move.z)
-                    if mx.length() > 1e-5:
-                        hx = raycast(origin, mx.normalized(), distance=0.55 + mx.length(), ignore=ign, debug=False)
-                        if not hx.hit:
-                            player.x += mx.x
-                    if mz.length() > 1e-5:
-                        hz = raycast(origin, mz.normalized(), distance=0.55 + mz.length(), ignore=ign, debug=False)
-                        if not hz.hit:
-                            player.z += mz.z
-                player.x = max(-60, min(78, player.x))
-                player.z = max(-58, min(30, player.z))
-
-        self.y_vel -= 32 * dt
-        player.y += self.y_vel * dt
-        if player.y <= 0:
-            player.y = 0
-            self.y_vel = 0
-            self.grounded = True
-        else:
-            self.grounded = False
-
-        if held_keys['space'] and self.grounded:
-            self.y_vel = 8.2
-            self.grounded = False
-
-        if not self.visual.enabled:
-            self.visual.enabled = True
-        if self.cam_in_car:
-            self._set_camera_follow(False)
-
-
-    def _drive(self, dt):
-        from ursina import held_keys, mouse, raycast, Vec3, Entity, destroy, color
-        from vendor.vehicle import bicycle_step
-        car = self.in_car
-        if getattr(mouse, 'locked', False):
-            # Clamp mouse look while driving (pitch only on cam_pivot)
-            car.cam_pivot.rotation_x -= mouse.velocity[1] * (float(getattr(self, "mouse_sens", 140) or 140) * 0.57)
-            car.cam_pivot.rotation_x = max(-20, min(25, car.cam_pivot.rotation_x))
-
-        dmg = float(getattr(car, 'damage', 0.0) or 0.0)
-        dmg_mul = max(0.15, 1.0 - 0.5 * (dmg / 100.0))
-        wear = float(getattr(car, 'tire_wear', 0.0) or 0.0)
-        wear_n = max(0.0, min(1.0, wear / 100.0))
-        steer_gain = 1.05 * (1.0 - 0.55 * wear_n)
-        coast_drag = 3.2 + 2.8 * wear_n
-        accel_drag = 0.55 + 0.9 * wear_n
-        base_vmax, base_accel = 24.0, 16.0
-        vmax = base_vmax * dmg_mul * (1.0 - 0.18 * wear_n)
-        accel_force = base_accel * dmg_mul * (1.0 - 0.12 * wear_n)
-        brake_force = 0.0
-        accel = 0.0
-
-        fuel = float(getattr(car, 'fuel', 100.0) or 0.0)
-        out_of_gas = fuel <= 0.0 or getattr(car, 'disabled', False)
-
-        if out_of_gas:
-            brake_force = 14.0
-            if not getattr(car, 'out_of_gas_toasted', False) and fuel <= 0.0 and not getattr(car, 'disabled', False):
-                car.out_of_gas_toasted = True
-                self.toast('Out of gas. Find a pump.')
-        else:
-            if held_keys['w']:
-                accel = accel_force
-            elif held_keys['s']:
-                if car.speed > 0.55:
-                    brake_force = 32.0
-                else:
-                    accel = -accel_force * 0.55
-            if held_keys['space']:
-                brake_force = max(brake_force, 52.0)
-
-        steer = float(held_keys['a'] - held_keys['d'])
-        nx, nz, nyaw, nspd = _bicycle_step_safe(
-            car.x, car.z, car.rotation_y, car.speed,
-            steer, accel, dt,
-            vmax=vmax, wheelbase=2.6, drag=2.4 + 1.5 * wear_n,
-            steer_gain=steer_gain, brake_force=brake_force,
-            coast_drag=coast_drag, accel_drag=accel_drag,
-        )
-        # Tire wear: speed / hard turns / off-road (lots & grass harsher than hwy asphalt)
-        try:
-            from crowd import is_on_road
-            on_hwy = is_on_road(nx, nz)
-        except Exception:
-            on_hwy = True
-        spd = abs(float(nspd))
-        hard = abs(steer) > 0.55 and spd > 6.0
-        rate = 0.35 * (spd / 24.0) ** 1.4
-        if hard:
-            rate += 1.1 * abs(steer) * (spd / 18.0)
-        if not on_hwy:
-            rate += 1.6 * (spd / 16.0)
         if brake_force >= 40 and spd > 8:
             rate += 0.8
         car.tire_wear = min(100.0, wear + rate * dt)
@@ -319,3 +182,144 @@
         if cur not in modes:
             cur = 'follow'
         i = modes.index(cur)
+        self.cam_mode = modes[(i + int(delta)) % len(modes)]
+        self._apply_camera_mode()
+        self.toast(self._camera_mode_label(self.cam_mode))
+        self._persist_cam_pref()
+
+    def _apply_camera_mode(self):
+        from ursina import Vec3, camera
+        mode = str(getattr(self, 'cam_mode', 'follow') or 'follow').lower()
+        in_car = bool(getattr(self, 'cam_in_car', False) and self.in_car)
+        if not in_car and mode == 'hood':
+            mode = 'follow'
+            self.cam_mode = mode
+        # tuple: y, z, pitch, x_off, fov
+        if in_car:
+            table = {
+                'follow': (2.4, -10.5, 14.0, 0.0, 80.0),
+                'near': (1.55, -4.2, 10.0, 0.55, 78.0),
+                'far': (5.2, -16.5, 26.0, 0.0, 82.0),
+                'hood': (1.05, 1.85, 8.0, 0.0, 75.0),
+            }
+            parent = self.in_car.cam_pivot
+        else:
+            table = {
+                'follow': (1.65, -8.8, 12.0, 0.0, 80.0),
+                'near': (1.35, -3.4, 8.0, 0.62, 78.0),
+                'far': (4.2, -15.0, 24.0, 0.0, 82.0),
+                'hood': (1.65, -8.8, 12.0, 0.0, 80.0),
+            }
+            parent = self.cam_pivot
+        y, z, pitch, x_off, fov = table.get(mode, table['follow'])
+        if parent is None:
+            return
+        camera.parent = parent
+        camera.position = Vec3(x_off, y, z)
+        camera.rotation = Vec3(pitch, 0, 0)
+        try:
+            camera.fov = fov
+        except Exception:
+            pass
+
+    def _cycle_outfit(self, delta=1):
+        """Adult feminine NPCs / Michelle / player: clothed -> underwear -> nude."""
+        from models3d._actors import cycle_humanoid_outfit
+        if getattr(self, 'mode', 'play') not in ('play', 'safe'):
+            return
+        if getattr(self, 'ui_open', False):
+            return
+        Entity = self.Entity
+        color = self.color
+        target = None
+        # Prefer Michelle if near, else nearest feminine adult NPC, else player visual
+        try:
+            px, pz = self.player.x, self.player.z
+        except Exception:
+            return
+        best_d = 3.2
+        m = getattr(self, 'michelle', None)
+        if m is not None:
+            try:
+                d = ((m.x - px) ** 2 + (m.z - pz) ** 2) ** 0.5
+                if d <= best_d:
+                    target, best_d = m, d
+            except Exception:
+                pass
+        for npc in list(getattr(self, 'npcs', []) or []):
+            if npc is None or npc is m:
+                continue
+            if not (getattr(npc, '_feminine_adult', False) or getattr(npc, 'feminine', False)
+                    or str(getattr(npc, '_base_style', '') or getattr(npc, 'humanoid_style', '') or '').startswith(('michelle', 'anime_f'))
+                    or getattr(npc, 'kind', '') in ('michelle', 'mira', 'lila', 'rosa', 'yara')):
+                continue
+            try:
+                d = ((npc.x - px) ** 2 + (npc.z - pz) ** 2) ** 0.5
+            except Exception:
+                continue
+            if d < best_d:
+                target, best_d = npc, d
+        if target is None:
+            target = getattr(self, 'visual', None)
+            if target is None:
+                return
+            # player undress allowed (adult)
+            try:
+                target._feminine_adult = True
+                if not getattr(target, '_base_style', None):
+                    target._base_style = 'player'
+            except Exception:
+                pass
+        try:
+            nxt = cycle_humanoid_outfit(Entity, color, target, delta=delta)
+        except Exception as exc:
+            print('  outfit cycle skip:', exc)
+            return
+        label = {'clothed': 'Outfit: Clothed', 'underwear': 'Outfit: Underwear', 'nude': 'Outfit: Nude'}.get(nxt, 'Outfit')
+        who = getattr(target, 'npc_name', None) or ('Michelle' if target is m else 'You')
+        # Never print a surname / deadname
+        if isinstance(who, str) and who.lower().startswith('lewis'):
+            who = 'Michelle'
+        self.toast('%s — %s' % (who, label))
+
+
+    def _wander_targets(self, dt):
+        from ursina import Vec3, raycast
+        for t in self.targets:
+            if getattr(t, 'kind', '') not in ('target', 'mob'):
+                continue
+            if not t or getattr(t, 'hp', 0) <= 0:
+                continue
+            t.wander_t += dt
+            if t.wander_t > 2.8:
+                t.heading = random.uniform(0, 360)
+                t.wander_t = 0
+            t.rotation_y = t.heading
+            step = t.forward * 1.15 * dt
+            t.position += step
+            t.y = 0
+            t.x = max(-40, min(40, t.x))
+            t.z = max(-40, min(8, t.z))
+
+    def _shoot(self):
+        from ursina import camera, raycast, Vec3, Entity, color, destroy, mouse
+        if not self.owned_pistol or not self.pistol_drawn:
+            return
+        if self.shoot_cd > 0:
+            return
+        if self.ammo <= 0:
+            self.toast('Empty. Buy ammo at Hancock Gun Hut.')
+            self.shoot_cd = 0.35
+            return
+        self.ammo -= 1
+        self.shoot_cd = 0.22
+        self.panic_t = max(self.panic_t, 4.5)
+        origin = camera.world_position
+        direction = camera.forward
+        ign = list(self.ignore)
+        if self.in_car:
+            ign += [self.in_car, self.in_car.body]
+        hit = raycast(origin, direction, distance=48, ignore=ign, debug=False)
+        end = hit.world_point if hit.hit else origin + direction * 48
+        mid = origin + (end - origin) * 0.5
+        length = max(0.2, (end - origin).length())
