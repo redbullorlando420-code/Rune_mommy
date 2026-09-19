@@ -1,197 +1,3 @@
-
-    def _leave_safe_to_world(self):
-        """Gate exit: jump into Clermont, enable systems."""
-        self._ensure_world_populated()
-        self.mode = 'play'
-        self.world_paused = False
-        self.intro_started = True
-        self.mouse_free = False
-        self._set_menu_visible(False)
-        self._hide_play_hud(False)
-        self._lock_mouse(True)
-        sx, sy, sz = self.clermont_spawn
-        if self.player:
-            self.player.position = (sx, 0, sz)
-            self.player.rotation_y = -90
-        # restore tutorial UI if still active
-        if self.tutorial_active:
-            try:
-                if self.tutorial_overlay:
-                    self.tutorial_overlay.enabled = True
-                if self.tutorial_text:
-                    self.tutorial_text.enabled = True
-                    self._refresh_tutorial_text()
-            except Exception:
-                pass
-        self._write_local_save()
-        flags = self._load_flags()
-        flags['intro_started'] = True
-        self._save_flags(flags)
-        # Reveal ALL named NPCs + crowd after safe-yard → play (cull / y bury / multipart hide).
-        try:
-            n_show = 0
-            for ped in list(getattr(self, 'peds', None) or []) + list(getattr(self, 'npcs', None) or []):
-                if not ped:
-                    continue
-                try:
-                    set_visible(ped, True)
-                    if getattr(ped, 'y', None) is not None and float(ped.y) < -0.05:
-                        ped.y = 0.0
-                    try:
-                        ped.enabled = True
-                    except Exception:
-                        pass
-                    n_show += 1
-                except Exception:
-                    pass
-            print('  reveal_npcs=%d (named+crowd) after yard→gate' % n_show)
-        except Exception as exc:
-            print('  reveal_npcs skip:', exc)
-        self.toast('Clermont. Michelle is at Sanctuary Drive — E to talk.')
-
-    def _save_path(self):
-        return ROOT / 'data' / 'local_save.json'
-
-    def _write_local_save(self):
-        flags = self._load_flags()
-        tutorial_done = bool(flags.get('tutorial_done')) or (not self.tutorial_active)
-        data = {
-            'gold': int(self.gold),
-            'hp': int(self.hp),
-            'breed': int(self.breed),
-            'preg': bool(self.preg),
-            'owned_pistol': bool(self.owned_pistol),
-            'pistol': bool(self.owned_pistol),
-            'ammo': int(self.ammo),
-            'pack': list(self.pack),
-            'tutorial_done': tutorial_done,
-            'intro_started': bool(self.intro_started),
-            'michelle_seen': bool(self.michelle_seen),
-            'mouse_sens': float(self.mouse_sens),
-            'cam_mode': str(getattr(self, 'cam_mode', 'follow') or 'follow'),
-        }
-        path = self._save_path()
-        try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
-        except Exception as exc:
-            print('  local_save failed:', exc)
-
-    def _load_local_save(self):
-        path = self._save_path()
-        if not path.exists():
-            # honor flags-only as a soft save marker? require local_save for Load
-            return None
-        try:
-            return json.loads(path.read_text(encoding='utf-8')) or {}
-        except Exception:
-            return None
-
-    def _apply_local_save(self, data):
-        if not data:
-            return
-        self.gold = int(data.get('gold', self.gold))
-        self.hp = int(data.get('hp', self.hp))
-        self.breed = int(data.get('breed', self.breed))
-        self.preg = bool(data.get('preg', self.preg))
-        self.owned_pistol = bool(data.get('pistol', data.get('owned_pistol', self.owned_pistol)))
-        self.ammo = int(data.get('ammo', self.ammo))
-        self.pack = list(data.get('pack') or [])
-        self.intro_started = bool(data.get('intro_started', False))
-        self.michelle_seen = bool(data.get('michelle_seen', False))
-        if 'mouse_sens' in data:
-            try:
-                self.mouse_sens = float(data['mouse_sens'])
-            except Exception:
-                pass
-        if 'cam_mode' in data:
-            try:
-                cm = str(data.get('cam_mode') or 'follow').strip().lower()
-                if cm in ('follow', 'near', 'far', 'hood'):
-                    self.cam_mode = cm
-            except Exception:
-                pass
-        if data.get('tutorial_done'):
-            self.tutorial_active = False
-            try:
-                if self.tutorial_overlay:
-                    self.tutorial_overlay.enabled = False
-                if self.tutorial_text:
-                    self.tutorial_text.enabled = False
-            except Exception:
-                pass
-            flags = self._load_flags()
-            flags['tutorial_done'] = True
-            self._save_flags(flags)
-        if self.preg:
-            try:
-                self._apply_preg_look()
-            except Exception:
-                pass
-
-    def _try_load_game(self):
-        data = self._load_local_save()
-        if not data:
-            self.toast('No save yet')
-            return
-        self._apply_local_save(data)
-        if data.get('intro_started'):
-            self.mode = 'play'
-            self.world_paused = False
-            self._set_menu_visible(False)
-            self._hide_play_hud(False)
-            self.mouse_free = False
-            self._lock_mouse(True)
-            sx, sy, sz = self.clermont_spawn
-            if self.player:
-                self.player.position = (sx, 0, sz)
-                self.player.rotation_y = -90
-            self.toast('Clermont. Michelle is at Sanctuary Drive — E to talk.')
-        else:
-            self._enter_safe_zone(from_load=True)
-
-    # ----- world ----------------------------------------------------------
-
-    def _build_ground(self):
-        Entity = self.Entity
-        color = self.color
-        grass = load_tex('grass')
-        asphalt = load_tex('asphalt')
-        Entity(
-            model='plane',
-            scale=(220, 1, 200),
-            color=color.rgb32(48, 90, 42) if grass else color.rgb32(32, 24, 36),
-            texture=grass or 'white_cube',
-            texture_scale=(70, 55),
-            collider=None,
-            y=0,
-        )
-        # Lot asphalt split N/S of Hwy 50 — unique Y, no stack under highway footprint.
-        lot_col = color.rgb32(36, 34, 38) if asphalt else color.rgb32(24, 18, 28)
-        lot_tex = asphalt or 'white_cube'
-        # North lot (stalls side): z center -5.5, depth ~9 → avoids hwy ~-20.75..-11.25
-        Entity(
-            model='cube',
-            scale=(78, 0.04, 10),
-            position=(2, 0.02, -5.5),
-            color=lot_col,
-            texture=lot_tex,
-            texture_scale=(8, 2),
-        )
-        # South lot (town side)
-        Entity(
-            model='cube',
-            scale=(78, 0.04, 22),
-            position=(2, 0.02, -32),
-            color=lot_col,
-            texture=lot_tex,
-            texture_scale=(8, 2),
-        )
-
-    def _build_highway(self):
-        Entity = self.Entity
-        color = self.color
-        # Hwy 50 east-west between the two stall rows — Y unique vs lot/paint/sidewalk
         asphalt = load_tex('asphalt')
         concrete = load_tex('concrete')
         Entity(
@@ -319,3 +125,136 @@
         make_billboard(Entity, color, Text, self._scene(), 28.0, -20.5, 'HANCOCK\nGUN HUT', face_yaw=0)
         self.building_count += 4
 
+    def _build_pois(self):
+        """Gas, motel, laundry, Starbucks-ish, pharmacy, park + Clermont landmarks."""
+        Entity = self.Entity
+        color = self.color
+        Text = self.Text
+        self.pois = []
+        specs = (
+            ('gas', 18.0, -8.0, 'rita'),
+            # Hwy 27 Fuel — US-27 near Club 27 / east
+            ('gas_hwy27', 38.0, -14.0, None),
+            ('motel', -8.0, 6.5, 'motel_clerk'),
+            ('laundromat', 8.0, 5.0, 'lot_attendant'),
+            ('starbucks', -20.0, -10.5, 'barista'),
+            ('pharmacy', 30.0, -28.0, 'pharmacist'),
+            ('park', -14.0, -28.0, 'amanda_friend'),
+            # Club 27 Cabaret — 215 US Hwy 27, Clermont FL 34714 (east/south of Hwy 50)
+            ('club27', 40.0, -20.0, 'club27_host'),
+            # Quiet Spa — Hwy 50 west of shake row
+            ('quiet_spa', -36.0, -16.0, 'quiet_spa_tech'),
+            # Citrus Tower — US-27 north of Hwy 50
+            ('citrus_tower', 36.0, 6.0, 'citrus_guide'),
+            # Waterfront Park / Lake Minneola — SE of downtown slice
+            ('waterfront', 16.0, -42.0, 'park_ranger'),
+            # roadside kitsch density (buildings only — no shared NPC overwrite)
+            ('showcase_citrus', 28.0, -6.0, None),
+            ('presidents_hall', 44.0, -8.0, None),
+        )
+        for kind, x, z, npc_id in specs:
+            try:
+                x, z, ok = footprints.place_or_nudge(self, x, z, w=6.0, d=5.0, label='poi_'+kind)
+                if not ok:
+                    print('  poi skip (footprint):', kind)
+                    continue
+            except Exception:
+                pass
+            parts, interact, label = make_poi_building(Entity, color, Text, self._scene(), kind, x, z)
+            self.building_count += 1
+            is_gas = kind in ('gas', 'gas_hwy27') or (label or '').lower().find('gas') >= 0 or (label or '').lower().find('fuel') >= 0
+            self.pois.append({
+                'id': kind,
+                'name': label,
+                'pos': (interact[0], 0, interact[2]),
+                'npc_id': npc_id,
+                'line': None,
+                'is_gas': is_gas,
+                'pump_r': 4.2 if is_gas else 3.4,
+            })
+
+    def _build_house(self):
+        """Suburban cubes at about (-32, 0, 12). Body, teal roof, garage, door, back lawn, Sanctuary Drive."""
+        Entity = self.Entity
+        color = self.color
+        Text = self.Text
+        teal = color.rgb32(46, 196, 182)
+        body_col = color.rgb32(232, 214, 188)
+        wood = color.rgb32(90, 55, 40)
+        hx, hz = -32.0, 12.0
+        self.house_vols = []
+        self.sanctuary_pos = (hx, 0.0, hz)
+        try:
+            footprints.get(self).register(hx, hz, 10.0, 8.0, 'michelle_house')
+        except Exception:
+            pass
+
+        # lot grass + darker back-lawn swamp strip (west) + driveway (east)
+        grass = load_tex('grass')
+        asphalt = load_tex('asphalt')
+        stucco = load_tex('stucco')
+        concrete = load_tex('concrete')
+        Entity(model='cube', scale=(16, 0.05, 14), position=(hx - 1.0, 0.025, hz),
+               color=color.rgb32(34, 88, 46), texture=grass, texture_scale=(8, 7))
+        Entity(model='cube', scale=(7.5, 0.06, 12), position=(hx - 7.2, 0.03, hz),
+               color=color.rgb32(16, 42, 28), texture=grass, texture_scale=(4, 6))
+        Entity(model='cube', scale=(6.2, 0.07, 5.6), position=(hx + 6.4, 0.035, hz),
+               color=color.rgb32(48, 44, 50), texture=asphalt or concrete, texture_scale=(3, 2.5))
+
+        # Walk-in body shell — east door gap (no solid front collider)
+        _stucco = stucco if stucco is not None and not isinstance(stucco, str) else None
+        hollow_shell(
+            Entity, color, hx, hz, 8.0, 6.4, 3.2, body_col,
+            door_gap=1.2, door_face='e',
+            floor_col=color.rgb32(140, 110, 80),
+            ceil_col=color.rgb32(232, 214, 188),
+            wall_tex=_stucco,
+        )
+        # A-frame roof: ridge above wall top (h=3.2 → ridge ~3.75), ±28 slopes
+        Entity(model='cube', scale=(8.6, 0.22, 3.6), position=(hx - 1.2, 3.63, hz), color=teal, rotation_z=-28)
+        Entity(model='cube', scale=(8.6, 0.22, 3.6), position=(hx + 1.2, 3.63, hz), color=teal, rotation_z=28)
+        Entity(model='cube', scale=(0.22, 0.14, 7.0), position=(hx, 3.83, hz), color=color.rgb32(245, 248, 252))
+        for wz in (-1.6, 1.6):
+            Entity(model='cube', scale=(0.08, 0.7, 0.7), position=(hx + 4.05, 1.7, hz + wz), color=color.rgb32(120, 200, 230))
+        Entity(model='cube', scale=(2.8, 0.14, 2.2), position=(hx + 5.2, 0.1, hz),
+               color=color.rgb32(170, 160, 140), texture=concrete, texture_scale=(2, 1.5))
+        Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz + 0.9), color=wood)
+        Entity(model='cube', scale=(0.14, 2.0, 0.14), position=(hx + 5.8, 1.05, hz - 0.9), color=wood)
+        Entity(model='cube', scale=(0.7, 0.5, 0.55), position=(hx - 4.3, 0.4, hz + 2.2), color=color.rgb32(70, 78, 90))
+        # garage south of body
+        Entity(model='cube', scale=(5.4, 2.5, 4.6), position=(hx + 0.2, 1.25, hz - 5.4),
+               color=color.rgb32(210, 196, 176), texture=stucco, texture_scale=(2, 1.4), collider='box')
+        Entity(model='cube', scale=(5.6, 0.28, 4.8), position=(hx + 0.2, 2.62, hz - 5.4), color=teal)
+        Entity(model='cube', scale=(3.4, 1.9, 0.12), position=(hx + 2.7, 1.0, hz - 5.4), color=color.rgb32(70, 78, 90))
+        door = Entity(model='cube', scale=(0.16, 2.15, 1.05), position=(hx + 4.08, 1.12, hz), color=wood)
+        self.sanctuary_door = door
+        Entity(model='cube', scale=(1.5, 0.16, 1.7), position=(hx + 4.9, 0.1, hz), color=color.rgb32(180, 180, 175))
+        self.building_count += 2
+
+        # guest bed + shower markers inside
+        Entity(model='cube', scale=(2.2, 0.42, 1.5), position=(hx + 1.8, 0.45, hz + 1.5), color=color.rgb32(220, 210, 200))
+        Entity(model='cube', scale=(1.35, 1.9, 1.35), position=(hx - 2.1, 1.05, hz + 1.7), color=color.rgb32(180, 220, 215))
+
+        door_xz = (hx + 4.1, hz)
+        guest_xz = (hx + 1.8, hz + 1.5)
+        garage_xz = (hx + 0.2, hz - 5.4)
+        shower_xz = (hx - 2.1, hz + 1.7)
+        lawn_xz = (hx - 7.2, hz)
+        self.house_rooms = {
+            'door': door_xz,
+            'guest': guest_xz,
+            'garage': garage_xz,
+            'shower': shower_xz,
+            'lawn': lawn_xz,
+        }
+
+        def vol(xz, sx, sz, col, node):
+            e = Entity(model='cube', scale=(sx, 0.06, sz), position=(xz[0], 0.12, xz[1]), color=col)
+            e.room_node = node
+            self.house_vols.append(e)
+            return e
+
+        vol(guest_xz, 3.0, 2.4, color.rgb32(70, 180, 170), 'guest')
+        vol(garage_xz, 3.6, 3.2, color.rgb32(70, 70, 78), 'garage')
+        vol(shower_xz, 2.2, 2.2, color.rgb32(90, 200, 210), 'shower')
+        vol(lawn_xz, 4.2, 5.0, color.rgb32(22, 58, 32), 'lawn')
