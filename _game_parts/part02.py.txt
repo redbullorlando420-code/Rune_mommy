@@ -1,110 +1,3 @@
-        self.mode = 'menu'  # menu | settings | safe | play
-        self.world_paused = True
-        self.intro_started = False
-        self.mouse_sens = 140.0
-        self.cam_mode = 'follow'  # follow | near | far | hood (car)
-        self.fullscreen_stub = False
-        self.menu_ents = []
-        self.menu_title = None
-        self.menu_lines = []
-        self.menu_backdrop = None
-        self.safe_gate = None
-        self.safe_yard_center = (80.0, 0.0, 80.0)
-        self.clermont_spawn = (-18.0, 0.0, 12.0)
-        self.talk_npcs = []
-        self.house_vols = []
-        self.sanctuary_door = None
-        self.michelle = None
-        self.building_count = 0
-        self.pois = []
-        self.quest_defs = list((self.quests_data or {}).get('quests') or [])
-        self.quest_active = []
-        self.quest_completed = set()
-        self.quest_progress = {}
-        self.hud_quest = None
-        self.hud_mode = None
-        self.tutorial_active = False
-        self.tutorial_step = 0
-        self.tutorial_overlay = None
-        self.tutorial_text = None
-        self.kill_quest_count = 0
-
-        self.player = None
-        self.cam_pivot = None
-        self.visual = None
-        self.gun_model = None
-        self.cars = []
-        self.npcs = []
-        self.peds = []
-        self.heat_hunters = []
-        self.drops = []
-        self.stalls = []
-        self.targets = []
-        self.ignore = []
-        self.shake_spawned = []
-        self.traffic_count = 0
-        self.parked_count = 0
-
-        self.panel_bg = None
-        self.panel_portrait = None
-        self.panel_name = None
-        self.panel_body = None
-        self.panel_choices = []
-        self.hud_gold = None
-        self.hud_hp = None
-        self.hud_heat = None
-        self.hud_ammo = None
-        self.hud_pack = None
-        self.hud_breed = None
-        self.hud_prompt = None
-        self.hud_toast = None
-        self.crosshair = None
-        self.cam_in_car = False
-
-        try:
-            mira_p = portrait_texture_path('mira')
-        except Exception:
-            mira_p = None
-        self.mira_portrait_path = mira_p  # optional; None if missing
-        self.mira_texture = None
-
-    def setup(self):
-        from ursina import DirectionalLight, AmbientLight, PointLight, destroy  # noqa: F401
-        color = self.color
-        Entity = self.Entity
-        Text = self.Text
-        camera = self.camera
-        window = self.window
-        mouse = self.mouse
-
-        window.color = color.rgb32(12, 6, 22)
-        window.exit_button.visible = True
-        try:
-            window.fps_counter.enabled = True
-        except Exception:
-            pass
-
-        self.render_opts = apply_perf(window=window, camera=camera, color=color)
-        try:
-            self.render_opts['target_fps'] = apply_fps_cap()
-        except Exception:
-            self.render_opts['target_fps'] = target_fps()
-        print('  render: quality=%s fps_target=%s' % (
-            self.render_opts.get('quality'), self.render_opts.get('target_fps')))
-        try:
-            footprints.boot(self)
-        except Exception as exc:
-            print('  footprints skip:', exc)
-        try:
-            if world_chunks is not None:
-                world_chunks.boot(self)
-        except Exception as exc:
-            print('  chunks skip:', exc)
-        try:
-            apply_lighting(
-                color, self.Vec3,
-                Sky=self.Sky,
-                DirectionalLight=DirectionalLight,
                 AmbientLight=AmbientLight,
                 PointLight=PointLight,
             )
@@ -319,3 +212,142 @@
             z=-0.1,
         )
         self.menu_ents.append(self.menu_title)
+        sub = Text(
+            text='Clermont - click a button or press 1 / 2 / 3',
+            position=(0, 0.22),
+            origin=(0, 0),
+            color=color.rgb32(140, 230, 255),
+            scale=0.9,
+            enabled=False,
+            z=-0.1,
+        )
+        self.menu_ents.append(sub)
+        self.menu_lines = []
+        # Keep text lines for settings mode reuse
+        for i in range(5):
+            tline = Text(
+                text='',
+                position=(0, 0.06 - i * 0.07),
+                origin=(0, 0),
+                color=color.rgb32(255, 230, 255),
+                scale=1.0,
+                enabled=False,
+                z=-0.1,
+            )
+            self.menu_lines.append(tline)
+            self.menu_ents.append(tline)
+        self.settings_lines = []
+        for i in range(5):
+            tline = Text(
+                text='',
+                position=(0, 0.08 - i * 0.07),
+                origin=(0, 0),
+                color=color.rgb32(255, 230, 255),
+                scale=1.0,
+                enabled=False,
+                z=-0.1,
+            )
+            self.settings_lines.append(tline)
+            self.menu_ents.append(tline)
+
+        def mk_btn(label, y, action):
+            # Empty Button text + child Text — avoids Ursina Button font-atlas garbage
+            # (white pixel blocks) when text_entity scale/parent fights the panel.
+            btn = Button(
+                text='',
+                scale=(0.55, 0.09),
+                position=(0, y),
+                color=color.rgba32(40, 10, 50, 220),
+                highlight_color=color.rgba32(255, 60, 180, 220),
+                pressed_color=color.rgba32(180, 40, 120, 240),
+                parent=camera.ui,
+                enabled=False,
+                z=1.5,
+            )
+            try:
+                btn.text_entity.text = ''
+                btn.text_entity.enabled = False
+            except Exception:
+                pass
+            # Text parented to UI (not button) with readable scale/color
+            lbl = Text(
+                text=label,
+                parent=camera.ui,
+                position=(0, y),
+                origin=(0, 0),
+                color=color.rgb32(255, 245, 255),
+                scale=1.35,
+                enabled=False,
+                z=1.4,
+            )
+            btn._label = lbl
+            btn.on_click = action
+            self.menu_buttons.append(btn)
+            self.menu_ents.append(btn)
+            self.menu_ents.append(lbl)
+            return btn
+
+        self.btn_start = mk_btn('1  Start', 0.06, lambda: self._enter_safe_zone(from_load=False))
+        self.btn_load = mk_btn('2  Load', -0.02, lambda: self._try_load_game())
+        self.btn_settings = mk_btn('3  Settings', -0.10, lambda: self._enter_settings())
+        hint = Text(
+            text='Esc quit',
+            position=(0, -0.22),
+            origin=(0, 0),
+            color=color.rgb32(160, 140, 180),
+            scale=0.85,
+            enabled=False,
+            z=-0.1,
+        )
+        self.menu_ents.append(hint)
+        self.menu_hint = hint
+
+
+    def _set_menu_visible(self, visible):
+        vis = bool(visible)
+        for e in getattr(self, 'menu_ents', []) or []:
+            try:
+                e.enabled = vis
+            except Exception:
+                pass
+        # Settings: hide Start/Load/Settings buttons + labels
+        if vis and getattr(self, 'mode', '') == 'settings':
+            for b in getattr(self, 'menu_buttons', []) or []:
+                try:
+                    b.enabled = False
+                    lab = getattr(b, '_label', None)
+                    if lab is not None:
+                        lab.enabled = False
+                except Exception:
+                    pass
+            if getattr(self, 'menu_hint', None):
+                try:
+                    self.menu_hint.enabled = False
+                except Exception:
+                    pass
+        elif vis:
+            for b in getattr(self, 'menu_buttons', []) or []:
+                try:
+                    b.enabled = True
+                    lab = getattr(b, '_label', None)
+                    if lab is not None:
+                        lab.enabled = True
+                except Exception:
+                    pass
+            if getattr(self, 'menu_hint', None):
+                try:
+                    self.menu_hint.enabled = True
+                except Exception:
+                    pass
+            # spare menu_lines are settings-only; hide on main menu
+            for line in getattr(self, 'menu_lines', []) or []:
+                try:
+                    line.enabled = False
+                except Exception:
+                    pass
+        else:
+            for b in getattr(self, 'menu_buttons', []) or []:
+                try:
+                    b.enabled = False
+                    lab = getattr(b, '_label', None)
+                    if lab is not None:
