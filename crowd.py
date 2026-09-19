@@ -317,6 +317,22 @@ def tick_crowd(game, dt):
             continue
         if getattr(npc, 'driving', False):
             continue
+        # Freeze while player is in dialogue with this NPC
+        if getattr(npc, 'talk_frozen', False) or npc is getattr(game, 'talk_target', None):
+            try:
+                hold = getattr(npc, '_talk_hold_pos', None)
+                if hold is not None:
+                    npc.x, npc.y, npc.z = hold[0], hold[1], hold[2]
+                # Face the player
+                dx = px - float(npc.x)
+                dz = pz - float(npc.z)
+                if abs(dx) + abs(dz) > 0.05:
+                    npc.heading = _atan_yaw(dx, dz)
+                    npc.rotation_y = npc.heading
+                npc.y = 0
+            except Exception:
+                pass
+            continue
         role = getattr(npc, 'role', 'civilian')
         kind = getattr(npc, 'kind', '')
         dx = npc.x - px
