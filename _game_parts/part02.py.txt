@@ -1,3 +1,45 @@
+        self.gold = 200
+        self.hp = 100
+        self.max_hp = 100
+        self.heat = 0.0
+        self.breed = 0
+        self.preg = False
+        self.michelle_seen = False
+        self.house_rooms = {}
+        self.pack = []
+        self.owned_pistol = False
+        self.ammo = 0
+        self.pistol_drawn = False
+        self.shoot_cd = 0.0
+        self.y_vel = 0.0
+        self.grounded = True
+        self.in_car = None
+        self.ui_open = False
+        self.mouse_free = False
+        self.debug_on = True
+        self.debug_hud = None
+        self._dbg_t = 0.0
+        self._dbg_last_key = '-'
+        self._dbg_moved = False
+        self._dbg_wish = False
+        self._dbg_stuck_t = 0.0
+        self.ui_choices = []
+        self.toast_timer = 0.0
+        self.prompt = ''
+        self.panic_t = 0.0
+        self.heat_spawn_cd = 0.0
+        self.michelle_auto_opened = False
+        self.michelle_node = 'door'
+        self.michelle_open_idx = 0
+        self.mode = 'menu'  # menu | settings | safe | play
+        self.world_paused = True
+        self.intro_started = False
+        self.mouse_sens = 140.0
+        self.cam_mode = 'follow'  # follow | near | far | hood (car)
+        self.fullscreen_stub = False
+        self.menu_ents = []
+        self.menu_title = None
+        self.menu_lines = []
         self.menu_backdrop = None
         self.safe_gate = None
         self.safe_yard_center = (80.0, 0.0, 80.0)
@@ -116,19 +158,29 @@
         set_world_textures(tex_map)
         self.world_textures = tex_map
 
-        self._build_ground()
-        self._build_highway()
-        self._build_skyline()
-        self._build_town_slice()
-        self._build_pois()
-        self._build_house()
-        self._build_stalls()
-        self._build_npcs()
-        self._build_cars()
-        self._build_targets()
-        self._build_crowd()
-        self._build_traffic()
-        self._build_deferred_content()
+        # PERF: title menu must stay light. Build ONLY safe yard + player + HUD + menu.
+        # Full Clermont / crowd / traffic / Tokyo / densify / wildlife wait until gate.
+        self._world_populated = False
+        self.peds = []
+        self.cars = getattr(self, 'cars', None) or []
+        self.npcs = getattr(self, 'npcs', None) or []
+        self.building_count = int(getattr(self, 'building_count', 0) or 0)
+
+        # Texture sanity — blocky walls usually mean None textures
+        loaded = [k for k, v in tex_map.items() if v]
+        missing = [k for k, v in tex_map.items() if not v]
+        print('  textures loaded=%s missing=%s' % (loaded, missing or 'none'))
+        try:
+            from assets.generate_textures import ensure_all as _ensure_tex2
+            _ensure_tex2()
+            # reload any that were missing
+            for k in list(missing):
+                tex_map[k] = load_tex(k)
+            set_world_textures(tex_map)
+            self.world_textures = tex_map
+        except Exception as _tx:
+            print('  textures re-ensure skip:', _tx)
+
         self._build_safe_yard()
         self._build_player()
         self._build_hud()
@@ -141,17 +193,10 @@
         self._init_tutorial()
         self._rebuild_ignore()
 
-        tut = 'on' if self.tutorial_active else 'off'
-        print('  buildings=%d quests=%d tutorial=%s' % (
-            self.building_count, len(self.quest_defs), tut))
-        named_n = sum(
-            1 for n in (self.npcs or [])
-            if n and getattr(n, 'kind', '') in (
-                'mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara'
-            )
-        )
-        crowd_n = len(getattr(self, 'peds', None) or [])
-        print('named_npcs=%d crowd=%d' % (named_n, crowd_n))
+        print('  boot: SLIM (menu/safe only) — world deferred until pink gate')
+        print('  buildings=%d quests=%d (world pending)' % (
+            self.building_count, len(self.quest_defs)))
+        print('named_npcs=0 crowd=0 (deferred)')
         self._show_menu()
 
 
@@ -269,43 +314,3 @@
         )
         make_street_sign(Entity, color, Text, self._scene(), gate_x - 0.8, gate_z, 'LEAVE ->')
 
-    def _build_menu(self):
-        from ursina import Button, color as u_color
-        Entity = self.Entity
-        Text = self.Text
-        color = self.color
-        camera = self.camera
-        self.menu_ents = []
-        self.menu_buttons = []
-        self.menu_backdrop = Entity(
-            parent=camera.ui,
-            model='quad',
-            color=color.rgba32(6, 2, 14, 230),
-            scale=(2.2, 1.4),
-            position=(0, 0),
-            z=2,
-            enabled=False,
-        )
-        self.menu_ents.append(self.menu_backdrop)
-        neon = Entity(
-            parent=camera.ui,
-            model='quad',
-            color=color.rgba32(255, 40, 180, 50),
-            scale=(1.1, 0.02),
-            position=(0, 0.22),
-            z=1.9,
-            enabled=False,
-        )
-        self.menu_ents.append(neon)
-        self.menu_title = Text(
-            text='RUNE MOMMY',
-            position=(0, 0.30),
-            origin=(0, 0),
-            color=color.rgb32(255, 90, 210),
-            scale=2.0,
-            enabled=False,
-            z=-0.1,
-        )
-        self.menu_ents.append(self.menu_title)
-        sub = Text(
-            text='Clermont  ·  click a button or press 1 / 2 / 3',
