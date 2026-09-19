@@ -252,6 +252,29 @@ def tick(game, dt: float):
     for ent in list(getattr(game, 'life_sim_named', []) or []) + list(getattr(game, 'life_sim_crowd', []) or []):
         if not ent or getattr(ent, 'hp', 1) <= 0:
             continue
+        # Hold still + face player while dialogue panel is open on this NPC
+        if getattr(ent, 'talk_frozen', False) or ent is getattr(game, 'talk_target', None):
+            try:
+                hold = getattr(ent, '_talk_hold_pos', None)
+                if hold is not None:
+                    ent.x, ent.y, ent.z = float(hold[0]), float(hold[1]), float(hold[2])
+                else:
+                    ent._talk_hold_pos = (float(ent.x), float(getattr(ent, 'y', 0) or 0), float(ent.z))
+                if player is not None:
+                    dx = px - float(ent.x)
+                    dz = pz - float(ent.z)
+                    if abs(dx) + abs(dz) > 0.05:
+                        import math as _m
+                        yaw = _m.degrees(_m.atan2(dx, dz))
+                        ent.rotation_y = yaw
+                        try:
+                            ent.heading = yaw
+                        except Exception:
+                            pass
+                ent.y = 0.0
+            except Exception:
+                pass
+            continue
         sched = getattr(ent, 'life_schedule', None)
         if not sched:
             continue
