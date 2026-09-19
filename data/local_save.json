@@ -1,0 +1,14 @@
+{
+  "gold": 200,
+  "hp": 100,
+  "breed": 0,
+  "preg": false,
+  "owned_pistol": false,
+  "pistol": false,
+  "ammo": 0,
+  "pack": [],
+  "tutorial_done": true,
+  "intro_started": true,
+  "michelle_seen": false,
+  "mouse_sens": 140.0
+}

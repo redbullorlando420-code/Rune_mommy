@@ -15,7 +15,7 @@ def _pitched_roof(Entity, color, x, y, z, w, d, roof_col, pitch=0.35):
 
 def make_house(Entity, color, Text, scene_parent, x, z, *, w=3.6, h=2.8, d=3.2, body_col=None,
                roof_col=None, label=None, porch=True, garage=False, rng=None):
-    """Multi-part house: base, pitched roof, windows, door recess, porch, AC."""
+    """Multi-part Florida house with a deterministic, varied massing style."""
     rng = rng or random.Random(int(abs(x * 10 + z)))
     body_col = body_col or _rgb(color, rng.randint(180, 235), rng.randint(160, 210), rng.randint(150, 200))
     roof_col = roof_col or _rgb(color, rng.randint(40, 90), rng.randint(100, 180), rng.randint(120, 190))
@@ -26,7 +26,32 @@ def make_house(Entity, color, Text, scene_parent, x, z, *, w=3.6, h=2.8, d=3.2, 
     Entity(model='cube', scale=(w, h, d), position=(x, h / 2, z), color=body_col,
            texture=wall_tex, texture_scale=(2.2, 1.6), collider='box')
     n += 1
-    # pitched roof
+    # Varied real-home silhouette: an entry gable, side wing, or ranch bump-out
+    # breaks the old uniform rectangular-box read without adding random overlap.
+    style = int(abs(x * 17 + z * 31)) % 3
+    if style == 0:
+        Entity(model='cube', scale=(w * 0.34, h * 0.70, d * 0.44),
+               position=(x - w * 0.42, h * 0.35, z - d * 0.18), color=body_col,
+               texture=wall_tex, texture_scale=(1.2, 1.0), collider='box')
+        _pitched_roof(Entity, color, x - w * 0.42, h * 0.74, z - d * 0.18,
+                      w * 0.40, d * 0.50, roof_col, pitch=0.46)
+        n += 4
+    elif style == 1:
+        Entity(model='cube', scale=(w * 0.48, h * 0.56, d * 0.52),
+               position=(x + w * 0.43, h * 0.28, z + d * 0.12), color=body_col.tint(-0.04) if hasattr(body_col, 'tint') else body_col,
+               texture=wall_tex, texture_scale=(1.1, 1.0), collider='box')
+        _pitched_roof(Entity, color, x + w * 0.43, h * 0.61, z + d * 0.12,
+                      w * 0.54, d * 0.58, roof_col, pitch=0.28)
+        n += 4
+    else:
+        # Covered front gable gives the simple ranch profile a proper entry.
+        Entity(model='cube', scale=(w * 0.44, h * 0.48, d * 0.26),
+               position=(x, h * 0.24, z - d * 0.57), color=body_col,
+               texture=wall_tex, texture_scale=(1.0, 1.0))
+        _pitched_roof(Entity, color, x, h * 0.58, z - d * 0.57,
+                      w * 0.50, d * 0.34, roof_col, pitch=0.52)
+        n += 4
+    # Primary pitched roof
     _pitched_roof(Entity, color, x, h + 0.15, z, w + 0.4, d + 0.2, roof_col)
     n += 3
     # windows (front)
@@ -47,7 +72,10 @@ def make_house(Entity, color, Text, scene_parent, x, z, *, w=3.6, h=2.8, d=3.2, 
         n += 4
     # AC unit
     Entity(model='cube', scale=(0.55, 0.45, 0.45), position=(x + w / 2 + 0.35, 0.35, z + 0.4), color=_rgb(color, 70, 78, 90))
-    n += 1
+    # Chimney + small planter add familiar residential detail from a distance.
+    Entity(model='cube', scale=(0.26, h * 0.52, 0.30), position=(x - w * 0.30, h + 0.35, z + d * 0.22), color=_rgb(color, 108, 74, 60), texture=_t('brick'))
+    Entity(model='cube', scale=(0.52, 0.20, 0.52), position=(x - w * 0.37, 0.10, z - d * 0.64), color=_rgb(color, 86, 115, 70))
+    n += 3
     if garage:
         Entity(model='cube', scale=(w * 0.7, h * 0.75, d * 0.7), position=(x + w * 0.55, h * 0.38, z + 0.2),
                color=body_col.tint(-0.08) if hasattr(body_col, 'tint') else body_col,

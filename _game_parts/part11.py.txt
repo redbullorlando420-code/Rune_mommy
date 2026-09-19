@@ -224,6 +224,27 @@
         self.hp = min(self.max_hp, self.hp + 28)
         self.toast(f'{name}  +28 HP')
 
+    def open_inventory(self):
+        """Compact inventory management without a second always-on UI tree."""
+        if not self.pack:
+            self.open_panel('PACK', 'Empty pack. Buy food at a shake shop or pick up drops.', [('Close.', self.close_panel)])
+            return
+        counts = {}
+        for name in self.pack:
+            counts[name] = counts.get(name, 0) + 1
+        body = '\n'.join(f'{name}  x{count}' for name, count in list(counts.items())[:8])
+        choices = []
+        for name in list(counts)[:3]:
+            def use(item=name):
+                if item in self.pack:
+                    self.pack.remove(item)
+                    self.hp = min(self.max_hp, self.hp + 28)
+                    self.toast(f'{item} used. +28 HP')
+                self.open_inventory()
+            choices.append((f'Use {name}', use))
+        choices.append(('Close pack.', self.close_panel))
+        self.open_panel('PACK  ·  I', body, choices)
+
     def _apply_preg_look(self):
         m = self.michelle
         if not m:

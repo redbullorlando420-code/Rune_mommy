@@ -8,6 +8,7 @@ import zlib
 ROOT = Path(__file__).resolve().parent
 DEST = ROOT / "textures"
 NAMES = ("grass", "asphalt", "concrete", "brick", "stucco", "water")
+FALLBACK_SIZE = 512
 
 
 def _hash(x: int, y: int, s: int = 0) -> int:
@@ -20,8 +21,11 @@ def _pixel(name: str, x: int, y: int) -> tuple[int, int, int]:
     if name == "grass":
         return (34 + _hash(x, y, 1) % 40, 90 + _hash(x, y, 2) % 50, 28 + _hash(x, y, 3) % 30)
     if name == "asphalt":
-        v = 40 + _hash(x, y, 4) % 25
-        return (v, v, min(255, v + _hash(x, y, 5) % 8))
+        # Blue-grey aggregate, tire-worn bands and occasional pale flecks make
+        # the road readable under dusk lighting instead of a flat black slab.
+        v = 54 + _hash(x, y, 4) % 28
+        wear = 10 if ((x // 31 + y // 97) % 17 == 0) else 0
+        return (min(255, v + wear), min(255, v + wear), min(255, v + 7 + _hash(x, y, 5) % 9))
     if name == "concrete":
         v = 150 + _hash(x, y, 6) % 40
         return (v, v, max(0, v - 5))
@@ -63,9 +67,18 @@ def ensure_all() -> list[str]:
     for name in NAMES:
         jpg = DEST / f"{name}.jpg"
         png = DEST / f"{name}.png"
-        if jpg.exists() or png.exists():
+        if jpg.exists():
             continue
-        png.write_bytes(_png(64, 64, name))
+        # Replace old 64px procedural fallbacks with the sharper local set.
+        # Real project JPGs, if supplied later, always take precedence.
+        if png.exists():
+            try:
+                width, height = struct.unpack('>II', png.read_bytes()[16:24])
+                if width >= FALLBACK_SIZE and height >= FALLBACK_SIZE:
+                    continue
+            except Exception:
+                pass
+        png.write_bytes(_png(FALLBACK_SIZE, FALLBACK_SIZE, name))
         written.append(png.name)
     return written
 

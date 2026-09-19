@@ -153,7 +153,7 @@
         from ursina import held_keys
         # step 0: any WASD movement
         if self.tutorial_step == 0:
-            if any(held_keys[k] for k in ('w', 'a', 's', 'd')):
+            if any(self._movement_down(held_keys, k) for k in ('w', 'a', 's', 'd')):
                 self.tutorial_step = 1
                 self._refresh_tutorial_text()
         elif self.tutorial_step == 2:
@@ -232,7 +232,7 @@ def run():
     TEST_T0 = pytime.time()
 
     print('Rune Mommy   -   Clermont / Hwy 50')
-    print('  >>> CLICK THE GAME WINDOW once, then WASD to move <<<')
+    print('  >>> Choose Start (or press 1), then WASD to move <<<')
     print('  WASD walk   mouse look   Space jump')
     print('  If a pink talk panel is open: press Esc, then WASD')
     print('  E enter/exit car, talk, buy')

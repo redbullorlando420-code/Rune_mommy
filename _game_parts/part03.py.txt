@@ -1,5 +1,6 @@
         for i in range(5):
             tline = Text(
+                parent=camera.ui,
                 text='',
                 position=(0, 0.08 - i * 0.07),
                 origin=(0, 0),
@@ -37,6 +38,7 @@
         self.btn_load = mk_btn('2   Load', -0.02, lambda: self._try_load_game())
         self.btn_settings = mk_btn('3   Settings', -0.10, lambda: self._enter_settings())
         hint = Text(
+            parent=camera.ui,
             text='Esc quit',
             position=(0, -0.22),
             origin=(0, 0),
@@ -100,7 +102,8 @@
                 'SETTINGS',
                 f'1  Mouse sensitivity  {sens}',
                 f'2  Fullscreen (stub)  {fs}',
-                '3  Back',
+                f"3  Render range  {getattr(self, 'render_range', 'full').upper()}",
+                '4  Back',
                 'Esc back',
             ]
             for i, t in enumerate(self.settings_lines):
@@ -125,6 +128,13 @@
             self.hud_pack, self.hud_breed, self.hud_quest, self.hud_mode,
             self.hud_prompt, self.crosshair,
         ]
+        bits.extend(getattr(self, 'hud_static', []) or [])
+        if getattr(self, 'hud_frame', None):
+            bits.append(self.hud_frame)
+        bits.extend([
+            getattr(self, 'hud_hp_bar_bg', None), getattr(self, 'hud_hp_bar', None),
+            getattr(self, 'hud_heat_bar_bg', None), getattr(self, 'hud_heat_bar', None),
+        ])
         for b in bits:
             if b is None:
                 continue
@@ -146,6 +156,7 @@
         self.mode = 'menu'
         self.world_paused = True
         self.ui_open = False
+        self.move_keys.clear()
         self.mouse_free = True
         self._lock_mouse(False)
         try:
@@ -165,6 +176,7 @@
     def _enter_settings(self):
         self.mode = 'settings'
         self.world_paused = True
+        self.move_keys.clear()
         self.mouse_free = True
         self._lock_mouse(False)
         self._set_menu_visible(True)
@@ -172,55 +184,30 @@
         self._refresh_menu_labels()
 
     def _enter_safe_zone(self, from_load=False):
-        from ursina import invoke
         self.mode = 'safe'
         self.world_paused = True
         self.ui_open = False
-        self.mouse_free = True
+        # Match conventional third-person controls: Start owns mouse-look and
+        # walking immediately. Tab releases it; neither mode affects WASD.
+        self.mouse_free = False
+        self.move_keys.clear()
         self._set_menu_visible(False)
         self._hide_play_hud(False)
-        self._lock_mouse(False)
-        try:
-            self.mouse.visible = True
-            self.mouse.locked = False
-        except Exception:
-            pass
+        self._lock_mouse(True)
+        self.mouse_look_cooldown = 2
         cx, cy, cz = self.safe_yard_center
         if self.player:
-            # Spawn high and drop so we never clip into floor/props.
-            self.player.position = (cx, 6.0, cz)
+            # Safe yard has a flat, collider-free floor; ground immediately
+            # rather than leaving the player visibly suspended during startup.
+            self.player.position = (cx, 0, cz)
             self.player.rotation_y = 180
             self.y_vel = 0.0
-            self.grounded = False
-        msg = 'SAFE YARD — WASD / arrows move, Q/E turn, mouse look. Esc = menu. E at pink gate = Clermont.'
+            self.grounded = True
+        msg = 'SAFE YARD — WASD / arrows walk. Mouse look active. Tab frees cursor. Esc = menu. E at pink gate = Clermont.'
         if from_load:
             msg = 'Loaded. ' + msg
         self.toast(msg)
         print('[Rune Mommy]', msg)
-        # Refocus after UI button steals keyboard on Windows.
-        def _refocus():
-            try:
-                from ursina import application
-                win = application.base.win
-                props = win.get_properties() if hasattr(win, 'get_properties') else None
-                from panda3d.core import WindowProperties
-                wp = WindowProperties()
-                wp.setForeground(True)
-                win.request_properties(wp)
-            except Exception as exc:
-                print('[Rune Mommy] refocus skip:', exc)
-            try:
-                self.mouse.visible = True
-                self.mouse.locked = False
-            except Exception:
-                pass
-        try:
-            invoke(_refocus, delay=0.05)
-            invoke(_refocus, delay=0.25)
-        except Exception:
-            _refocus()
-
-
     def _leave_safe_to_world(self):
         """Gate exit: jump into Clermont, enable systems."""
         self.mode = 'play'
@@ -230,6 +217,7 @@
         self._set_menu_visible(False)
         self._hide_play_hud(False)
         self._lock_mouse(True)
+        self.mouse_look_cooldown = 2
         sx, sy, sz = self.clermont_spawn
         if self.player:
             self.player.position = (sx, 0, sz)

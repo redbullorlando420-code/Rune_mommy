@@ -8,11 +8,23 @@ def make_poi_building(Entity, color, Text, scene_parent, kind, x, z):
     label = kind
     interact = (x, 0, z - 2.2)
     label_y = 3.5
-    if kind in ('gas', 'gas_hwy27'):
+    if kind.startswith('gas'):
         if kind == 'gas_hwy27':
             label = 'Hwy 27 Fuel'
             canopy = _rgb(color, 40, 140, 90)
             pump_col = _rgb(color, 40, 90, 180)
+        elif kind == 'gas_westgate':
+            label = 'Westgate Fuel & Market'
+            canopy = _rgb(color, 55, 115, 185)
+            pump_col = _rgb(color, 245, 165, 45)
+        elif kind == 'gas_lakeside':
+            label = 'Lakeside Charge & Fuel'
+            canopy = _rgb(color, 40, 165, 145)
+            pump_col = _rgb(color, 90, 210, 230)
+        elif kind == 'gas_north':
+            label = 'North Loop Fuel'
+            canopy = _rgb(color, 190, 70, 100)
+            pump_col = _rgb(color, 240, 210, 70)
         else:
             label = 'Hancock Gas'
             canopy = _rgb(color, 220, 180, 40)

@@ -13,18 +13,18 @@ py -3 game.py
 
 If `py` is missing, use `python` instead of `py -3`.
 
-A window titled **Rune Mommy** opens. **Click the window once**, then use WASD. Esc closes talk panels.
+A window titled **Rune Mommy** opens at the title menu. Choose **Start** (or press `1`); you arrive grounded in the safe yard with WASD and mouse-look active immediately. Press `Tab` to release or recapture the cursor. Esc closes talk panels or returns to the title from the safe yard.
 
 ## Controls
 
-- **WASD** walk (click the window first so it captures the mouse)
+- **WASD** walk (available immediately after Start and after returning from Settings)
 - **Mouse** look
 - **Space** jump
 - **E** enter/exit car, talk, buy, refuel at a pump
 - **1** draw / holster pistol (buy from Gage at Hancock Gun Hut)
 - **LMB** shoot
 - **H** drink a shake (heals)
-- **Tab** free the cursor
+- **Tab** release or recapture mouse-look; walking remains available either way
 - **Esc** close talk panel, or quit
 - **1–4** pick dialogue choices
 

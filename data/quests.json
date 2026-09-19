@@ -155,6 +155,34 @@
       "requires": [
         "tutorial_walk"
       ]
+    },
+    {
+      "id": "raceway_patrol",
+      "name": "Citrus Run Patrol",
+      "desc": "Clear four road thugs around the Citrus Run Raceway south-east loop.",
+      "type": "kill",
+      "kinds": [
+        "road_thug",
+        "thug"
+      ],
+      "count": 4,
+      "reward_gold": 55,
+      "hud": "Citrus Run: clear road thugs ({progress}/4)",
+      "requires": [
+        "lot_cleanup"
+      ]
+    },
+    {
+      "id": "orlando_gate",
+      "name": "First Exit",
+      "desc": "Reach the Orlando Preview gate from the Hwy 50 regional spine.",
+      "type": "visit",
+      "poi": "orlando_gate",
+      "reward_gold": 35,
+      "hud": "Reach the Orlando gate",
+      "requires": [
+        "tutorial_walk"
+      ]
     }
   ]
 }

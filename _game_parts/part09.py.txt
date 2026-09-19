@@ -70,11 +70,41 @@
 
     # ----- input ----------------------------------------------------------
 
+    def _record_movement_key(self, key):
+        """Mirror key transitions independent of Ursina's GUI focus state."""
+        released = key.endswith(' up')
+        base = key[:-3] if released else key
+        if base not in ('w', 'a', 's', 'd', 'up arrow', 'down arrow'):
+            return
+        keys = getattr(self, 'move_keys', None)
+        if keys is None:
+            keys = self.move_keys = set()
+        if released:
+            keys.discard(base)
+        else:
+            keys.add(base)
+
+    def _movement_down(self, held_keys, key):
+        """Use direct input when a menu click left held_keys stale."""
+        try:
+            if held_keys[key]:
+                return True
+        except Exception:
+            pass
+        return key in getattr(self, 'move_keys', set())
+
     def on_input(self, key):
         from ursina import application, mouse
         mode = getattr(self, 'mode', 'play')
+        self._record_movement_key(key)
 
         if mode in ('menu', 'settings'):
+            # Button focus must never carry a relative-mouse lock into a menu
+            # or settings page. This also makes Settings -> Back -> Start safe.
+            if key == 'left mouse down':
+                self.move_keys.clear()
+                self.mouse_free = True
+                self._lock_mouse(False)
             if key == 'escape':
                 if mode == 'settings':
                     self._show_menu()
@@ -114,6 +144,18 @@
                 self.toast('Fullscreen stub ' + ('ON' if self.fullscreen_stub else 'OFF'))
                 return
             if key == '3':
+                compact = getattr(self, 'render_range', 'full') == 'full'
+                self.render_range = 'compact' if compact else 'full'
+                opts = getattr(self, 'render_opts', None) or {}
+                base_ped = 42.0 if opts.get('quality') != 'low' else 32.0
+                base_traffic = 55.0 if opts.get('quality') != 'low' else 40.0
+                opts['cull_ped'] = base_ped * (0.70 if compact else 1.0)
+                opts['cull_traffic'] = base_traffic * (0.70 if compact else 1.0)
+                self.render_opts = opts
+                self._refresh_menu_labels()
+                self.toast('Compact render range ' + ('ON' if compact else 'OFF'))
+                return
+            if key == '4':
                 self._show_menu()
                 return
             return
@@ -140,23 +182,32 @@
             if key in ('1', '2', '3', '4'):
                 self._pick_choice(int(key) - 1)
             return
+        if key in ('i', 'I'):
+            self.open_inventory()
+            return
         if key == 'e':
             if mode == 'safe':
+                if self.in_car:
+                    self._exit_car()
+                    return
                 self._try_safe_gate()
                 return
             self._interact()
             return
         if mode != 'play':
-            # safe: allow mouse lock / tab only
+            # Safe yard: movement remains active with or without mouse look.
             if key == 'left mouse down':
                 if not getattr(self.mouse, 'locked', False):
                     self._lock_mouse(True)
                     self.mouse_free = False
+                    self.mouse_look_cooldown = 2
                     self.toast('Mouse locked. WASD walk. E at pink gate.')
                 return
             if key == 'tab':
+                self.move_keys.clear()
                 self.mouse_free = not getattr(self, 'mouse_free', False)
                 self._lock_mouse(not self.mouse_free)
+                self.mouse_look_cooldown = 2
                 self.toast('Cursor free (Tab to recapture)' if self.mouse_free else 'Mouse locked. WASD to walk.')
             return
         if key == '1':
@@ -170,6 +221,7 @@
             if not self.ui_open and not getattr(self.mouse, 'locked', False):
                 self._lock_mouse(True)
                 self.mouse_free = False
+                self.mouse_look_cooldown = 2
                 self.toast('Mouse locked. WASD walk. E talk. Tab frees cursor.')
                 return
             if self.pistol_drawn:
@@ -178,6 +230,7 @@
         if key == 'tab':
             self.mouse_free = not getattr(self, 'mouse_free', False)
             self._lock_mouse(not self.mouse_free)
+            self.mouse_look_cooldown = 2
             self.toast('Cursor free (Tab to recapture)' if self.mouse_free else 'Mouse locked. WASD to walk.')
 
     def _try_safe_gate(self):
@@ -189,8 +242,27 @@
         d = dist_xz(pos, (gate.x, 0, gate.z))
         if d <= 3.2:
             self._leave_safe_to_world()
-        else:
-            self.toast('Walk to the pink gate, then E.')
+            return
+        # Test pickup is intentionally local to the safe yard and does not
+        # alter normal city progression unless the player chooses it.
+        for pickup in list(getattr(self, 'safe_debug_pickups', []) or []):
+            ent = pickup.get('entity') if isinstance(pickup, dict) else None
+            if ent and dist_xz(pos, (ent.x, 0, ent.z)) <= 2.2:
+                if pickup.get('kind') == 'pistol':
+                    self.owned_pistol = True
+                    self.ammo = max(int(getattr(self, 'ammo', 0)), 60)
+                    try:
+                        ent.enabled = False
+                    except Exception:
+                        pass
+                    self.safe_debug_pickups.remove(pickup)
+                    self.toast('Debug pistol acquired — 60 rounds. Press 1 to draw.')
+                    return
+        car, cd = self._nearest_car(pos, 3.0)
+        if car and getattr(car, 'safe_yard', False):
+            self._enter_car(car)
+            return
+        self.toast('Safe yard: E at DEBUG PISTOL, the blue test car, or pink gate.')
 
     def _toggle_pistol(self):
         if not self.owned_pistol:
@@ -217,6 +289,13 @@
                     return
             self.toast('Walk to the pink gate (west) — E to start Clermont.')
             return
+        if getattr(self, 'active_interior', None):
+            self._leave_interior()
+            return
+        gate, gate_d = self._nearest_region_gate(pos)
+        if gate:
+            self._travel_region_gate(gate)
+            return
         gas = self._nearest_gas(pos)
         if self.in_car:
             if gas:
@@ -233,10 +312,11 @@
             if service is not None:
                 self.open_gas_station(gas, service)
                 return
-            # No car: allow NPC talk (e.g. Rita); otherwise nudge
+            # A pedestrian enters the actual market instead of being blocked
+            # by the vehicle-service-only pump interaction.
             npc_chk, nd_chk = self._nearest_npc(pos, 3.0)
             if not (npc_chk and nd_chk <= 3.0):
-                self.toast('Bring a car.')
+                self._enter_interior('gas_market')
                 return
         car, cd = self._nearest_car(pos, 3.2)
         npc, nd = self._nearest_npc(pos, 3.0)

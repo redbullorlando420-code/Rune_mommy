@@ -50,6 +50,11 @@
         color = self.color
         Entity = self.Entity
         Text = self.Text
+        # Keep UI text independent of Ursina's package-relative font lookup.
+        try:
+            Text.default_font = 'assets/fonts/OpenSans-Regular.ttf'
+        except Exception:
+            pass
         camera = self.camera
         window = self.window
         mouse = self.mouse
@@ -63,7 +68,7 @@
 
         self.render_opts = apply_perf(window=window, camera=camera, color=color)
         try:
-            apply_lighting(
+            self.light_rig = apply_lighting(
                 color, self.Vec3,
                 Sky=self.Sky,
                 DirectionalLight=DirectionalLight,
@@ -71,6 +76,7 @@
                 PointLight=PointLight,
             )
         except Exception:
+            self.light_rig = {}
             self.Sky(color=color.rgb32(20, 8, 34))
 
         self._lock_mouse(False)  # boot unlocked; menu owns cursor
@@ -89,9 +95,12 @@
 
         self._build_ground()
         self._build_highway()
+        self._build_road_expansion()
         self._build_skyline()
         self._build_town_slice()
         self._build_pois()
+        self._build_enterable_interiors()
+        self._build_environment()
         self._build_house()
         self._build_stalls()
         self._build_npcs()
@@ -140,6 +149,7 @@
             color=color.rgb32(55, 120, 55) if grass else color.rgb32(40, 80, 40),
             texture=grass or 'white_cube',
             texture_scale=(12, 12),
+            collider='box',
         )
         half = 13.0
         post_c = color.rgb32(90, 70, 50)
@@ -182,7 +192,7 @@
             if dummy:
                 dummy.parked = True
                 dummy.traffic = False
-                dummy.fuel = 0
+                dummy.fuel = 100
                 dummy.safe_yard = True
                 self.cars.append(dummy)
         except Exception:
@@ -193,6 +203,13 @@
         barrel.hp = 30
         barrel.npc_name = 'barrel'
         self.targets.append(barrel)
+        # Safe-yard test kit: test gun + fueled car without entering the city.
+        self.safe_debug_pickups = []
+        gun_pickup = Entity(model='cube', scale=(0.32, 0.14, 0.74), position=(cx - 5.5, 0.65, cz - 4.0),
+                            rotation_y=22, color=color.rgb32(80, 180, 230))
+        Entity(model='cube', scale=(0.16, 0.18, 0.32), position=(cx - 5.33, 0.55, cz - 4.0), color=color.rgb32(35, 38, 48))
+        self.safe_debug_pickups.append({'entity': gun_pickup, 'kind': 'pistol', 'label': 'debug pistol'})
+        make_billboard(Entity, color, Text, self._scene(), cx - 5.5, cz - 5.7, 'DEBUG\nPISTOL', face_yaw=0)
         # labels / billboard controls
         make_billboard(Entity, color, Text, self._scene(), cx, cz + half - 1.0, 'SAFE YARD', face_yaw=0)
         make_billboard(
@@ -232,6 +249,7 @@
         )
         self.menu_ents.append(neon)
         self.menu_title = Text(
+            parent=camera.ui,
             text='RUNE MOMMY',
             position=(0, 0.30),
             origin=(0, 0),
@@ -242,6 +260,7 @@
         )
         self.menu_ents.append(self.menu_title)
         sub = Text(
+            parent=camera.ui,
             text='Clermont  ·  click a button or press 1 / 2 / 3',
             position=(0, 0.22),
             origin=(0, 0),
@@ -255,6 +274,7 @@
         # Keep text lines for settings mode reuse
         for i in range(5):
             tline = Text(
+                parent=camera.ui,
                 text='',
                 position=(0, 0.06 - i * 0.07),
                 origin=(0, 0),
