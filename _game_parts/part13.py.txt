@@ -1,3 +1,4 @@
+
     def _quest_hud_line(self):
         for qid in self.quest_active:
             q = self._quest_def(qid)
