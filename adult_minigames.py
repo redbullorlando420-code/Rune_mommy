@@ -353,29 +353,39 @@ def _sex_pick(game, nxt):
     _sex_show(game, nxt)
 
 
-def set_michelle_nude(game, nude: bool):
-    """Swap Michelle mesh between teal dress and adult nude anime-feminine variant."""
-    from models3d._actors import attach_humanoid_parts, clear_humanoid_parts
+def set_michelle_outfit(game, outfit: str = 'clothed'):
+    """Michelle mesh: clothed (teal dress) -> underwear -> nude. Adult only, first name only."""
+    from models3d._actors import set_humanoid_outfit
     m = getattr(game, 'michelle', None)
     if not m:
         return
+    outfit = str(outfit or 'clothed').lower()
+    if outfit in ('nude', 'naked', 'stripped'):
+        outfit = 'nude'
+    elif outfit in ('underwear', 'lingerie', 'bra'):
+        outfit = 'underwear'
+    else:
+        outfit = 'clothed'
+    if getattr(m, 'outfit_state', None) == outfit and getattr(m, '_parts_ready', False):
+        return
     Entity = game.Entity
     color = game.color
-    want = 'michelle_nude' if nude else 'michelle'
-    if getattr(m, 'humanoid_style', None) == want and getattr(m, '_parts_ready', False):
-        return
-    clear_humanoid_parts(m)
-    shirt = color.rgb32(46, 196, 182)  # teal fabric even when nude unused
+    shirt = color.rgb32(46, 196, 182)
     pants = color.rgb32(46, 196, 182)
     skin = color.rgb32(255, 206, 166)
-    attach_humanoid_parts(
-        Entity, color, m, shirt, pants, skin=skin,
-        hitbox=False, detail='named', style=want,
+    set_humanoid_outfit(
+        Entity, color, m, outfit,
+        shirt=shirt, pants=pants, skin=skin,
+        hitbox=False, detail='named', style='michelle',
     )
-    m.humanoid_style = want
     m._parts_ready = True
     if getattr(game, 'preg', False):
         try:
             game._apply_preg_look()
         except Exception:
             pass
+
+
+def set_michelle_nude(game, nude: bool):
+    """Back-compat: True=nude, False=clothed teal dress."""
+    set_michelle_outfit(game, 'nude' if nude else 'clothed')

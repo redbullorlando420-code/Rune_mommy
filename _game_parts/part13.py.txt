@@ -1,0 +1,205 @@
+        done = bool(flags.get('tutorial_done'))
+        self.tutorial_active = not done
+        self.tutorial_step = 0
+        Entity = self.Entity
+        Text = self.Text
+        color = self.color
+        camera = self.camera
+        if not self.tutorial_active:
+            self.tutorial_overlay = None
+            self.tutorial_text = None
+            return
+        self.tutorial_overlay = Entity(
+            parent=camera.ui,
+            model='quad',
+            color=color.rgba32(8, 2, 16, 160),
+            scale=(1.1, 0.28),
+            position=(0, 0.38),
+            z=1,
+        )
+        self.tutorial_text = Text(
+            text='',
+            position=(0, 0.40),
+            origin=(0, 0),
+            color=color.rgb32(255, 230, 255),
+            scale=0.85,
+        )
+        self._refresh_tutorial_text()
+
+    def _tutorial_steps(self):
+        return [
+            'WASD — walk toward Michelle (Sanctuary Drive door)',
+            'E — talk to Michelle',
+            'Mouse — look around  |  Enter skips tutorial',
+            '1 / LMB — pistol after buying from Gage',
+            'H — drink a shake from your pack',
+        ]
+
+    def _refresh_tutorial_text(self):
+        if not self.tutorial_text:
+            return
+        steps = self._tutorial_steps()
+        i = min(self.tutorial_step, len(steps) - 1)
+        self.tutorial_text.text = f'TUTORIAL  {i + 1}/{len(steps)}:  {steps[i]}   (Enter to dismiss)'
+
+    def _tick_tutorial(self, dt):
+        if not self.tutorial_active:
+            return
+        from ursina import held_keys
+        # step 0: any WASD movement
+        if self.tutorial_step == 0:
+            if any(held_keys[k] for k in ('w', 'a', 's', 'd')):
+                self.tutorial_step = 1
+                self._refresh_tutorial_text()
+        elif self.tutorial_step == 2:
+            # mouse look — advance after a moment if mouse locked
+            if getattr(self.mouse, 'locked', False):
+                self.tutorial_step = 3
+                self._refresh_tutorial_text()
+        # completing talk (step 1) finishes early via _tutorial_note
+
+    def _tutorial_note(self, what):
+        if not self.tutorial_active:
+            return
+        if what == 'talk' and self.tutorial_step <= 1:
+            self.tutorial_step = 2
+            self._refresh_tutorial_text()
+            # completing steps 1-2 can dismiss
+            self._finish_tutorial()
+            return
+        if what == 'gun' and self.tutorial_step >= 3:
+            self.tutorial_step = 4
+            self._refresh_tutorial_text()
+
+    def _finish_tutorial(self):
+        if not self.tutorial_active and not getattr(self, 'tutorial_overlay', None):
+            flags = self._load_flags()
+            if not flags.get('tutorial_done'):
+                flags['tutorial_done'] = True
+                self._save_flags(flags)
+            return
+        self.tutorial_active = False
+        try:
+            if self.tutorial_overlay:
+                self.tutorial_overlay.enabled = False
+            if self.tutorial_text:
+                self.tutorial_text.enabled = False
+                self.tutorial_text.text = ''
+        except Exception:
+            pass
+        flags = self._load_flags()
+        flags['tutorial_done'] = True
+        self._save_flags(flags)
+        self.toast('Tutorial done. Explore Hwy 50.')
+
+
+    def _debug_tick(self, dt):
+        """Console + HUD breadcrumbs when lagging or input-stuck."""
+        from ursina import held_keys, mouse, time as u_time
+        self._dbg_t += dt
+        wish = any(held_keys[k] for k in ('w', 'a', 's', 'd', 'up arrow', 'down arrow'))
+        self._dbg_wish = wish
+        if wish and getattr(self, 'mode', '') in ('safe', 'play') and not self.in_car:
+            # approximate movement by checking position change
+            pos = (round(float(self.player.x), 2), round(float(self.player.z), 2))
+            last = getattr(self, '_dbg_pos', None)
+            moved = last is not None and pos != last
+            self._dbg_pos = pos
+            if wish and not moved and not self.ui_open:
+                self._dbg_stuck_t += dt
+            else:
+                self._dbg_stuck_t = 0.0
+        else:
+            self._dbg_stuck_t = 0.0
+
+        fps = 1.0 / dt if dt > 1e-6 else 0.0
+        lag = dt > 0.08
+        stuck = self._dbg_stuck_t > 0.7
+        line = (
+            "DBG mode=%s paused=%s ui=%s locked=%s free=%s fps=%.0f dt=%.3f key=%s pos=(%.1f,%.1f) stuck=%.1fs"
+            % (
+                getattr(self, 'mode', '?'),
+                bool(getattr(self, 'world_paused', False)),
+                bool(self.ui_open),
+                bool(getattr(mouse, 'locked', False)),
+                bool(getattr(self, 'mouse_free', False)),
+                fps,
+                dt,
+                getattr(self, '_dbg_last_key', '-'),
+                float(self.player.x) if self.player else 0,
+                float(self.player.z) if self.player else 0,
+                self._dbg_stuck_t,
+            )
+        )
+        if self.debug_hud:
+            self.debug_hud.enabled = bool(getattr(self, 'debug_on', True))
+            if self.debug_on:
+                self.debug_hud.text = line
+        # Print on lag, stuck, or every 2s
+        if lag or stuck or self._dbg_t >= 2.0:
+            self._dbg_t = 0.0
+            tag = 'LAG' if lag else ('STUCK' if stuck else 'ok')
+            print('[Rune Mommy][%s] %s' % (tag, line))
+            if stuck:
+                print('[Rune Mommy][STUCK] tip: Esc=menu | click 3D view | arrows move | Q/right-arrow turn')
+
+
+    def toast(self, msg):
+        self.toast_timer = 2.6
+        if self.hud_toast:
+            self.hud_toast.text = msg
+        print(f'[Rune Mommy] {msg}')
+
+
+def update():
+    if GAME:
+        GAME.tick()
+    if TEST_SECONDS > 0 and (pytime.time() - TEST_T0) >= TEST_SECONDS:
+        from ursina import application
+        print('RUNE_MOMMY_TEST ok  shakes=%s cars=%s peds=%s traffic=%s parked=%s' % (
+            len(GAME.shake_spawned) if GAME else 0,
+            len(GAME.cars) if GAME else 0,
+            len(getattr(GAME, 'peds', []) or []) if GAME else 0,
+            getattr(GAME, 'traffic_count', 0) if GAME else 0,
+            getattr(GAME, 'parked_count', 0) if GAME else 0,
+        ))
+        application.quit()
+
+
+def input(key):
+    if GAME:
+        GAME.on_input(key)
+
+
+def run():
+    global GAME, TEST_SECONDS, TEST_T0
+    test = os.environ.get('RUNE_MOMMY_TEST', '').strip().lower() in ('1', 'true', 'yes')
+    TEST_SECONDS = float(os.environ.get('RUNE_MOMMY_TEST_SEC', '2' if test else '0') or 0)
+    window_type = os.environ.get('URSINA_WINDOW', 'offscreen' if test else 'onscreen')
+    TEST_T0 = pytime.time()
+
+    print('Rune Mommy   -   Clermont / Hwy 50')
+    print('  >>> CLICK THE GAME WINDOW once, then WASD to move <<<')
+    print('  WASD walk   mouse look   Space jump')
+    print('  If a pink talk panel is open: press Esc, then WASD')
+    print('  E enter/exit car, talk, buy')
+    print('  1 draw pistol   LMB shoot   H shake   V/C or wheel camera   U outfit   ESC quit')
+    rep = data_report()
+    print('  shops:', ', '.join(rep['shake_names']))
+    print('  mira portrait:', 'yes' if rep['mira_portrait'] else 'missing')
+
+    app = boot_ursina(window_type=window_type)
+    GAME = Game()
+    GAME.setup()
+    print('  spawned shakes:', len(GAME.shake_spawned), GAME.shake_spawned)
+    print('  cars:', len(GAME.cars), ' npcs:', len(GAME.npcs))
+    print('  buildings=%d quests=%d tutorial=%s' % (
+        GAME.building_count,
+        len(GAME.quest_defs),
+        'on' if GAME.tutorial_active else 'off',
+    ))
+    app.run()
+
+
+if __name__ == '__main__':
+    run()

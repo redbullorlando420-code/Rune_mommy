@@ -1,7 +1,15 @@
-"""Humanoid and car meshes — procedural multi-part Ursina primitives."""
+"""Humanoid + car meshes — procedural multi-part Ursina primitives.
+
+Adult-only proportions. Michelle = first name only (never a surname / deadname).
+Outfit states for adult feminine: clothed -> underwear -> nude
+(via style suffixes _underwear/_nude or outfit= kwarg).
+"""
 from __future__ import annotations
 
 from models3d._base import _rgb
+
+
+OUTFITS = ('clothed', 'underwear', 'nude')
 
 
 def _tint(col, amount):
@@ -13,14 +21,11 @@ def _tint(col, amount):
     return col
 
 
-
 def _mesh(preferred='sphere'):
-    """Ursina mesh name; fall back to cube if sphere/cylinder missing."""
-    return preferred  # resolved at Entity create time via _entity
+    return preferred
 
 
 def _entity(Entity, *, model='cube', **kw):
-    """Create Entity; if model fails (missing sphere), retry as cube."""
     try:
         return Entity(model=model, **kw)
     except Exception:
@@ -31,24 +36,41 @@ def _entity(Entity, *, model='cube', **kw):
                 pass
         raise
 
+
+def parse_style_outfit(style, outfit=None):
+    """Return (base_style, outfit) from style name and optional outfit override."""
+    base = style
+    out = (outfit or 'clothed').lower()
+    if isinstance(base, str):
+        b = base.lower()
+        if b.endswith('_nude'):
+            out = 'nude'
+            base = base[: -len('_nude')] or None
+        elif b.endswith('_underwear'):
+            out = 'underwear'
+            base = base[: -len('_underwear')] or None
+    if out not in OUTFITS:
+        out = 'clothed'
+    return base, out
+
+
 def _hair_from_shirt(color, shirt, style, detail):
-    """Pick a readable hair color from style / shirt."""
     if style == 'michelle':
         return _rgb(color, 236, 198, 92)
     if style == 'player':
         return _rgb(color, 52, 38, 28)
-    if detail in ('named', 'michelle'):
-        # darker relative to shirt so named NPCs read as having hair
+    if detail in ('named', 'michelle', 'anime_f'):
         return _tint(shirt, -0.42) if shirt is not None else _rgb(color, 40, 30, 50)
-    # crowd: muted from shirt
     return _tint(shirt, -0.55) if shirt is not None else _rgb(color, 55, 45, 50)
 
 
-
 def clear_humanoid_parts(parent):
-    """Remove mesh children so outfit variants can re-attach (hitbox ghost preserved if re-added)."""
+    """Remove mesh children so outfit variants can re-attach (hitbox ghost re-added by attach)."""
     try:
         for ch in list(getattr(parent, 'children', []) or []):
+            # Keep non-body attachments tagged keep_on_outfit_swap (e.g. portrait billboard)
+            if getattr(ch, 'keep_on_outfit_swap', False):
+                continue
             try:
                 ch.disable()
             except Exception:
@@ -65,7 +87,7 @@ def clear_humanoid_parts(parent):
                     pass
     except Exception:
         pass
-    for attr in ('chest', 'humanoid_style'):
+    for attr in ('chest', 'humanoid_style', 'outfit_state'):
         try:
             if attr == 'chest':
                 parent.chest = None
@@ -73,35 +95,382 @@ def clear_humanoid_parts(parent):
             pass
 
 
+def _face(Entity, color, parent, head_y, head_s, head_col, *, fancy, michelle, anime_f, feminine, player):
+    """Higher-fidelity face cues (still primitives)."""
+    # Ears
+    if fancy:
+        ear = _tint(head_col, -0.04)
+        _entity(Entity, parent=parent, model='sphere', color=ear, scale=0.08, x=-head_s * 0.48, y=head_y)
+        _entity(Entity, parent=parent, model='sphere', color=ear, scale=0.08, x=head_s * 0.48, y=head_y)
+
+    # Brows
+    if fancy:
+        brow = _rgb(color, 60, 42, 36) if not michelle else _rgb(color, 180, 140, 70)
+        for ex in (-0.09, 0.09):
+            Entity(parent=parent, model='cube', color=brow,
+                   scale=(0.10, 0.02, 0.03), x=ex, y=head_y + 0.10, z=head_s * 0.38)
+
+    # Eyes
+    if michelle or anime_f or (feminine and not player):
+        eye_w = _rgb(color, 250, 250, 255)
+        iris = _rgb(color, 55, 140, 120) if michelle else _rgb(color, 60, 90, 140)
+        eye_scale = (0.13, 0.14, 0.07) if michelle else (0.10, 0.11, 0.06)
+        iris_scale = (0.065, 0.075, 0.045) if michelle else (0.05, 0.06, 0.04)
+        spread = 0.09 if michelle else 0.08
+        for ex in (-spread, spread):
+            Entity(parent=parent, model='sphere', color=eye_w,
+                   scale=eye_scale, x=ex, y=head_y + 0.03, z=head_s * 0.40)
+            Entity(parent=parent, model='sphere', color=iris,
+                   scale=iris_scale, x=ex, y=head_y + 0.03, z=head_s * 0.48)
+            Entity(parent=parent, model='sphere', color=_rgb(color, 20, 24, 30),
+                   scale=(0.03, 0.035, 0.02) if michelle else (0.022, 0.025, 0.015),
+                   x=ex, y=head_y + 0.03, z=head_s * 0.52)
+            Entity(parent=parent, model='sphere', color=_rgb(color, 255, 255, 255),
+                   scale=(0.025, 0.025, 0.015) if michelle else (0.018, 0.018, 0.01),
+                   x=ex - 0.02, y=head_y + 0.05, z=head_s * 0.53)
+        if michelle or anime_f:
+            for ex in (-spread, spread):
+                Entity(parent=parent, model='cube', color=_rgb(color, 40, 30, 45),
+                       scale=(0.12 if michelle else 0.09, 0.02, 0.03),
+                       x=ex, y=head_y + 0.09, z=head_s * 0.42)
+            Entity(parent=parent, model='sphere', color=_rgb(color, 255, 160, 170),
+                   scale=(0.08, 0.04, 0.03), x=-0.14, y=head_y - 0.02, z=head_s * 0.36)
+            Entity(parent=parent, model='sphere', color=_rgb(color, 255, 160, 170),
+                   scale=(0.08, 0.04, 0.03), x=0.14, y=head_y - 0.02, z=head_s * 0.36)
+    elif fancy:
+        # named / player — smaller realistic eyes
+        eye_w = _rgb(color, 245, 245, 250)
+        iris = _rgb(color, 70, 90, 120) if player else _rgb(color, 90, 70, 50)
+        for ex in (-0.07, 0.07):
+            Entity(parent=parent, model='sphere', color=eye_w,
+                   scale=(0.07, 0.06, 0.04), x=ex, y=head_y + 0.02, z=head_s * 0.42)
+            Entity(parent=parent, model='sphere', color=iris,
+                   scale=(0.035, 0.035, 0.03), x=ex, y=head_y + 0.02, z=head_s * 0.48)
+
+    # Nose
+    if fancy or michelle:
+        Entity(parent=parent, model='cube', color=_tint(head_col, -0.06),
+               scale=(0.05, 0.06, 0.07), y=head_y - 0.02, z=head_s * 0.42)
+
+    # Lips
+    if michelle:
+        Entity(parent=parent, model='cube', color=_rgb(color, 220, 80, 110),
+               scale=(0.12, 0.035, 0.045), y=head_y - 0.08, z=head_s * 0.44)
+    elif anime_f or (feminine and not player):
+        Entity(parent=parent, model='cube', color=_rgb(color, 210, 90, 120),
+               scale=(0.10, 0.03, 0.04), y=head_y - 0.08, z=head_s * 0.42)
+    elif fancy:
+        Entity(parent=parent, model='cube', color=_tint(head_col, -0.12),
+               scale=(0.08, 0.025, 0.03), y=head_y - 0.08, z=head_s * 0.40)
+
+
+def _hair_michelle(Entity, parent, hair, head_y):
+    # Long wavy blonde cascade — anime twin-volume
+    Entity(parent=parent, model='sphere', color=hair,
+           scale=(0.48, 0.40, 0.46), y=head_y + 0.10, z=-0.02)
+    Entity(parent=parent, model='cube', color=_tint(hair, -0.04),
+           scale=(0.50, 0.12, 0.24), y=head_y + 0.18, z=0.10)
+    Entity(parent=parent, model='cube', color=_tint(hair, 0.02),
+           scale=(0.22, 0.08, 0.12), y=head_y + 0.14, z=0.16)
+    Entity(parent=parent, model='cube', color=_tint(hair, -0.06),
+           scale=(0.20, 0.48, 0.16), x=-0.26, y=head_y - 0.10, z=-0.02)
+    Entity(parent=parent, model='cube', color=_tint(hair, -0.06),
+           scale=(0.20, 0.48, 0.16), x=0.26, y=head_y - 0.10, z=-0.02)
+    Entity(parent=parent, model='sphere', color=_tint(hair, -0.08),
+           scale=(0.32, 0.44, 0.24), y=head_y - 0.14, z=-0.22)
+    Entity(parent=parent, model='cube', color=_tint(hair, -0.12),
+           scale=(0.26, 0.55, 0.14), y=head_y - 0.32, z=-0.24)
+    Entity(parent=parent, model='sphere', color=_tint(hair, -0.10),
+           scale=(0.22, 0.30, 0.16), y=head_y - 0.48, z=-0.20)
+    Entity(parent=parent, model='sphere', color=_tint(hair, -0.02),
+           scale=(0.16, 0.28, 0.16), x=-0.28, y=head_y - 0.28, z=0.04)
+    Entity(parent=parent, model='sphere', color=_tint(hair, -0.02),
+           scale=(0.16, 0.28, 0.16), x=0.28, y=head_y - 0.28, z=0.04)
+    Entity(parent=parent, model='sphere', color=_tint(hair, -0.05),
+           scale=(0.14, 0.22, 0.14), x=-0.30, y=head_y - 0.48, z=0.02)
+    Entity(parent=parent, model='sphere', color=_tint(hair, -0.05),
+           scale=(0.14, 0.22, 0.14), x=0.30, y=head_y - 0.48, z=0.02)
+
+
+def _hair_feminine(Entity, parent, hair, head_y):
+    Entity(parent=parent, model='sphere', color=hair,
+           scale=(0.42, 0.30, 0.40), y=head_y + 0.10)
+    Entity(parent=parent, model='cube', color=_tint(hair, -0.06),
+           scale=(0.42, 0.10, 0.16), y=head_y + 0.16, z=0.08)
+    Entity(parent=parent, model='cube', color=_tint(hair, -0.10),
+           scale=(0.24, 0.52, 0.14), y=head_y - 0.20, z=-0.16)
+    Entity(parent=parent, model='sphere', color=_tint(hair, -0.04),
+           scale=(0.16, 0.30, 0.14), x=-0.22, y=head_y - 0.16)
+    Entity(parent=parent, model='sphere', color=_tint(hair, -0.04),
+           scale=(0.16, 0.30, 0.14), x=0.22, y=head_y - 0.16)
+
+
+def _hair_player(Entity, parent, hair, head_y):
+    Entity(parent=parent, model='sphere', color=hair,
+           scale=(0.36, 0.20, 0.36), y=head_y + 0.10)
+    Entity(parent=parent, model='cube', color=_tint(hair, -0.08),
+           scale=(0.34, 0.08, 0.16), y=head_y + 0.14, z=0.08)
+    Entity(parent=parent, model='cube', color=_tint(hair, -0.12),
+           scale=(0.30, 0.10, 0.12), y=head_y + 0.06, z=-0.14)
+
+
+def _hair_named(Entity, parent, hair, shirt, head_y):
+    Entity(parent=parent, model='sphere', color=hair,
+           scale=(0.38, 0.24, 0.38), y=head_y + 0.10)
+    Entity(parent=parent, model='cube', color=_tint(hair, -0.10),
+           scale=(0.34, 0.10, 0.15), y=head_y + 0.13, z=0.07)
+    Entity(parent=parent, model='sphere', color=_tint(hair, -0.08),
+           scale=(0.18, 0.22, 0.14), y=head_y - 0.06, z=-0.14)
+    Entity(parent=parent, model='cube', color=_tint(shirt, 0.08),
+           scale=(0.22, 0.04, 0.12), y=1.30, z=0.12)
+
+
+def _hair_crowd(Entity, parent, hair, head_y):
+    Entity(parent=parent, model='sphere', color=hair,
+           scale=(0.33, 0.16, 0.33), y=head_y + 0.08)
+    Entity(parent=parent, model='cube', color=_tint(hair, -0.08),
+           scale=(0.28, 0.06, 0.10), y=head_y + 0.12, z=0.08)
+
+
+def _arms(Entity, parent, *, sleeve, skin, shoulder_w, fancy, detail):
+    arm_x = shoulder_w * 0.58
+    for sx in (-arm_x, arm_x):
+        Entity(parent=parent, model='sphere', color=sleeve,
+               scale=0.15 if fancy else 0.12, x=sx * 0.92, y=1.28)
+        Entity(parent=parent, model='cube', color=sleeve,
+               scale=(0.12, 0.28, 0.12), x=sx, y=1.12)
+        Entity(parent=parent, model='cube', color=skin,
+               scale=(0.10, 0.26, 0.10), x=sx, y=0.88)
+        if fancy:
+            # hand + slight finger nubs
+            Entity(parent=parent, model='sphere', color=skin, scale=0.10, x=sx, y=0.72)
+            Entity(parent=parent, model='cube', color=_tint(skin, -0.04),
+                   scale=(0.08, 0.04, 0.10), x=sx, y=0.66, z=0.04)
+        elif detail == 'crowd':
+            Entity(parent=parent, model='cube', color=skin,
+                   scale=(0.08, 0.08, 0.08), x=sx, y=0.72)
+
+
+def _hitbox_ghost(Entity, parent):
+    ghost = Entity(
+        parent=parent, model='cube',
+        scale=(0.55, 1.60, 0.42), y=0.85,
+        collider='box', visible=False,
+    )
+    try:
+        ghost.hitbox_ghost = True
+    except Exception:
+        pass
+    return ghost
+
+
+def _body_nude_feminine(Entity, color, parent, skin, hip_w, torso_d, leg_gap, *, michelle=False):
+    """Adult nude silhouette — hourglass. Never underage."""
+    waist = 0.28 if michelle else 0.32
+    bust = (0.82, 0.50, 0.56) if michelle else (0.64, 0.38, 0.42)
+    Entity(parent=parent, model='cube', color=skin,
+           scale=(waist, 0.44, torso_d * 0.82), y=1.12)
+    Entity(parent=parent, model='cube', color=_tint(skin, -0.04),
+           scale=(waist * 0.85, 0.10, torso_d * 0.78), y=0.92)
+    Entity(parent=parent, model='sphere', color=_tint(skin, -0.02),
+           scale=(hip_w * 1.00, 0.34 if michelle else 0.28, 0.40 if michelle else 0.34),
+           y=0.76, z=0.08)
+    parent.chest = Entity(
+        parent=parent, model='sphere', color=skin,
+        scale=bust, y=1.26, z=-0.08,
+    )
+    bx = 0.20 if michelle else 0.14
+    bs = (0.36, 0.34, 0.34) if michelle else (0.26, 0.24, 0.24)
+    Entity(parent=parent, model='sphere', color=_tint(skin, 0.04),
+           scale=bs, x=-bx, y=1.28, z=-0.14)
+    Entity(parent=parent, model='sphere', color=_tint(skin, 0.04),
+           scale=bs, x=bx, y=1.28, z=-0.14)
+    Entity(parent=parent, model='sphere', color=_rgb(color, 220, 140, 140),
+           scale=0.055 if michelle else 0.04, x=-bx, y=1.28, z=-0.26)
+    Entity(parent=parent, model='sphere', color=_rgb(color, 220, 140, 140),
+           scale=0.055 if michelle else 0.04, x=bx, y=1.28, z=-0.26)
+    Entity(parent=parent, model='sphere', color=_tint(skin, -0.08),
+           scale=0.04, y=1.00, z=-0.14)
+    # legs already from shared bare-leg path
+
+
+def _body_underwear_feminine(Entity, color, parent, skin, shirt, hip_w, torso_d, leg_gap, *, michelle=False):
+    """Bra + panties — adult feminine only."""
+    bra = _rgb(color, 245, 230, 235) if michelle else _tint(shirt, 0.25)
+    panty = _rgb(color, 40, 36, 42) if michelle else _tint(shirt, -0.35)
+    # bra band + cups
+    Entity(parent=parent, model='cube', color=bra,
+           scale=(0.42 if michelle else 0.38, 0.10, torso_d * 0.9), y=1.18)
+    parent.chest = Entity(
+        parent=parent, model='sphere', color=bra,
+        scale=(0.78, 0.44, 0.50) if michelle else (0.58, 0.32, 0.36),
+        y=1.24, z=-0.08,
+    )
+    bx = 0.19 if michelle else 0.13
+    Entity(parent=parent, model='sphere', color=_tint(bra, 0.06),
+           scale=(0.32, 0.30, 0.30) if michelle else (0.22, 0.20, 0.20),
+           x=-bx, y=1.26, z=-0.14)
+    Entity(parent=parent, model='sphere', color=_tint(bra, 0.06),
+           scale=(0.32, 0.30, 0.30) if michelle else (0.22, 0.20, 0.20),
+           x=bx, y=1.26, z=-0.14)
+    # straps
+    Entity(parent=parent, model='cube', color=bra,
+           scale=(0.04, 0.22, 0.03), x=-0.16, y=1.40, z=-0.02)
+    Entity(parent=parent, model='cube', color=bra,
+           scale=(0.04, 0.22, 0.03), x=0.16, y=1.40, z=-0.02)
+    # slim midriff
+    Entity(parent=parent, model='cube', color=skin,
+           scale=(0.30 if michelle else 0.34, 0.28, torso_d * 0.8), y=1.02)
+    # panties
+    Entity(parent=parent, model='cube', color=panty,
+           scale=(hip_w * 0.92, 0.14, 0.30), y=0.80)
+    Entity(parent=parent, model='sphere', color=_tint(panty, -0.05),
+           scale=(hip_w * 0.85, 0.18, 0.28), y=0.74, z=0.06)
+
+
+def _body_michelle_dress(Entity, color, parent, dress, skin, hip_w, torso_d):
+    """Sexier teal anime-waifu dress — cinched waist, deep neckline, short flare."""
+    Entity(parent=parent, model='cube', color=dress,
+           scale=(0.36, 0.42, torso_d), y=1.14)
+    Entity(parent=parent, model='cube', color=_tint(dress, -0.12),
+           scale=(0.24, 0.12, torso_d * 0.88), y=0.92)
+    Entity(parent=parent, model='cube', color=_tint(dress, -0.04),
+           scale=(hip_w * 1.00, 0.14, 0.36), y=0.80)
+    Entity(parent=parent, model='cube', color=_tint(dress, 0.05),
+           scale=(0.80, 0.32, 0.46), y=0.62)
+    Entity(parent=parent, model='cube', color=_tint(dress, 0.10),
+           scale=(0.88, 0.16, 0.50), y=0.46)
+    Entity(parent=parent, model='sphere', color=_tint(dress, -0.06),
+           scale=(0.62, 0.30, 0.40), y=0.74, z=0.14)
+    parent.chest = Entity(
+        parent=parent, model='sphere', color=dress,
+        scale=(0.80, 0.48, 0.54), y=1.24, z=-0.10,
+    )
+    Entity(parent=parent, model='sphere', color=_tint(dress, 0.10),
+           scale=(0.34, 0.32, 0.32), x=-0.20, y=1.27, z=-0.16)
+    Entity(parent=parent, model='sphere', color=_tint(dress, 0.10),
+           scale=(0.34, 0.32, 0.32), x=0.20, y=1.27, z=-0.16)
+    Entity(parent=parent, model='cube', color=skin,
+           scale=(0.30, 0.14, 0.12), y=1.38, z=-0.04)
+    Entity(parent=parent, model='sphere', color=_tint(skin, 0.04),
+           scale=(0.22, 0.12, 0.10), y=1.34, z=-0.12)
+    Entity(parent=parent, model='cube', color=_tint(dress, 0.08),
+           scale=(0.04, 0.26, 0.035), x=-0.18, y=1.42, z=-0.02)
+    Entity(parent=parent, model='cube', color=_tint(dress, 0.08),
+           scale=(0.04, 0.26, 0.035), x=0.18, y=1.42, z=-0.02)
+    Entity(parent=parent, model='cube', color=_rgb(color, 20, 18, 22),
+           scale=(0.30, 0.05, 0.06), y=1.54, z=0.12)
+    Entity(parent=parent, model='sphere', color=_rgb(color, 255, 180, 200),
+           scale=0.04, y=1.54, z=0.16)
+    Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
+           scale=0.055, x=-0.22, y=1.50, z=0.02)
+    Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
+           scale=0.055, x=0.22, y=1.50, z=0.02)
+
+
+def _body_anime_f_clothed(Entity, parent, shirt, skin, hip_w, torso_d, leg_gap):
+    Entity(parent=parent, model='cube', color=shirt,
+           scale=(0.40, 0.38, torso_d), y=1.14)
+    Entity(parent=parent, model='cube', color=_tint(shirt, -0.12),
+           scale=(0.30, 0.10, torso_d * 0.9), y=0.96)
+    parent.chest = Entity(
+        parent=parent, model='sphere', color=_tint(shirt, 0.05),
+        scale=(0.60, 0.34, 0.38), y=1.22, z=-0.06,
+    )
+    Entity(parent=parent, model='cube', color=_tint(shirt, 0.06),
+           scale=(0.70, 0.32, 0.42), y=0.68)
+    Entity(parent=parent, model='sphere', color=_tint(shirt, -0.05),
+           scale=(0.50, 0.24, 0.32), y=0.78, z=0.10)
+    # collar
+    Entity(parent=parent, model='cube', color=_tint(shirt, 0.12),
+           scale=(0.24, 0.05, 0.16), y=1.34, z=0.02)
+
+
+def _body_player(Entity, color, parent, shirt, pants, hip_w, shoulder_w, torso_d):
+    torso = Entity(
+        parent=parent, model='cube', color=shirt,
+        scale=(shoulder_w * 0.92, 0.50, torso_d), y=1.10,
+    )
+    parent.chest = torso
+    Entity(parent=parent, model='cube', color=_tint(shirt, -0.06),
+           scale=(hip_w * 0.95, 0.14, torso_d * 0.95), y=0.88)
+    # tee collar + hem + pocket
+    Entity(parent=parent, model='cube', color=_tint(shirt, 0.12),
+           scale=(0.24, 0.05, 0.18), y=1.36, z=0.02)
+    Entity(parent=parent, model='cube', color=_tint(shirt, -0.08),
+           scale=(0.14, 0.16, 0.02), x=0.16, y=1.12, z=-torso_d * 0.52)
+    Entity(parent=parent, model='cube', color=_rgb(color, 24, 28, 36),
+           scale=(hip_w * 0.88, 0.06, 0.22), y=0.86)
+    # jeans layering
+    Entity(parent=parent, model='cube', color=pants,
+           scale=(hip_w, 0.22, 0.26), y=0.78)
+    Entity(parent=parent, model='cube', color=_tint(pants, -0.25),
+           scale=(hip_w * 1.02, 0.05, 0.27), y=0.88)
+
+
+def _body_named_or_crowd(Entity, color, parent, shirt, pants, skin, hip_w, shoulder_w, torso_d,
+                         *, fancy, player, feminine, hitbox):
+    torso = Entity(
+        parent=parent, model='cube', color=shirt,
+        scale=(shoulder_w * 0.92, 0.48, torso_d), y=1.10,
+        collider='box' if hitbox and not fancy else None,
+    )
+    parent.chest = torso
+    Entity(parent=parent, model='cube', color=_tint(shirt, -0.06),
+           scale=(hip_w * 0.95, 0.14, torso_d * 0.95), y=0.88)
+    if fancy:
+        Entity(parent=parent, model='cube', color=_tint(shirt, -0.05),
+               scale=(shoulder_w, 0.10, torso_d + 0.02), y=1.30)
+        Entity(parent=parent, model='cube', color=_tint(shirt, 0.10),
+               scale=(0.20, 0.04, 0.14), y=1.34, z=0.02)  # collar
+    if fancy and not player and feminine:
+        Entity(parent=parent, model='sphere', color=_tint(shirt, 0.05),
+               scale=(0.48, 0.24, 0.30), y=1.20, z=-0.04)
+        Entity(parent=parent, model='sphere', color=_tint(shirt, 0.10),
+               scale=(0.16, 0.14, 0.14), x=-0.10, y=1.22, z=-0.10)
+        Entity(parent=parent, model='sphere', color=_tint(shirt, 0.10),
+               scale=(0.16, 0.14, 0.14), x=0.10, y=1.22, z=-0.10)
+    # pants hips
+    Entity(parent=parent, model='cube', color=pants,
+           scale=(hip_w, 0.22, 0.26), y=0.78)
+    Entity(parent=parent, model='cube', color=_tint(pants, -0.25),
+           scale=(hip_w * 1.02, 0.05, 0.27), y=0.88)
+
+
 def attach_humanoid_parts(
     Entity, color, parent, shirt, pants, skin=None,
-    hitbox=False, detail='crowd', style=None,
+    hitbox=False, detail='crowd', style=None, outfit=None,
 ):
-    """Attach a multi-part humanoid under `parent`. Overall height ~1.65–1.72.
+    """Attach multi-part humanoid under `parent`. Height ~1.65–1.72.
 
-    Styles:
-      michelle — teal dress + sandals + blonde hair + body silhouette
-      player   — casual tee + jeans + sneakers (Alec)
-      (else)   — shirt/pants; named gets more hair/hands detail
+    Styles: michelle (anime-waifu teal dress), player, anime_f, named/crowd.
+    Outfit (adult feminine): clothed | underwear | nude
+      Also accepts style suffixes michelle_nude / anime_f_underwear etc.
     """
     skin = skin or _rgb(color, 255, 206, 166)
-    # Adult feminine anime styles ONLY — never underage proportions.
-    michelle = style in ('michelle', 'michelle_nude')
-    michelle_nude = style == 'michelle_nude'
+    base_style, outfit_state = parse_style_outfit(style, outfit)
+    style = base_style
+
+    michelle = style == 'michelle'
     anime_f = style == 'anime_f' or detail == 'anime_f'
     player = style == 'player'
     named = detail in ('named', 'michelle', 'player', 'anime_f') or style in (
-        'michelle', 'michelle_nude', 'player', 'anime_f')
+        'michelle', 'player', 'anime_f')
     feminine = michelle or anime_f or (named and not player and style != 'male')
     fancy = feminine or named or michelle
+
+    # Underwear/nude: adult feminine NPCs + player (adult). Never underage styles.
+    allow_undress = bool(michelle or anime_f or (feminine and not player) or player)
+    if not allow_undress and outfit_state != 'clothed':
+        outfit_state = 'clothed'
+
     hair = _hair_from_shirt(color, shirt, 'michelle' if michelle else style, detail)
 
     # --- proportions (adult) ---
-    # Keep crown near y=1.55. Feminine: hourglass, longer legs read, never childlike.
     if michelle:
-        hip_w, shoulder_w, torso_d, leg_gap = 0.64, 0.42, 0.38, 0.15
+        hip_w, shoulder_w, torso_d, leg_gap = 0.76, 0.38, 0.36, 0.16
     elif anime_f or (feminine and not player):
-        hip_w, shoulder_w, torso_d, leg_gap = 0.56, 0.44, 0.34, 0.14
+        hip_w, shoulder_w, torso_d, leg_gap = 0.60, 0.42, 0.34, 0.14
     elif named and not player:
         hip_w, shoulder_w, torso_d, leg_gap = 0.48, 0.50, 0.30, 0.12
     elif player:
@@ -109,36 +478,36 @@ def attach_humanoid_parts(
     else:
         hip_w, shoulder_w, torso_d, leg_gap = 0.42, 0.50, 0.28, 0.12
 
-    # Hips / pelvis
-    if michelle:
+    bare_legs = michelle or anime_f or outfit_state in ('underwear', 'nude') or (
+        feminine and not player and outfit_state != 'clothed')
+
+    # Hips / pelvis foundation
+    if michelle or (feminine and outfit_state != 'clothed'):
         Entity(parent=parent, model='cube', color=skin,
-               scale=(hip_w * 0.92, 0.18, 0.24), y=0.78)
-    elif anime_f:
+               scale=(hip_w * 0.98, 0.20, 0.28), y=0.76)
+        if michelle:
+            Entity(parent=parent, model='sphere', color=_tint(skin, -0.03),
+                   scale=(hip_w * 1.02, 0.30, 0.34), y=0.74, z=0.08)
+    elif anime_f and outfit_state == 'clothed':
         Entity(parent=parent, model='cube', color=skin,
                scale=(hip_w * 0.95, 0.18, 0.26), y=0.78)
         Entity(parent=parent, model='cube', color=_tint(shirt, -0.15),
-               scale=(hip_w * 0.7, 0.08, 0.22), y=0.86)  # panty line under skirt
-    else:
+               scale=(hip_w * 0.7, 0.08, 0.22), y=0.86)
+    elif not player:
         Entity(parent=parent, model='cube', color=pants,
                scale=(hip_w, 0.22, 0.26), y=0.78)
         Entity(parent=parent, model='cube', color=_tint(pants, -0.25),
                scale=(hip_w * 1.02, 0.05, 0.27), y=0.88)
 
-    # Upper + lower legs
-    if michelle:
-        # bare toned legs under dress hem (thicker thigh read)
+    # Legs
+    if bare_legs or michelle or anime_f:
+        thigh = (0.18, 0.36, 0.16) if michelle else (0.15, 0.32, 0.14)
+        calf = (0.14, 0.34, 0.13) if michelle else (0.13, 0.30, 0.12)
         for sx in (-leg_gap, leg_gap):
             Entity(parent=parent, model='cube', color=skin,
-                   scale=(0.15, 0.34, 0.14), x=sx, y=0.52)
+                   scale=thigh, x=sx, y=0.50)
             Entity(parent=parent, model='cube', color=_tint(skin, -0.05),
-                   scale=(0.13, 0.32, 0.12), x=sx, y=0.22)
-    elif anime_f:
-        # bare adult thighs + calves under mini skirt
-        for sx in (-leg_gap, leg_gap):
-            Entity(parent=parent, model='cube', color=skin,
-                   scale=(0.15, 0.30, 0.14), x=sx, y=0.52)
-            Entity(parent=parent, model='cube', color=_tint(skin, -0.04),
-                   scale=(0.13, 0.28, 0.12), x=sx, y=0.24)
+                   scale=calf, x=sx, y=0.20)
     else:
         for sx in (-leg_gap, leg_gap):
             Entity(parent=parent, model='cube', color=pants,
@@ -146,15 +515,18 @@ def attach_humanoid_parts(
             Entity(parent=parent, model='cube', color=_tint(pants, -0.08),
                    scale=(0.12, 0.32, 0.12), x=sx, y=0.22)
 
-    # Feet — sandals (Michelle) / sneakers (player) / dark shoes (crowd)
+    # Feet
     if michelle:
         shoe = _rgb(color, 245, 232, 210)
         strap = _rgb(color, 46, 196, 182)
+        heel = _rgb(color, 36, 160, 150)
         for sx in (-leg_gap, leg_gap):
             Entity(parent=parent, model='cube', color=shoe,
-                   scale=(0.15, 0.05, 0.30), x=sx, y=0.04, z=0.05)
+                   scale=(0.16, 0.05, 0.32), x=sx, y=0.05, z=0.06)
             Entity(parent=parent, model='cube', color=strap,
-                   scale=(0.14, 0.03, 0.06), x=sx, y=0.08, z=0.02)
+                   scale=(0.14, 0.03, 0.06), x=sx, y=0.09, z=0.02)
+            Entity(parent=parent, model='cube', color=heel,
+                   scale=(0.08, 0.08, 0.08), x=sx, y=0.03, z=-0.08)
     elif player:
         shoe = _rgb(color, 28, 32, 40)
         sole = _rgb(color, 220, 220, 230)
@@ -163,8 +535,7 @@ def attach_humanoid_parts(
                    scale=(0.15, 0.08, 0.28), x=sx, y=0.05, z=0.04)
             Entity(parent=parent, model='cube', color=sole,
                    scale=(0.15, 0.03, 0.28), x=sx, y=0.02, z=0.04)
-    elif anime_f or (feminine and not player and not michelle):
-        # heeled sandal cue for adult feminine
+    elif anime_f or (feminine and not player):
         shoe = _rgb(color, 240, 220, 210)
         accent = _tint(shirt, -0.2) if shirt is not None else _rgb(color, 200, 80, 140)
         for sx in (-leg_gap, leg_gap):
@@ -178,263 +549,146 @@ def attach_humanoid_parts(
             Entity(parent=parent, model='cube', color=shoe,
                    scale=(0.14, 0.07, 0.26), x=sx, y=0.04, z=0.03)
 
-    # --- torso / clothing ---
+    # --- torso / clothing by outfit ---
     dress = shirt
-    if michelle and michelle_nude:
-        # Adult nude anime-feminine variant (Michelle intimacy scene). Not underage.
-        Entity(parent=parent, model='cube', color=skin,
-               scale=(0.36, 0.42, torso_d * 0.85), y=1.12)  # slim waist torso
-        Entity(parent=parent, model='cube', color=_tint(skin, -0.04),
-               scale=(0.28, 0.10, torso_d * 0.8), y=0.94)
-        Entity(parent=parent, model='sphere', color=_tint(skin, -0.02),
-               scale=(hip_w * 0.95, 0.28, 0.36), y=0.78, z=0.06)
-        parent.chest = Entity(
-            parent=parent, model='sphere', color=skin,
-            scale=(0.70, 0.42, 0.48), y=1.24, z=-0.06,
-        )
-        Entity(parent=parent, model='sphere', color=_tint(skin, 0.04),
-               scale=(0.30, 0.28, 0.28), x=-0.17, y=1.26, z=-0.12)
-        Entity(parent=parent, model='sphere', color=_tint(skin, 0.04),
-               scale=(0.30, 0.28, 0.28), x=0.17, y=1.26, z=-0.12)
-        # soft nipples cue (tiny, adult)
-        Entity(parent=parent, model='sphere', color=_rgb(color, 220, 140, 140),
-               scale=0.05, x=-0.17, y=1.26, z=-0.22)
-        Entity(parent=parent, model='sphere', color=_rgb(color, 220, 140, 140),
-               scale=0.05, x=0.17, y=1.26, z=-0.22)
-        # earrings stay
-        Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
-               scale=0.05, x=-0.20, y=1.48, z=0.02)
-        Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
-               scale=0.05, x=0.20, y=1.48, z=0.02)
+    if outfit_state == 'nude' and allow_undress:
+        _body_nude_feminine(Entity, color, parent, skin, hip_w, torso_d, leg_gap, michelle=michelle)
+        if michelle:
+            Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
+                   scale=0.055, x=-0.22, y=1.50, z=0.02)
+            Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
+                   scale=0.055, x=0.22, y=1.50, z=0.02)
+    elif outfit_state == 'underwear' and allow_undress:
+        _body_underwear_feminine(Entity, color, parent, skin, shirt, hip_w, torso_d, leg_gap, michelle=michelle)
+        if michelle:
+            Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
+                   scale=0.055, x=-0.22, y=1.50, z=0.02)
+            Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
+                   scale=0.055, x=0.22, y=1.50, z=0.02)
     elif michelle:
-        # fitted bodice (narrower waist read)
-        Entity(parent=parent, model='cube', color=dress,
-               scale=(0.42, 0.40, torso_d), y=1.14)
-        Entity(parent=parent, model='cube', color=_tint(dress, -0.10),
-               scale=(0.28, 0.12, torso_d * 0.90), y=0.94)
-        Entity(parent=parent, model='cube', color=_tint(dress, -0.04),
-               scale=(hip_w * 0.98, 0.16, 0.34), y=0.82)
-        Entity(parent=parent, model='cube', color=_tint(dress, 0.04),
-               scale=(0.74, 0.38, 0.44), y=0.64)
-        Entity(parent=parent, model='cube', color=_tint(dress, 0.08),
-               scale=(0.82, 0.18, 0.48), y=0.48)
-        Entity(parent=parent, model='sphere', color=_tint(dress, -0.06),
-               scale=(0.54, 0.28, 0.36), y=0.76, z=0.12)
-        parent.chest = Entity(
-            parent=parent, model='sphere', color=dress,
-            scale=(0.70, 0.42, 0.48), y=1.22, z=-0.08,
-        )
-        Entity(parent=parent, model='sphere', color=_tint(dress, 0.08),
-               scale=(0.30, 0.28, 0.28), x=-0.17, y=1.25, z=-0.14)
-        Entity(parent=parent, model='sphere', color=_tint(dress, 0.08),
-               scale=(0.30, 0.28, 0.28), x=0.16, y=1.25, z=-0.14)
-        Entity(parent=parent, model='cube', color=skin,
-               scale=(0.28, 0.10, 0.14), y=1.36, z=-0.02)
-        Entity(parent=parent, model='cube', color=_tint(dress, 0.05),
-               scale=(0.05, 0.22, 0.04), x=-0.16, y=1.40, z=-0.02)
-        Entity(parent=parent, model='cube', color=_tint(dress, 0.05),
-               scale=(0.05, 0.22, 0.04), x=0.16, y=1.40, z=-0.02)
-        Entity(parent=parent, model='cube', color=_rgb(color, 20, 18, 22),
-               scale=(0.28, 0.06, 0.06), y=1.54, z=0.14)
-        Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
-               scale=0.05, x=-0.20, y=1.48, z=0.02)
-        Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
-               scale=0.05, x=0.20, y=1.48, z=0.02)
+        _body_michelle_dress(Entity, color, parent, dress, skin, hip_w, torso_d)
+        # thigh cue under short hem
         Entity(parent=parent, model='cube', color=_tint(skin, 0.06),
-               scale=(0.17, 0.22, 0.13), x=-0.14, y=0.40, z=-0.02)
+               scale=(0.18, 0.24, 0.14), x=-0.16, y=0.38, z=-0.02)
         Entity(parent=parent, model='cube', color=_tint(skin, 0.06),
-               scale=(0.17, 0.22, 0.13), x=0.14, y=0.40, z=-0.02)
+               scale=(0.18, 0.24, 0.14), x=0.16, y=0.38, z=-0.02)
     elif anime_f:
-        # Adult feminine crowd/named: skirt + hourglass + thighs
-        Entity(parent=parent, model='cube', color=shirt,
-               scale=(0.40, 0.38, torso_d), y=1.14)
-        Entity(parent=parent, model='cube', color=_tint(shirt, -0.12),
-               scale=(0.30, 0.10, torso_d * 0.9), y=0.96)
-        parent.chest = Entity(
-            parent=parent, model='sphere', color=_tint(shirt, 0.05),
-            scale=(0.58, 0.32, 0.36), y=1.22, z=-0.06,
-        )
-        Entity(parent=parent, model='cube', color=_tint(shirt, 0.06),
-               scale=(0.68, 0.30, 0.40), y=0.68)  # mini skirt
-        Entity(parent=parent, model='sphere', color=_tint(shirt, -0.05),
-               scale=(0.48, 0.22, 0.30), y=0.78, z=0.10)
-        # bare thighs under skirt
+        _body_anime_f_clothed(Entity, parent, shirt, skin, hip_w, torso_d, leg_gap)
         for sx in (-leg_gap, leg_gap):
             Entity(parent=parent, model='cube', color=skin,
                    scale=(0.14, 0.28, 0.13), x=sx, y=0.48)
+    elif player:
+        _body_player(Entity, color, parent, shirt, pants, hip_w, shoulder_w, torso_d)
     else:
-        # shirt torso
-        torso = Entity(
-            parent=parent, model='cube', color=shirt,
-            scale=(shoulder_w * 0.92, 0.48, torso_d), y=1.10,
-            collider='box' if hitbox and not fancy else None,
+        _body_named_or_crowd(
+            Entity, color, parent, shirt, pants, skin, hip_w, shoulder_w, torso_d,
+            fancy=fancy, player=player, feminine=feminine, hitbox=hitbox,
         )
-        parent.chest = torso
-        # slight belly / lower shirt tuck into pants
-        Entity(parent=parent, model='cube', color=_tint(shirt, -0.06),
-               scale=(hip_w * 0.95, 0.14, torso_d * 0.95), y=0.88)
-        if player:
-            # casual tee hem + collar strip
-            Entity(parent=parent, model='cube', color=_tint(shirt, 0.10),
-                   scale=(0.22, 0.05, 0.18), y=1.34, z=0.02)
-            Entity(parent=parent, model='cube', color=_rgb(color, 24, 28, 36),
-                   scale=(hip_w * 0.88, 0.06, 0.22), y=0.86)  # belt
-        if fancy:
-            # soft chest volume for named (non-michelle) female-coded shirts stay modest;
-            # male / player get shoulder pads via extra cubes
-            Entity(parent=parent, model='cube', color=_tint(shirt, -0.05),
-                   scale=(shoulder_w, 0.10, torso_d + 0.02), y=1.30)
-        if fancy and not player:
-            # soft bust for named talk NPCs (modest vs Michelle)
-            Entity(parent=parent, model='sphere', color=_tint(shirt, 0.05),
-                   scale=(0.46, 0.22, 0.28), y=1.20, z=-0.04)
-            Entity(parent=parent, model='sphere', color=_tint(shirt, 0.10),
-                   scale=(0.16, 0.14, 0.14), x=-0.10, y=1.22, z=-0.10)
-            Entity(parent=parent, model='sphere', color=_tint(shirt, 0.10),
-                   scale=(0.16, 0.14, 0.14), x=0.10, y=1.22, z=-0.10)
 
     # Neck
     Entity(parent=parent, model='cube', color=skin,
            scale=(0.12, 0.10, 0.12), y=1.38)
 
-    # Head — slightly larger for adult anime feminine read
+    # Head
     head_y = 1.52
-    head_s = 0.38 if michelle else (0.36 if anime_f or feminine else (0.34 if fancy else 0.30))
+    head_s = 0.42 if michelle else (0.36 if anime_f or feminine else (0.34 if fancy else 0.30))
     head_col = _rgb(color, 255, 220, 170) if michelle else skin
     Entity(parent=parent, model='sphere', color=head_col, scale=head_s, y=head_y)
 
-    # Ears
-    if fancy:
-        ear = _tint(head_col, -0.04)
-        Entity(parent=parent, model='sphere', color=ear, scale=0.08, x=-0.18, y=head_y)
-        Entity(parent=parent, model='sphere', color=ear, scale=0.08, x=0.18, y=head_y)
+    _face(Entity, color, parent, head_y, head_s, head_col,
+          fancy=fancy, michelle=michelle, anime_f=anime_f, feminine=feminine, player=player)
 
-    # Bigger anime-ish eyes (adult feminine only)
-    if michelle or anime_f or (feminine and not player):
-        eye_w = _rgb(color, 250, 250, 255)
-        iris = _rgb(color, 60, 90, 140) if not michelle else _rgb(color, 70, 110, 90)
-        for ex in (-0.08, 0.08):
-            Entity(parent=parent, model='sphere', color=eye_w,
-                   scale=(0.10, 0.11, 0.06), x=ex, y=head_y + 0.02, z=0.14)
-            Entity(parent=parent, model='sphere', color=iris,
-                   scale=(0.05, 0.06, 0.04), x=ex, y=head_y + 0.02, z=0.17)
-
-    # Hair / silhouette — never a bare cube head
+    # Hair
     if michelle:
-        # long wavy blonde volume + soft bangs + side fall (adult silhouette)
-        Entity(parent=parent, model='sphere', color=hair,
-               scale=(0.42, 0.36, 0.40), y=head_y + 0.08, z=-0.02)
-        Entity(parent=parent, model='cube', color=_tint(hair, -0.04),
-               scale=(0.46, 0.11, 0.22), y=head_y + 0.16, z=0.08)  # bangs
-        Entity(parent=parent, model='cube', color=_tint(hair, -0.06),
-               scale=(0.18, 0.36, 0.14), x=-0.22, y=head_y - 0.06, z=-0.04)
-        Entity(parent=parent, model='cube', color=_tint(hair, -0.06),
-               scale=(0.18, 0.36, 0.14), x=0.22, y=head_y - 0.06, z=-0.04)
-        # longer back fall / waves
-        Entity(parent=parent, model='sphere', color=_tint(hair, -0.08),
-               scale=(0.26, 0.36, 0.20), y=head_y - 0.10, z=-0.20)
-        Entity(parent=parent, model='cube', color=_tint(hair, -0.12),
-               scale=(0.20, 0.40, 0.12), y=head_y - 0.22, z=-0.22)
-        # side curls
-        Entity(parent=parent, model='sphere', color=_tint(hair, -0.02),
-               scale=(0.14, 0.22, 0.14), x=-0.24, y=head_y - 0.18, z=0.02)
-        Entity(parent=parent, model='sphere', color=_tint(hair, -0.02),
-               scale=(0.14, 0.22, 0.14), x=0.24, y=head_y - 0.18, z=0.02)
-        # lips cue
-        Entity(parent=parent, model='cube', color=_rgb(color, 210, 90, 110),
-               scale=(0.10, 0.03, 0.04), y=head_y - 0.06, z=0.16)
+        _hair_michelle(Entity, parent, hair, head_y)
     elif player:
-        # short dark crop
-        Entity(parent=parent, model='sphere', color=hair,
-               scale=(0.36, 0.20, 0.36), y=head_y + 0.10)
-        Entity(parent=parent, model='cube', color=_tint(hair, -0.08),
-               scale=(0.34, 0.08, 0.16), y=head_y + 0.14, z=0.08)
+        _hair_player(Entity, parent, hair, head_y)
     elif anime_f or (feminine and not player and not michelle):
-        # long adult feminine hair
-        Entity(parent=parent, model='sphere', color=hair,
-               scale=(0.40, 0.28, 0.38), y=head_y + 0.10)
-        Entity(parent=parent, model='cube', color=_tint(hair, -0.06),
-               scale=(0.40, 0.10, 0.16), y=head_y + 0.16, z=0.08)
-        Entity(parent=parent, model='cube', color=_tint(hair, -0.10),
-               scale=(0.22, 0.48, 0.14), y=head_y - 0.18, z=-0.16)
-        Entity(parent=parent, model='sphere', color=_tint(hair, -0.04),
-               scale=(0.16, 0.28, 0.14), x=-0.22, y=head_y - 0.14)
-        Entity(parent=parent, model='sphere', color=_tint(hair, -0.04),
-               scale=(0.16, 0.28, 0.14), x=0.22, y=head_y - 0.14)
-        Entity(parent=parent, model='cube', color=_rgb(color, 220, 90, 120),
-               scale=(0.10, 0.03, 0.04), y=head_y - 0.08, z=0.16)
+        _hair_feminine(Entity, parent, hair, head_y)
     elif named:
-        Entity(parent=parent, model='sphere', color=hair,
-               scale=(0.37, 0.22, 0.37), y=head_y + 0.10)
-        Entity(parent=parent, model='cube', color=_tint(hair, -0.10),
-               scale=(0.34, 0.10, 0.15), y=head_y + 0.13, z=0.07)
-        Entity(parent=parent, model='sphere', color=_tint(hair, -0.08),
-               scale=(0.18, 0.20, 0.14), y=head_y - 0.06, z=-0.14)
-        Entity(parent=parent, model='cube', color=_tint(shirt, 0.08),
-               scale=(0.22, 0.04, 0.12), y=1.30, z=0.12)
+        _hair_named(Entity, parent, hair, shirt, head_y)
     else:
-        # utilitarian crowd / male
-        Entity(parent=parent, model='sphere', color=hair,
-               scale=(0.33, 0.15, 0.33), y=head_y + 0.08)
-        Entity(parent=parent, model='cube', color=_tint(hair, -0.08),
-               scale=(0.28, 0.06, 0.10), y=head_y + 0.12, z=0.08)
+        _hair_crowd(Entity, parent, hair, head_y)
 
-    # Neck stump (all styles) — reduces floating-head look
+    # Neck stump
     Entity(parent=parent, model='cube', color=skin,
            scale=(0.12, 0.10, 0.12), y=head_y - 0.18)
 
-    # Soft nose cue
-    if named or detail == 'crowd':
-        Entity(parent=parent, model='cube', color=_tint(skin, -0.06),
-               scale=(0.05, 0.05, 0.06), y=head_y - 0.02, z=0.15)
+    # Arms — sleeveless when underwear/nude
+    if outfit_state in ('underwear', 'nude') and allow_undress:
+        sleeve = skin
+    else:
+        sleeve = dress if michelle else shirt
+    _arms(Entity, parent, sleeve=sleeve, skin=skin, shoulder_w=shoulder_w, fancy=fancy, detail=detail)
 
-    # Shoulders + upper / lower arms + hands
-    arm_x = shoulder_w * 0.58
-    sleeve = dress if michelle else shirt
-    for sx in (-arm_x, arm_x):
-        # shoulder
-        Entity(parent=parent, model='sphere', color=sleeve,
-               scale=0.14 if fancy else 0.12, x=sx * 0.92, y=1.28)
-        # upper arm (sleeve)
-        Entity(parent=parent, model='cube', color=sleeve,
-               scale=(0.11, 0.26, 0.11), x=sx, y=1.12)
-        # lower arm (skin — short sleeves / dress)
-        Entity(parent=parent, model='cube', color=skin,
-               scale=(0.10, 0.26, 0.10), x=sx, y=0.88)
-        if fancy:
-            Entity(parent=parent, model='sphere', color=skin,
-                   scale=0.09, x=sx, y=0.72)
-        elif detail == 'crowd':
-            # tiny hand nub so crowd isn't stump-armed
-            Entity(parent=parent, model='cube', color=skin,
-                   scale=(0.08, 0.08, 0.08), x=sx, y=0.72)
-
-    # Invisible full-body collider (keeps E-talk / combat ranges stable)
     if hitbox:
-        ghost = Entity(
-            parent=parent, model='cube',
-            scale=(0.55, 1.60, 0.42), y=0.85,
-            collider='box', visible=False,
-        )
-        try:
-            ghost.hitbox_ghost = True
-        except Exception:
-            pass
+        _hitbox_ghost(Entity, parent)
 
-    parent.humanoid_style = style or detail
+    # Style string includes outfit for nude/underwear back-compat
+    if outfit_state == 'nude' and style:
+        stored = f'{style}_nude'
+    elif outfit_state == 'underwear' and style:
+        stored = f'{style}_underwear'
+    else:
+        stored = style or detail
+
+    parent.humanoid_style = stored
+    parent.outfit_state = outfit_state
+    parent._base_style = style or detail
+    parent._shirt_col = shirt
+    parent._pants_col = pants
+    parent._skin_col = skin
+    parent._parts_detail = detail
+    parent._parts_hitbox = bool(hitbox)
+    parent._parts_ready = True
+    parent._feminine_adult = bool(allow_undress)
     return parent
 
 
-def make_humanoid(Entity, color, x, z, shirt, pants, skin=None, hitbox=False, detail='crowd', style=None):
-    """Root entity at (x,0,z) with multi-part body. Named / Michelle get more parts."""
+def set_humanoid_outfit(Entity, color, parent, outfit, shirt=None, pants=None, skin=None,
+                        hitbox=None, detail=None, style=None):
+    """Swap outfit clothed|underwear|nude via clear + re-attach. Adult feminine only."""
+    outfit = (outfit or 'clothed').lower()
+    if outfit not in OUTFITS:
+        outfit = 'clothed'
+    base = style or getattr(parent, '_base_style', None) or getattr(parent, 'humanoid_style', None)
+    base, _ = parse_style_outfit(base, None)
+    shirt = shirt if shirt is not None else getattr(parent, '_shirt_col', None)
+    pants = pants if pants is not None else getattr(parent, '_pants_col', None)
+    skin = skin if skin is not None else getattr(parent, '_skin_col', None)
+    detail = detail if detail is not None else getattr(parent, '_parts_detail', 'named')
+    hitbox = bool(getattr(parent, '_parts_hitbox', False) if hitbox is None else hitbox)
+    if shirt is None:
+        shirt = _rgb(color, 46, 196, 182)
+    if pants is None:
+        pants = shirt
+    clear_humanoid_parts(parent)
+    attach_humanoid_parts(
+        Entity, color, parent, shirt, pants, skin=skin,
+        hitbox=hitbox, detail=detail, style=base, outfit=outfit,
+    )
+    return parent
+
+
+def cycle_humanoid_outfit(Entity, color, parent, delta=1, **kw):
+    """Advance clothed -> underwear -> nude -> clothed."""
+    cur = str(getattr(parent, 'outfit_state', 'clothed') or 'clothed').lower()
+    if cur not in OUTFITS:
+        cur = 'clothed'
+    nxt = OUTFITS[(OUTFITS.index(cur) + int(delta)) % len(OUTFITS)]
+    set_humanoid_outfit(Entity, color, parent, nxt, **kw)
+    return nxt
+
+
+def make_humanoid(Entity, color, x, z, shirt, pants, skin=None, hitbox=False, detail='crowd', style=None, outfit=None):
+    """Root entity at (x,0,z) with multi-part body."""
     root = Entity(position=(x, 0, z))
     try:
         attach_humanoid_parts(
             Entity, color, root, shirt, pants, skin=skin,
-            hitbox=hitbox, detail=detail, style=style,
+            hitbox=hitbox, detail=detail, style=style, outfit=outfit,
         )
     except Exception as exc:
-        # Sphere/mesh failure — fall back to cube-only silhouette so NPCs still spawn
         print('  humanoid parts fallback:', exc)
         try:
             for ch in list(getattr(root, 'children', []) or []):
@@ -448,14 +702,8 @@ def make_humanoid(Entity, color, x, z, shirt, pants, skin=None, hitbox=False, de
         Entity(parent=root, model='cube', color=pants or shirt, scale=(0.4, 0.55, 0.25), y=0.45)
         Entity(parent=root, model='cube', color=skin or shirt, scale=(0.32, 0.32, 0.32), y=1.55)
         root.chest = body
-        if hitbox:
-            ghost = Entity(parent=root, model='cube', scale=(0.55, 1.60, 0.42), y=0.85, collider='box', visible=False)
-            try:
-                ghost.hitbox_ghost = True
-            except Exception:
-                pass
-        root.humanoid_style = style or detail
     return root
+
 
 
 def make_car(Entity, color, pos, yaw, paint):

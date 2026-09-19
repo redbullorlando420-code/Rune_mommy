@@ -1,3 +1,179 @@
+        try:
+            tracer.look_at(end)
+        except Exception:
+            pass
+        destroy(tracer, delay=0.07)
+        flash = Entity(model='sphere', color=color.rgb32(255, 240, 180), scale=0.18, position=origin + direction * 1.2)
+        destroy(flash, delay=0.05)
+        if hit.hit and hit.entity:
+            ent = hit.entity
+            # walk up to a tagged parent
+            cur = ent
+            tagged = None
+            for _ in range(6):
+                if cur is None:
+                    break
+                if getattr(cur, 'hittable', False):
+                    tagged = cur
+                    break
+                cur = getattr(cur, 'parent', None)
+            if tagged is None:
+                # maybe we hit a child of a target
+                for t in list(self.targets):
+                    if not t:
+                        continue
+                    if ent == t or getattr(ent, 'parent', None) == t:
+                        tagged = t
+                        break
+            if tagged is not None:
+                kind = getattr(tagged, 'kind', '')
+                named = getattr(tagged, 'npc_id', '')
+                if kind in ('mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara') or named in ('mira', 'michelle', 'gage', 'lila', 'rosa', 'yara', 'rita', 'deb', 'motel_clerk', 'barista', 'pharmacist', 'neighbor', 'lot_attendant', 'amanda_friend'):
+                    self.toast('Not a target.')
+                    return
+                tagged.hp = getattr(tagged, 'hp', 10) - 18
+                if kind in ('civilian', 'lot_rat', 'walker', 'thug', 'heat_hunter', 'mob'):
+                    self.heat = min(3.0, self.heat + 0.4)
+                try:
+                    tagged.blink(color.red)
+                except Exception:
+                    pass
+                if tagged.hp <= 0:
+                    name = getattr(tagged, 'npc_name', 'target')
+                    loot = 12 if name != 'barrel' else 4
+                    xp = int(getattr(tagged, 'xp', 0) or 0)
+                    self.gold += loot
+                    tagged.hittable = False
+                    try:
+                        tagged.enabled = False
+                    except Exception:
+                        try:
+                            tagged.visible = False
+                        except Exception:
+                            pass
+                    extra = f' +{xp}xp' if xp else ''
+                    self.toast(f'{name} down. +{loot}g{extra}')
+                    if kind == 'gator' or getattr(tagged, 'npc_name', '') == 'alligator':
+                        try:
+                            wildlife.on_gator_killed(self, tagged)
+                        except Exception:
+                            pass
+                    self._quest_event('kill', kind=kind, mob_id=getattr(tagged, 'mob_id', ''))
+
+    def _refresh_hud(self):
+        if self.hud_gold:
+            self.hud_gold.text = f'Gold  {self.gold}'
+        if self.hud_hp:
+            self.hud_hp.text = f'HP  {int(self.hp)}'
+        if self.hud_heat:
+            self.hud_heat.text = f'HEAT  {self.heat:.1f}'
+        if getattr(self, 'hud_breed', None):
+            flag = '  PREG' if self.preg else ''
+            self.hud_breed.text = f'Breed  {int(self.breed)}%{flag}'
+        if self.hud_ammo:
+            if not self.owned_pistol:
+                self.hud_ammo.text = 'Pistol  not owned'
+            elif self.pistol_drawn:
+                self.hud_ammo.text = f'Pistol  DRAWN   ammo {self.ammo}'
+            else:
+                self.hud_ammo.text = f'Pistol  holstered   ammo {self.ammo}'
+        if self.hud_pack:
+            self.hud_pack.text = f'Pack  {len(self.pack)}'
+        if getattr(self, 'hud_quest', None):
+            self.hud_quest.text = self._quest_hud_line()
+        if getattr(self, 'hud_mode', None):
+            if self.in_car:
+                fuel = int(getattr(self.in_car, 'fuel', 0) or 0)
+                dmg = int(getattr(self.in_car, 'damage', 0) or 0)
+                tw = int(getattr(self.in_car, 'tire_wear', 0) or 0)
+                self.hud_mode.text = f'DRIVE   FUEL {fuel}%   DMG {dmg}%   TIRES {tw}%'
+            else:
+                self.hud_mode.text = 'WALK'
+        if self.gun_model:
+            self.gun_model.enabled = bool(self.pistol_drawn and self.owned_pistol and not self.in_car)
+        if getattr(self, 'mode', 'play') in ('menu', 'settings'):
+            if self.hud_prompt:
+                self.hud_prompt.text = ''
+            return
+        if self.ui_open:
+            if self.hud_prompt:
+                self.hud_prompt.text = '1-8 choose / click    ESC close'
+            return
+        prompt = self._nearest_prompt()
+        if self.hud_prompt:
+            self.hud_prompt.text = prompt
+
+    def _nearest_prompt(self):
+        if getattr(self, 'mode', 'play') in ('menu', 'settings'):
+            return ''
+        pos = self._actor_pos()
+        if getattr(self, 'mode', '') == 'safe' and getattr(self, 'safe_gate', None):
+            g = self.safe_gate
+            if dist_xz(pos, (g.x, 0, g.z)) < 3.5:
+                return 'E  leave safe yard — start game'
+        gas = self._nearest_gas(pos)
+        if self.in_car:
+            if gas:
+                car = self.in_car
+                fuel = float(getattr(car, 'fuel', 100) or 0)
+                dmg = float(getattr(car, 'damage', 0) or 0)
+                need = max(0.0, 100.0 - fuel)
+                cost = max(1, int(math.ceil(need / 2.0))) if need > 0.5 else 0
+                if need > 0.5:
+                    return f'E  fill tank ({cost}g)'
+                if dmg >= 5:
+                    return 'E  repair (50g)'
+                return 'E  exit car  ·  tank full'
+            return 'E  exit car'
+        car, cd = self._nearest_car(pos, 3.2)
+        npc, nd = self._nearest_npc(pos, 3.0)
+        stall, sd = self._nearest_stall(pos, 3.6)
+        options = []
+        try:
+            ip = interiors.prompt(self, pos)
+            if ip:
+                options.append((0.05, ip))
+        except Exception:
+            pass
+        try:
+            tp = tokyo.prompt_line(self)
+            if tp:
+                options.append((0.02, tp))
+        except Exception:
+            pass
+        if gas:
+            near_car, _ncd = self._nearest_car(pos, 5.0)
+            if near_car and not getattr(near_car, 'traffic', False):
+                fuel = float(getattr(near_car, 'fuel', 100) or 0)
+                need = max(0.0, 100.0 - fuel)
+                cost = max(1, int(math.ceil(need / 2.0))) if need > 0.5 else 0
+                dmg = float(getattr(near_car, 'damage', 0) or 0)
+                if need > 0.5:
+                    options.append((0.1, f'E  fill tank ({cost}g)'))
+                elif dmg >= 5:
+                    options.append((0.1, 'E  repair (50g)'))
+                else:
+                    options.append((0.15, 'E  gas station'))
+            else:
+                options.append((0.2, 'E  gas pump'))
+        if car and not getattr(car, 'disabled', False):
+            options.append((cd, f'E  enter car'))
+        if npc:
+            kind = getattr(npc, 'kind', '')
+            if kind == 'mira':
+                options.append((nd, 'E  talk to Mama Mira'))
+            elif kind == 'michelle':
+                options.append((nd, 'E  talk to Michelle'))
+            elif kind == 'gun':
+                options.append((nd, 'E  Hancock Gun Hut (Gage)'))
+            elif kind not in ('target', 'mob'):
+                options.append((nd, f'E  talk to {getattr(npc, "npc_name", "NPC")}'))
+        if stall and (not npc or sd + 0.4 < nd):
+            if stall['kind'] == 'gun':
+                options.append((sd, 'E  Hancock Gun Hut'))
+            else:
+                options.append((sd, f'E  {stall["name"]}'))
+        door_xz = (self.house_rooms or {}).get('door')
         if door_xz and not self.michelle_seen:
             dd = dist_xz(pos, (door_xz[0], 0, door_xz[1]))
             if dd < 3.0:
@@ -133,179 +309,3 @@
             return
 
         # Safe yard: Esc always returns to title (never soft-lock).
-        if mode == 'safe' and key == 'escape':
-            self._show_menu()
-            self.toast('Title menu.')
-            return
-
-        if key in ('enter', 'return') and getattr(self, 'tutorial_active', False) and mode == 'play':
-            self._finish_tutorial()
-            return
-        if key == 'escape':
-            if self.ui_open:
-                self.close_panel()
-                return
-            if mode == 'safe':
-                self._show_menu()
-                return
-            # Play: first Esc frees cursor (WASD still works); second Esc quits.
-            if not getattr(self, 'mouse_free', False) and getattr(self.mouse, 'locked', False):
-                self.mouse_free = True
-                self._lock_mouse(False)
-                self.toast('Cursor free — click window to look again. Esc again quits.')
-                return
-            application.quit()
-            return
-        if self.ui_open:
-            if key in ('1', '2', '3', '4', '5', '6', '7', '8'):
-                self._pick_choice(int(key) - 1)
-            return
-        if key == 'e':
-            if mode == 'safe':
-                self._try_safe_gate()
-                return
-            self._interact()
-            return
-        if mode != 'play':
-            # safe: allow mouse lock / tab only
-            if key == 'left mouse down':
-                if not getattr(self.mouse, 'locked', False):
-                    self._lock_mouse(True)
-                    self.mouse_free = False
-                    self.toast('Mouse locked. WASD walk. E at pink gate.')
-                return
-            if key == 'tab':
-                self.mouse_free = not getattr(self, 'mouse_free', False)
-                self._lock_mouse(not self.mouse_free)
-                self.toast('Cursor free (Tab to recapture)' if self.mouse_free else 'Mouse locked. WASD to walk.')
-            return
-        if key == '1':
-            self._toggle_pistol()
-            return
-        if key in ('h', 'H'):
-            self._eat_food()
-            return
-        if key == 'left mouse down':
-            # Clicking the window should capture the mouse for look+WASD.
-            if not self.ui_open and not getattr(self.mouse, 'locked', False):
-                self._lock_mouse(True)
-                self.mouse_free = False
-                self.toast('Mouse locked. WASD walk. E talk. Tab frees cursor.')
-                return
-            if self.pistol_drawn:
-                self._shoot()
-            return
-        if key == 'tab':
-            self.mouse_free = not getattr(self, 'mouse_free', False)
-            self._lock_mouse(not self.mouse_free)
-            self.toast('Cursor free (Tab to recapture)' if self.mouse_free else 'Mouse locked. WASD to walk.')
-
-    def _try_safe_gate(self):
-        gate = getattr(self, 'safe_gate', None)
-        if not gate or not self.player:
-            self.toast('No gate.')
-            return
-        pos = self._actor_pos()
-        d = dist_xz(pos, (gate.x, 0, gate.z))
-        if d <= 3.2:
-            self._leave_safe_to_world()
-        else:
-            self.toast('Walk to the pink gate, then E.')
-
-    def _toggle_pistol(self):
-        if not self.owned_pistol:
-            self.toast('No pistol. Buy one from Gage at Hancock Gun Hut (east).')
-            return
-        self.pistol_drawn = not self.pistol_drawn
-        if self.gun_model and not self.in_car:
-            self.gun_model.enabled = self.pistol_drawn
-        if self.pistol_drawn:
-            self.panic_t = max(self.panic_t, 3.5)
-            self.toast('Pistol drawn.')
-        else:
-            self.toast('Holstered.')
-
-    def _interact(self):
-        if getattr(self, 'mode', 'play') in ('menu', 'settings'):
-            return
-        try:
-            if tokyo.try_interact(self):
-                return
-            if interiors.try_interact(self):
-                return
-        except Exception:
-            pass
-        pos = self._actor_pos()
-        if getattr(self, 'mode', '') == 'safe':
-            if getattr(self, 'safe_gate', None):
-                g = self.safe_gate
-                if dist_xz(pos, (g.x, 0, g.z)) < 3.5:
-                    self._leave_safe_to_world()
-                    return
-            self.toast('Walk to the pink gate (west) — E to start Clermont.')
-            return
-        gas = self._nearest_gas(pos)
-        if self.in_car:
-            if gas:
-                self.open_gas_station(gas, self.in_car)
-                return
-            self._exit_car()
-            return
-        if gas:
-            near_car, _ncd = self._nearest_car(pos, 5.0)
-            # Prefer parked/player car near pump; traffic ignored for service
-            service = None
-            if near_car and not getattr(near_car, 'traffic', False):
-                service = near_car
-            if service is not None:
-                self.open_gas_station(gas, service)
-                return
-            # No car: allow NPC talk (e.g. Rita); otherwise nudge
-            npc_chk, nd_chk = self._nearest_npc(pos, 3.0)
-            if not (npc_chk and nd_chk <= 3.0):
-                self.toast('Bring a car.')
-                return
-        car, cd = self._nearest_car(pos, 3.2)
-        npc, nd = self._nearest_npc(pos, 3.0)
-        stall, sd = self._nearest_stall(pos, 3.6)
-
-        # prefer NPC / stall over car if closer
-        if npc and nd <= 3.0 and (car is None or nd <= cd + 0.15):
-            kind = getattr(npc, 'kind', '')
-            if kind == 'mira':
-                self.open_mira('start')
-                return
-            if kind == 'michelle':
-                try:
-                    from michelle_talk import pick_michelle_opening
-                    nid = pick_michelle_opening(self)
-                except Exception:
-                    nid = 'door' if not self.michelle_seen else 'hi'
-                self.michelle_seen = True
-                self.michelle_auto_opened = True
-                self.open_michelle(nid)
-                self._quest_event('talk', npc_id='michelle')
-                self._tutorial_note('talk')
-                return
-            if kind == 'gun':
-                self.open_gun_shop()
-                return
-            named = getattr(npc, 'npc_id', '')
-            if kind in ('lila', 'rosa', 'yara') or named in ('lila', 'rosa', 'yara'):
-                self.open_vn(kind if kind in ('lila', 'rosa', 'yara') else named)
-                return
-            if kind == 'talk' or getattr(npc, 'talkable', False):
-                _line = getattr(npc, 'line', None) or getattr(npc, 'life_line', None) or '...'
-                try:
-                    _line = life_sim.decorate_talk_line(npc, _line)
-                except Exception:
-                    pass
-                self.open_talk(
-                    getattr(npc, 'npc_name', 'NPC'),
-                    _line,
-                    getattr(npc, 'portrait_tex', None),
-                )
-                self._quest_event('talk', npc_id=getattr(npc, 'npc_id', ''))
-                return
-        if self.michelle_seen and self.house_rooms:
-            best_room, best_rd = None, 2.8

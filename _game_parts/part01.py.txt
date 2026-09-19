@@ -283,6 +283,7 @@ class Game:
         self.world_paused = True
         self.intro_started = False
         self.mouse_sens = 140.0
+        self.cam_mode = 'follow'  # follow | near | far | hood (car)
         self.fullscreen_stub = False
         self.menu_ents = []
         self.menu_title = None
@@ -308,4 +309,3 @@ class Game:
         self.tutorial_overlay = None
         self.tutorial_text = None
         self.kill_quest_count = 0
-

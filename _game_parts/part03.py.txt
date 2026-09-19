@@ -1,3 +1,4 @@
+                enabled=False,
                 z=-0.1,
             )
             self.settings_lines.append(tline)
@@ -281,6 +282,7 @@
             'intro_started': bool(self.intro_started),
             'michelle_seen': bool(self.michelle_seen),
             'mouse_sens': float(self.mouse_sens),
+            'cam_mode': str(getattr(self, 'cam_mode', 'follow') or 'follow'),
         }
         path = self._save_path()
         try:
@@ -307,5 +309,3 @@
         self.breed = int(data.get('breed', self.breed))
         self.preg = bool(data.get('preg', self.preg))
         self.owned_pistol = bool(data.get('pistol', data.get('owned_pistol', self.owned_pistol)))
-        self.ammo = int(data.get('ammo', self.ammo))
-        self.pack = list(data.get('pack') or [])

@@ -1,3 +1,4 @@
+
         self.player = None
         self.cam_pivot = None
         self.visual = None
@@ -308,4 +309,3 @@
                 origin=(0, 0),
                 color=color.rgb32(255, 230, 255),
                 scale=1.0,
-                enabled=False,

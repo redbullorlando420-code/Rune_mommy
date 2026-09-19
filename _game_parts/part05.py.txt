@@ -1,3 +1,12 @@
+            'guest': guest_xz,
+            'garage': garage_xz,
+            'shower': shower_xz,
+            'lawn': lawn_xz,
+        }
+
+        def vol(xz, sx, sz, col, node):
+            e = Entity(model='cube', scale=(sx, 0.06, sz), position=(xz[0], 0.12, xz[1]), color=col)
+            e.room_node = node
             self.house_vols.append(e)
             return e
 
@@ -59,10 +68,16 @@
                     bill.billboard = True
                 except Exception:
                     pass
+                try:
+                    bill.keep_on_outfit_swap = True
+                except Exception:
+                    pass
             except Exception:
                 michelle.portrait_tex = None
         self.npcs.append(michelle)
         self.michelle = michelle
+        michelle._feminine_adult = True
+        michelle._base_style = 'michelle'
 
     def _build_stalls(self):
 
@@ -294,18 +309,3 @@
         mira.npc_id = 'mira'
         mira.npc_name = 'Mama Mira'
         mira.kind = 'mira'
-        mira.hittable = False
-        self.talk_npcs.append({'ent': mira, 'name': 'Mama Mira', 'talk': 'Neons loud tonight.', 'killable': False})
-        if portrait:
-            bill = Entity(
-                parent=mira,
-                model='quad',
-                texture=portrait,
-                scale=(1.15, 1.55),
-                position=(0, 1.45, -0.55),
-                double_sided=True,
-            )
-            try:
-                bill.billboard = True
-            except Exception:
-                pass

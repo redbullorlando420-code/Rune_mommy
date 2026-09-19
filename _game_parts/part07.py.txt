@@ -1,3 +1,49 @@
+        camera = self.camera
+
+        Text(text='RUNE MOMMY', position=(-0.86, 0.48), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 210))
+        Text(text='Clermont / Hwy 50', position=(-0.86, 0.445), origin=(-0.5, 0.5), color=color.rgb32(140, 230, 255), scale=0.75)
+        self.hud_gold = Text(text='Gold  200', position=(-0.86, 0.40), origin=(-0.5, 0.5), color=color.rgb32(255, 220, 90))
+        self.hud_hp = Text(text='HP  100', position=(-0.86, 0.370), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 170), scale=0.85)
+        self.hud_heat = Text(text='HEAT  0.0', position=(-0.86, 0.340), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 90), scale=0.85)
+        self.hud_ammo = Text(text='Pistol  --', position=(-0.86, 0.310), origin=(-0.5, 0.5), color=color.rgb32(200, 200, 210), scale=0.85)
+        self.hud_pack = Text(text='Pack  0', position=(-0.86, 0.280), origin=(-0.5, 0.5), color=color.rgb32(180, 230, 200), scale=0.85)
+        self.hud_breed = Text(text='BREED  0%', position=(-0.86, 0.250), origin=(-0.5, 0.5), color=color.rgb32(46, 196, 182), scale=0.85)
+        self.hud_quest = Text(text='QUEST  —', position=(-0.86, 0.220), origin=(-0.5, 0.5), color=color.rgb32(180, 255, 200), scale=0.8)
+        self.hud_mode = Text(text='WALK', position=(-0.86, 0.190), origin=(-0.5, 0.5), color=color.rgb32(200, 220, 255), scale=0.8)
+        self.hud_prompt = Text(text='', position=(0, -0.42), origin=(0, 0), color=color.rgb32(255, 240, 180), scale=0.9)
+        self.hud_toast = Text(text='', position=(0, 0.32), origin=(0, 0), color=color.rgb32(255, 180, 220), scale=0.85)
+        self.crosshair = Entity(parent=camera.ui, model='quad', color=color.rgb32(255, 255, 255), scale=0.008, rotation_z=45)
+        self.debug_hud = Text(
+            text='',
+            position=(-0.86, -0.36),
+            origin=(-0.5, 0.5),
+            color=color.rgb32(180, 255, 180),
+            scale=0.65,
+            enabled=True,
+        )
+
+        self.panel_bg = Entity(
+            parent=camera.ui,
+            model='quad',
+            color=color.rgba32(10, 4, 18, 235),
+            scale=(1.58, 0.78),
+            position=(0.06, -0.28),
+            enabled=False,
+            z=0.1,
+        )
+        self.panel_portrait = Entity(
+            parent=camera.ui,
+            model='quad',
+            scale=(0.34, 0.60),
+            position=(-0.68, -0.26),
+            enabled=False,
+            z=-0.05,
+        )
+        if self.mira_texture:
+            self.panel_portrait.texture = self.mira_texture
+        self.panel_name = Text(text='', position=(-0.52, -0.02), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 210), enabled=False)
+        self.panel_body = Text(text='', position=(-0.52, -0.07), origin=(-0.5, 0.5), color=color.rgb32(245, 230, 255), enabled=False, scale=0.75)
+        # Clickable dialogue choice buttons (mouse) + number keys 1-8
         from ursina import Button
         self.panel_choices = []
         for i in range(8):
@@ -263,49 +309,3 @@
         if not getattr(car, 'traffic', False) and not out_of_gas:
             burn = (0.028 * abs(nspd) + 0.045 * max(0.0, accel)) * dt
             fuel = max(0.0, fuel - burn)
-            car.fuel = fuel
-            if fuel <= 0.0 and not getattr(car, 'out_of_gas_toasted', False):
-                car.out_of_gas_toasted = True
-                self.toast('Out of gas. Find a pump.')
-
-        # Collision: buildings via raycast (do not ignore other cars); traffic via proximity
-        proposed = Vec3(nx - car.x, 0, nz - car.z)
-        hit_something = False
-        impact_speed = abs(nspd)
-        if proposed.length() > 0.001:
-            origin = car.world_position + Vec3(0, 0.7, 0)
-            ign = [self.player, self.visual, self.cam_pivot, car, getattr(car, 'body', None)]
-            if self.gun_model:
-                ign.append(self.gun_model)
-            # Never destroy / count named NPC talk entities as crash targets
-            for npc in self.npcs:
-                if not npc:
-                    continue
-                kind = getattr(npc, 'kind', '')
-                named = getattr(npc, 'npc_id', '')
-                if kind in ('mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara') or named in (
-                    'mira', 'michelle', 'gage', 'lila', 'rosa', 'yara', 'rita', 'deb',
-                    'motel_clerk', 'barista', 'pharmacist', 'neighbor', 'lot_attendant',
-                    'amanda_friend', 'club27_host', 'quiet_spa_tech', 'citrus_guide', 'park_ranger',
-                ):
-                    ign.append(npc)
-            ign = [e for e in ign if e]
-            direction = proposed.normalized()
-            hit = raycast(origin, direction, distance=max(2.0, proposed.length() + 1.2), ignore=ign, debug=False)
-            if hit.hit:
-                hit_something = True
-
-        if not hit_something:
-            for other in self.cars:
-                if not other or other is car:
-                    continue
-                d = dist_xz((nx, 0, nz), (other.x, 0, other.z))
-                if d < 2.6:
-                    hit_something = True
-                    break
-
-        if hit_something:
-            self._car_take_damage(car, impact_speed)
-            nspd *= -0.25
-            # stay put on impact
-            nx, nz = car.x, car.z

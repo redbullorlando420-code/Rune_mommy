@@ -11,7 +11,7 @@ import random
 from lighting import should_sim, set_visible, set_lod, CULL_TRAFFIC
 import parking
 
-TRAFFIC_COUNT = 22
+TRAFFIC_COUNT = 9
 LOT_WPS = (
     # Cruise loops near edge lots / hwy shoulders — not downtown plaza pads
     (-44.0, -10.6),
@@ -40,12 +40,12 @@ def spawn_traffic(game):
 
     # Empty parked cars in lots
     try:
-        n += parking.spawn_empty_parked(game, count=12)
+        n += parking.spawn_empty_parked(game, count=5)
     except Exception as exc:
         print('  empty parked skip:', exc)
 
     # Eastbound Hwy — driven
-    for i in range(8):
+    for i in range(3):
         x = -44 + i * 11.2 + rng.uniform(-1.2, 1.2)
         z = -14.15 + rng.uniform(-0.15, 0.15)
         paint = color.rgb32(*PAINTS[i % len(PAINTS)])
@@ -55,7 +55,7 @@ def spawn_traffic(game):
         game.cars.append(car)
         n += 1
     # Westbound
-    for i in range(8):
+    for i in range(3):
         x = 44 - i * 11.0 + rng.uniform(-1.0, 1.0)
         z = -17.85 + rng.uniform(-0.15, 0.15)
         paint = color.rgb32(*PAINTS[(i + 3) % len(PAINTS)])
@@ -65,7 +65,7 @@ def spawn_traffic(game):
         game.cars.append(car)
         n += 1
     # Cruising lot loop — driven
-    for i in range(6):
+    for i in range(3):
         wp = i % len(LOT_WPS)
         x, z = LOT_WPS[wp]
         x += rng.uniform(-2.5, 2.5)

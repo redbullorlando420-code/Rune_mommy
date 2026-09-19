@@ -1,3 +1,49 @@
+            car.fuel = fuel
+            if fuel <= 0.0 and not getattr(car, 'out_of_gas_toasted', False):
+                car.out_of_gas_toasted = True
+                self.toast('Out of gas. Find a pump.')
+
+        # Collision: buildings via raycast (do not ignore other cars); traffic via proximity
+        proposed = Vec3(nx - car.x, 0, nz - car.z)
+        hit_something = False
+        impact_speed = abs(nspd)
+        if proposed.length() > 0.001:
+            origin = car.world_position + Vec3(0, 0.7, 0)
+            ign = [self.player, self.visual, self.cam_pivot, car, getattr(car, 'body', None)]
+            if self.gun_model:
+                ign.append(self.gun_model)
+            # Never destroy / count named NPC talk entities as crash targets
+            for npc in self.npcs:
+                if not npc:
+                    continue
+                kind = getattr(npc, 'kind', '')
+                named = getattr(npc, 'npc_id', '')
+                if kind in ('mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara') or named in (
+                    'mira', 'michelle', 'gage', 'lila', 'rosa', 'yara', 'rita', 'deb',
+                    'motel_clerk', 'barista', 'pharmacist', 'neighbor', 'lot_attendant',
+                    'amanda_friend', 'club27_host', 'quiet_spa_tech', 'citrus_guide', 'park_ranger',
+                ):
+                    ign.append(npc)
+            ign = [e for e in ign if e]
+            direction = proposed.normalized()
+            hit = raycast(origin, direction, distance=max(2.0, proposed.length() + 1.2), ignore=ign, debug=False)
+            if hit.hit:
+                hit_something = True
+
+        if not hit_something:
+            for other in self.cars:
+                if not other or other is car:
+                    continue
+                d = dist_xz((nx, 0, nz), (other.x, 0, other.z))
+                if d < 2.6:
+                    hit_something = True
+                    break
+
+        if hit_something:
+            self._car_take_damage(car, impact_speed)
+            nspd *= -0.25
+            # stay put on impact
+            nx, nz = car.x, car.z
         else:
             car.x, car.z = nx, nz
             car.rotation_y = nyaw
@@ -10,10 +56,12 @@
         self._update_car_damage_visual(car, dt)
 
         # Slight camera follow lag (lerp cam_pivot local z toward target)
+        # Skip in hood-cam -- keep pivot stable for cabin/hood framing.
         try:
-            target_z = -0.15 if abs(car.speed) > 8 else 0.2
-            cur = float(getattr(car.cam_pivot, 'z', 0.2) or 0.2)
-            car.cam_pivot.z = cur + (target_z - cur) * min(1.0, 3.5 * dt)
+            if str(getattr(self, 'cam_mode', 'follow') or 'follow') != 'hood':
+                target_z = -0.15 if abs(car.speed) > 8 else 0.2
+                cur = float(getattr(car.cam_pivot, 'z', 0.2) or 0.2)
+                car.cam_pivot.z = cur + (target_z - cur) * min(1.0, 3.5 * dt)
         except Exception:
             pass
 
@@ -81,16 +129,144 @@
                 pass
 
     def _set_camera_follow(self, in_car):
-        from ursina import Vec3, camera
         self.cam_in_car = bool(in_car)
+        self._apply_camera_mode()
+
+    def _camera_mode_list(self):
+        # On foot: follow / near / far. In car: + hood-cam.
+        if self.in_car or getattr(self, 'cam_in_car', False):
+            return ('follow', 'near', 'far', 'hood')
+        return ('follow', 'near', 'far')
+
+    def _camera_mode_label(self, mode=None):
+        mode = mode or getattr(self, 'cam_mode', 'follow')
+        return {
+            'follow': 'Camera: Follow',
+            'near': 'Camera: Near / Shoulder',
+            'far': 'Camera: Far / Chase',
+            'hood': 'Camera: Hood',
+        }.get(mode, 'Camera: Follow')
+
+    def _persist_cam_pref(self):
+        # Light persist -- flags only (survives without full Save).
+        try:
+            flags = self._load_flags()
+            flags['cam_mode'] = str(getattr(self, 'cam_mode', 'follow') or 'follow')
+            self._save_flags(flags)
+        except Exception:
+            pass
+
+    def _cycle_camera_mode(self, delta=1):
+        mode = getattr(self, 'mode', 'play')
+        if mode not in ('play', 'safe'):
+            return
+        if getattr(self, 'ui_open', False):
+            return
+        modes = self._camera_mode_list()
+        cur = str(getattr(self, 'cam_mode', 'follow') or 'follow').lower()
+        if cur not in modes:
+            cur = 'follow'
+        i = modes.index(cur)
+        self.cam_mode = modes[(i + int(delta)) % len(modes)]
+        self._apply_camera_mode()
+        self.toast(self._camera_mode_label(self.cam_mode))
+        self._persist_cam_pref()
+
+    def _apply_camera_mode(self):
+        from ursina import Vec3, camera
+        mode = str(getattr(self, 'cam_mode', 'follow') or 'follow').lower()
+        in_car = bool(getattr(self, 'cam_in_car', False) and self.in_car)
+        if not in_car and mode == 'hood':
+            mode = 'follow'
+            self.cam_mode = mode
+        # tuple: y, z, pitch, x_off, fov
         if in_car:
-            camera.parent = self.in_car.cam_pivot
-            camera.position = Vec3(0, 2.4, -10.5)
-            camera.rotation = Vec3(14, 0, 0)
+            table = {
+                'follow': (2.4, -10.5, 14.0, 0.0, 80.0),
+                'near': (1.55, -4.2, 10.0, 0.55, 78.0),
+                'far': (5.2, -16.5, 26.0, 0.0, 82.0),
+                'hood': (1.05, 1.85, 8.0, 0.0, 75.0),
+            }
+            parent = self.in_car.cam_pivot
         else:
-            camera.parent = self.cam_pivot
-            camera.position = Vec3(0, 1.65, -8.8)
-            camera.rotation = Vec3(12, 0, 0)
+            table = {
+                'follow': (1.65, -8.8, 12.0, 0.0, 80.0),
+                'near': (1.35, -3.4, 8.0, 0.62, 78.0),
+                'far': (4.2, -15.0, 24.0, 0.0, 82.0),
+                'hood': (1.65, -8.8, 12.0, 0.0, 80.0),
+            }
+            parent = self.cam_pivot
+        y, z, pitch, x_off, fov = table.get(mode, table['follow'])
+        if parent is None:
+            return
+        camera.parent = parent
+        camera.position = Vec3(x_off, y, z)
+        camera.rotation = Vec3(pitch, 0, 0)
+        try:
+            camera.fov = fov
+        except Exception:
+            pass
+
+    def _cycle_outfit(self, delta=1):
+        """Adult feminine NPCs / Michelle / player: clothed -> underwear -> nude."""
+        from models3d._actors import cycle_humanoid_outfit
+        if getattr(self, 'mode', 'play') not in ('play', 'safe'):
+            return
+        if getattr(self, 'ui_open', False):
+            return
+        Entity = self.Entity
+        color = self.color
+        target = None
+        # Prefer Michelle if near, else nearest feminine adult NPC, else player visual
+        try:
+            px, pz = self.player.x, self.player.z
+        except Exception:
+            return
+        best_d = 3.2
+        m = getattr(self, 'michelle', None)
+        if m is not None:
+            try:
+                d = ((m.x - px) ** 2 + (m.z - pz) ** 2) ** 0.5
+                if d <= best_d:
+                    target, best_d = m, d
+            except Exception:
+                pass
+        for npc in list(getattr(self, 'npcs', []) or []):
+            if npc is None or npc is m:
+                continue
+            if not (getattr(npc, '_feminine_adult', False) or getattr(npc, 'feminine', False)
+                    or str(getattr(npc, '_base_style', '') or getattr(npc, 'humanoid_style', '') or '').startswith(('michelle', 'anime_f'))
+                    or getattr(npc, 'kind', '') in ('michelle', 'mira', 'lila', 'rosa', 'yara')):
+                continue
+            try:
+                d = ((npc.x - px) ** 2 + (npc.z - pz) ** 2) ** 0.5
+            except Exception:
+                continue
+            if d < best_d:
+                target, best_d = npc, d
+        if target is None:
+            target = getattr(self, 'visual', None)
+            if target is None:
+                return
+            # player undress allowed (adult)
+            try:
+                target._feminine_adult = True
+                if not getattr(target, '_base_style', None):
+                    target._base_style = 'player'
+            except Exception:
+                pass
+        try:
+            nxt = cycle_humanoid_outfit(Entity, color, target, delta=delta)
+        except Exception as exc:
+            print('  outfit cycle skip:', exc)
+            return
+        label = {'clothed': 'Outfit: Clothed', 'underwear': 'Outfit: Underwear', 'nude': 'Outfit: Nude'}.get(nxt, 'Outfit')
+        who = getattr(target, 'npc_name', None) or ('Michelle' if target is m else 'You')
+        # Never print a surname / deadname
+        if isinstance(who, str) and who.lower().startswith('lewis'):
+            who = 'Michelle'
+        self.toast('%s — %s' % (who, label))
+
 
     def _wander_targets(self, dt):
         from ursina import Vec3, raycast
@@ -133,179 +309,3 @@
         mid = origin + (end - origin) * 0.5
         length = max(0.2, (end - origin).length())
         tracer = Entity(model='cube', color=color.rgb32(255, 230, 80), scale=(0.04, 0.04, min(length, 18)), position=mid, collider=None)
-        try:
-            tracer.look_at(end)
-        except Exception:
-            pass
-        destroy(tracer, delay=0.07)
-        flash = Entity(model='sphere', color=color.rgb32(255, 240, 180), scale=0.18, position=origin + direction * 1.2)
-        destroy(flash, delay=0.05)
-        if hit.hit and hit.entity:
-            ent = hit.entity
-            # walk up to a tagged parent
-            cur = ent
-            tagged = None
-            for _ in range(6):
-                if cur is None:
-                    break
-                if getattr(cur, 'hittable', False):
-                    tagged = cur
-                    break
-                cur = getattr(cur, 'parent', None)
-            if tagged is None:
-                # maybe we hit a child of a target
-                for t in list(self.targets):
-                    if not t:
-                        continue
-                    if ent == t or getattr(ent, 'parent', None) == t:
-                        tagged = t
-                        break
-            if tagged is not None:
-                kind = getattr(tagged, 'kind', '')
-                named = getattr(tagged, 'npc_id', '')
-                if kind in ('mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara') or named in ('mira', 'michelle', 'gage', 'lila', 'rosa', 'yara', 'rita', 'deb', 'motel_clerk', 'barista', 'pharmacist', 'neighbor', 'lot_attendant', 'amanda_friend'):
-                    self.toast('Not a target.')
-                    return
-                tagged.hp = getattr(tagged, 'hp', 10) - 18
-                if kind in ('civilian', 'lot_rat', 'walker', 'thug', 'heat_hunter', 'mob'):
-                    self.heat = min(3.0, self.heat + 0.4)
-                try:
-                    tagged.blink(color.red)
-                except Exception:
-                    pass
-                if tagged.hp <= 0:
-                    name = getattr(tagged, 'npc_name', 'target')
-                    loot = 12 if name != 'barrel' else 4
-                    xp = int(getattr(tagged, 'xp', 0) or 0)
-                    self.gold += loot
-                    tagged.hittable = False
-                    try:
-                        tagged.enabled = False
-                    except Exception:
-                        try:
-                            tagged.visible = False
-                        except Exception:
-                            pass
-                    extra = f' +{xp}xp' if xp else ''
-                    self.toast(f'{name} down. +{loot}g{extra}')
-                    if kind == 'gator' or getattr(tagged, 'npc_name', '') == 'alligator':
-                        try:
-                            wildlife.on_gator_killed(self, tagged)
-                        except Exception:
-                            pass
-                    self._quest_event('kill', kind=kind, mob_id=getattr(tagged, 'mob_id', ''))
-
-    def _refresh_hud(self):
-        if self.hud_gold:
-            self.hud_gold.text = f'Gold  {self.gold}'
-        if self.hud_hp:
-            self.hud_hp.text = f'HP  {int(self.hp)}'
-        if self.hud_heat:
-            self.hud_heat.text = f'HEAT  {self.heat:.1f}'
-        if getattr(self, 'hud_breed', None):
-            flag = '  PREG' if self.preg else ''
-            self.hud_breed.text = f'Breed  {int(self.breed)}%{flag}'
-        if self.hud_ammo:
-            if not self.owned_pistol:
-                self.hud_ammo.text = 'Pistol  not owned'
-            elif self.pistol_drawn:
-                self.hud_ammo.text = f'Pistol  DRAWN   ammo {self.ammo}'
-            else:
-                self.hud_ammo.text = f'Pistol  holstered   ammo {self.ammo}'
-        if self.hud_pack:
-            self.hud_pack.text = f'Pack  {len(self.pack)}'
-        if getattr(self, 'hud_quest', None):
-            self.hud_quest.text = self._quest_hud_line()
-        if getattr(self, 'hud_mode', None):
-            if self.in_car:
-                fuel = int(getattr(self.in_car, 'fuel', 0) or 0)
-                dmg = int(getattr(self.in_car, 'damage', 0) or 0)
-                tw = int(getattr(self.in_car, 'tire_wear', 0) or 0)
-                self.hud_mode.text = f'DRIVE   FUEL {fuel}%   DMG {dmg}%   TIRES {tw}%'
-            else:
-                self.hud_mode.text = 'WALK'
-        if self.gun_model:
-            self.gun_model.enabled = bool(self.pistol_drawn and self.owned_pistol and not self.in_car)
-        if getattr(self, 'mode', 'play') in ('menu', 'settings'):
-            if self.hud_prompt:
-                self.hud_prompt.text = ''
-            return
-        if self.ui_open:
-            if self.hud_prompt:
-                self.hud_prompt.text = '1-8 choose / click    ESC close'
-            return
-        prompt = self._nearest_prompt()
-        if self.hud_prompt:
-            self.hud_prompt.text = prompt
-
-    def _nearest_prompt(self):
-        if getattr(self, 'mode', 'play') in ('menu', 'settings'):
-            return ''
-        pos = self._actor_pos()
-        if getattr(self, 'mode', '') == 'safe' and getattr(self, 'safe_gate', None):
-            g = self.safe_gate
-            if dist_xz(pos, (g.x, 0, g.z)) < 3.5:
-                return 'E  leave safe yard — start game'
-        gas = self._nearest_gas(pos)
-        if self.in_car:
-            if gas:
-                car = self.in_car
-                fuel = float(getattr(car, 'fuel', 100) or 0)
-                dmg = float(getattr(car, 'damage', 0) or 0)
-                need = max(0.0, 100.0 - fuel)
-                cost = max(1, int(math.ceil(need / 2.0))) if need > 0.5 else 0
-                if need > 0.5:
-                    return f'E  fill tank ({cost}g)'
-                if dmg >= 5:
-                    return 'E  repair (50g)'
-                return 'E  exit car  ·  tank full'
-            return 'E  exit car'
-        car, cd = self._nearest_car(pos, 3.2)
-        npc, nd = self._nearest_npc(pos, 3.0)
-        stall, sd = self._nearest_stall(pos, 3.6)
-        options = []
-        try:
-            ip = interiors.prompt(self, pos)
-            if ip:
-                options.append((0.05, ip))
-        except Exception:
-            pass
-        try:
-            tp = tokyo.prompt_line(self)
-            if tp:
-                options.append((0.02, tp))
-        except Exception:
-            pass
-        if gas:
-            near_car, _ncd = self._nearest_car(pos, 5.0)
-            if near_car and not getattr(near_car, 'traffic', False):
-                fuel = float(getattr(near_car, 'fuel', 100) or 0)
-                need = max(0.0, 100.0 - fuel)
-                cost = max(1, int(math.ceil(need / 2.0))) if need > 0.5 else 0
-                dmg = float(getattr(near_car, 'damage', 0) or 0)
-                if need > 0.5:
-                    options.append((0.1, f'E  fill tank ({cost}g)'))
-                elif dmg >= 5:
-                    options.append((0.1, 'E  repair (50g)'))
-                else:
-                    options.append((0.15, 'E  gas station'))
-            else:
-                options.append((0.2, 'E  gas pump'))
-        if car and not getattr(car, 'disabled', False):
-            options.append((cd, f'E  enter car'))
-        if npc:
-            kind = getattr(npc, 'kind', '')
-            if kind == 'mira':
-                options.append((nd, 'E  talk to Mama Mira'))
-            elif kind == 'michelle':
-                options.append((nd, 'E  talk to Michelle'))
-            elif kind == 'gun':
-                options.append((nd, 'E  Hancock Gun Hut (Gage)'))
-            elif kind not in ('target', 'mob'):
-                options.append((nd, f'E  talk to {getattr(npc, "npc_name", "NPC")}'))
-        if stall and (not npc or sd + 0.4 < nd):
-            if stall['kind'] == 'gun':
-                options.append((sd, 'E  Hancock Gun Hut'))
-            else:
-                options.append((sd, f'E  {stall["name"]}'))
-        door_xz = (self.house_rooms or {}).get('door')

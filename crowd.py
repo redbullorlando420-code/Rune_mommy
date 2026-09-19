@@ -10,7 +10,7 @@ import random
 
 from lighting import should_sim, set_visible, set_lod, CULL_PED
 
-PED_COUNT = 80
+PED_COUNT = 40
 
 # Hwy 50 asphalt Y-band corridor (traffic lanes ≈ -14.15 east / -17.85 west).
 # Sidewalks sit near z≈-10.6 (north) and z≈-21.4 (south).
@@ -221,6 +221,9 @@ def spawn_crowd(game):
         ped.kind = kind
         ped.role = role
         ped.feminine = fem
+        ped._feminine_adult = bool(fem)
+        if fem:
+            ped._base_style = 'anime_f'
         ped.hp = hp
         ped.max_hp = hp
         ped.xp = 6 if role == 'civilian' else 10

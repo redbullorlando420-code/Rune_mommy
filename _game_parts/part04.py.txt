@@ -1,8 +1,17 @@
+        self.ammo = int(data.get('ammo', self.ammo))
+        self.pack = list(data.get('pack') or [])
         self.intro_started = bool(data.get('intro_started', False))
         self.michelle_seen = bool(data.get('michelle_seen', False))
         if 'mouse_sens' in data:
             try:
                 self.mouse_sens = float(data['mouse_sens'])
+            except Exception:
+                pass
+        if 'cam_mode' in data:
+            try:
+                cm = str(data.get('cam_mode') or 'follow').strip().lower()
+                if cm in ('follow', 'near', 'far', 'hood'):
+                    self.cam_mode = cm
             except Exception:
                 pass
         if data.get('tutorial_done'):
@@ -300,12 +309,3 @@
         lawn_xz = (hx - 7.2, hz)
         self.house_rooms = {
             'door': door_xz,
-            'guest': guest_xz,
-            'garage': garage_xz,
-            'shower': shower_xz,
-            'lawn': lawn_xz,
-        }
-
-        def vol(xz, sx, sz, col, node):
-            e = Entity(model='cube', scale=(sx, 0.06, sz), position=(xz[0], 0.12, xz[1]), color=col)
-            e.room_node = node
