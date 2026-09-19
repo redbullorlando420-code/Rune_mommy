@@ -155,7 +155,7 @@ def build(game):
     # Return portal (torii) near station plaza
     rn, rpos = make_torii_portal(
         Entity, color, Text, scene, ox - 6.0, oz + 4.0,
-        label='CLERMONT ←',
+        label='CLERMONT <-',
     )
     n += rn
     game.akihabara_return_portal = {
