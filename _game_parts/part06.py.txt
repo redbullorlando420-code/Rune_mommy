@@ -1,3 +1,42 @@
+                name=shop.get('name', 'Tire Shop'),
+            )
+            self.building_count += 1
+            rec = {
+                'id': 'tire_shop_clermont', 'name': shop.get('name', 'Tire Shop'),
+                'kind': 'tire_shop', 'pos': (interact[0], 0, interact[2]),
+                'shop': shop, 'npc': shop.get('npcName', 'Rico'),
+            }
+            self.stalls.append(rec)
+            self.pois.append({
+                'id': 'tire_shop_clermont', 'name': shop.get('name', 'Tire Shop'),
+                'pos': (interact[0], 0, interact[2]),
+                'npc_id': None, 'line': None, 'is_gas': False, 'pump_r': 3.0,
+            })
+        except Exception as exc:
+            print('  tire shop skip:', exc)
+        try:
+            shop = shop_lookup_early.get('nail_salon_clermont') or {
+                'id': 'nail_salon_clermont', 'name': 'Neon Toes Nail Salon', 'stock': []}
+            n, interact = make_retail_box(
+                Entity, color, Text, self._scene(), -14.0, 7.2,
+                name=shop.get('name', 'Neon Toes'), w=6.5, d=5.0, h=3.0,
+                body_rgb=(255, 105, 180), accent_rgb=(255, 240, 245),
+            )
+            self.building_count += 1
+            rec = {
+                'id': 'nail_salon_clermont', 'name': shop.get('name', 'Neon Toes'),
+                'kind': 'nail_salon', 'pos': (interact[0], 0, interact[2]),
+                'shop': shop, 'npc': shop.get('npcName', 'Vee'),
+            }
+            self.stalls.append(rec)
+            self.pois.append({
+                'id': 'nail_salon_clermont', 'name': shop.get('name', 'Nail Salon'),
+                'pos': (interact[0], 0, interact[2]),
+                'npc_id': None, 'line': None, 'is_gas': False, 'pump_r': 3.0,
+            })
+        except Exception as exc:
+            print('  nail salon skip:', exc)
+
         # Food trucks from shops.json
         self.food_trucks = []
         trucks = [
@@ -280,4 +319,3 @@
                 continue
             if abs(getattr(ped, 'x', 0) - hx) < 14 and abs(getattr(ped, 'z', 0) - hz) < 10:
                 ped.x = min(46, ped.x + 18)
-
