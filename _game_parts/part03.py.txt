@@ -1,41 +1,3 @@
-    def _build_menu(self):
-        from ursina import Button, color as u_color
-        Entity = self.Entity
-        Text = self.Text
-        color = self.color
-        camera = self.camera
-        self.menu_ents = []
-        self.menu_buttons = []
-        self.menu_backdrop = Entity(
-            parent=camera.ui,
-            model='quad',
-            color=color.rgba32(6, 2, 14, 230),
-            scale=(2.2, 1.4),
-            position=(0, 0),
-            z=2,
-            enabled=False,
-        )
-        self.menu_ents.append(self.menu_backdrop)
-        neon = Entity(
-            parent=camera.ui,
-            model='quad',
-            color=color.rgba32(255, 40, 180, 50),
-            scale=(1.1, 0.02),
-            position=(0, 0.22),
-            z=1.9,
-            enabled=False,
-        )
-        self.menu_ents.append(neon)
-        self.menu_title = Text(
-            text='RUNE MOMMY',
-            position=(0, 0.30),
-            origin=(0, 0),
-            color=color.rgb32(255, 90, 210),
-            scale=2.0,
-            enabled=False,
-            z=-0.1,
-        )
-        self.menu_ents.append(self.menu_title)
         sub = Text(
             text='Clermont - click a button or press 1 / 2 / 3',
             position=(0, 0.22),
@@ -357,4 +319,3 @@
         crowd_n = len(getattr(self, 'peds', None) or [])
         print('  world ready: buildings=%d named_npcs=%d crowd=%d cars=%d' % (
             self.building_count, named_n, crowd_n, len(getattr(self, 'cars', None) or [])))
-
