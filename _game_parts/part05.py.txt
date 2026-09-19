@@ -26,6 +26,13 @@
             ('presidents_hall', 44.0, -8.0, None),
         )
         for kind, x, z, npc_id in specs:
+            try:
+                x, z, ok = footprints.place_or_nudge(self, x, z, w=6.0, d=5.0, label='poi_'+kind)
+                if not ok:
+                    print('  poi skip (footprint):', kind)
+                    continue
+            except Exception:
+                pass
             parts, interact, label = make_poi_building(Entity, color, Text, self._scene(), kind, x, z)
             self.building_count += 1
             is_gas = kind in ('gas', 'gas_hwy27') or (label or '').lower().find('gas') >= 0 or (label or '').lower().find('fuel') >= 0
@@ -50,6 +57,10 @@
         hx, hz = -32.0, 12.0
         self.house_vols = []
         self.sanctuary_pos = (hx, 0.0, hz)
+        try:
+            footprints.get(self).register(hx, hz, 10.0, 8.0, 'michelle_house')
+        except Exception:
+            pass
 
         # lot grass + darker back-lawn swamp strip (west) + driveway (east)
         grass = load_tex('grass')
@@ -198,12 +209,24 @@
                 w, d, h = 4.2, 3.6, 3.1
                 body_col = hex_color(pal[0])
                 accent = hex_color(pal[1])
+                try:
+                    x, z, ok = footprints.place_or_nudge(self, x, z, w=w, d=d, label=sid or 'gun_hut')
+                    if not ok:
+                        continue
+                except Exception:
+                    pass
                 make_shop_stall(Entity, color, Text, self._scene(), x, z, w, d, h, body_col, accent, accent, name, is_gun=True)
             else:
                 x, z = tile_to_world(shop.get('tileX', 16), shop.get('tileY', 7))
                 w = max(3.2, float(shop.get('w', 4)) * 0.85)
                 d = max(2.8, float(shop.get('h', 4)) * 0.7)
                 h = 2.35 if shop.get('flagship') else 2.05
+                try:
+                    x, z, ok = footprints.place_or_nudge(self, x, z, w=w, d=d, label=sid or name or 'stall')
+                    if not ok:
+                        continue
+                except Exception:
+                    pass
                 body_col = hex_color(pal[2] if len(pal) > 2 else pal[0]).tint(-0.15)
                 neon = hex_color(pal[0])
                 trim = hex_color(pal[1] if len(pal) > 1 else pal[0])
@@ -296,42 +319,3 @@
                 'id': 'tire_shop_clermont', 'name': 'Hwy 50 Tire & Lube', 'stock': []}
             n, interact = make_tire_shop(
                 Entity, color, Text, self._scene(), 42.0, -6.5,
-                name=shop.get('name', 'Tire Shop'),
-            )
-            self.building_count += 1
-            rec = {
-                'id': 'tire_shop_clermont', 'name': shop.get('name', 'Tire Shop'),
-                'kind': 'tire_shop', 'pos': (interact[0], 0, interact[2]),
-                'shop': shop, 'npc': shop.get('npcName', 'Rico'),
-            }
-            self.stalls.append(rec)
-            self.pois.append({
-                'id': 'tire_shop_clermont', 'name': shop.get('name', 'Tire Shop'),
-                'pos': (interact[0], 0, interact[2]),
-                'npc_id': None, 'line': None, 'is_gas': False, 'pump_r': 3.0,
-            })
-        except Exception as exc:
-            print('  tire shop skip:', exc)
-        try:
-            shop = shop_lookup_early.get('nail_salon_clermont') or {
-                'id': 'nail_salon_clermont', 'name': 'Neon Toes Nail Salon', 'stock': []}
-            n, interact = make_retail_box(
-                Entity, color, Text, self._scene(), -14.0, 7.2,
-                name=shop.get('name', 'Neon Toes'), w=6.5, d=5.0, h=3.0,
-                body_rgb=(255, 105, 180), accent_rgb=(255, 240, 245),
-            )
-            self.building_count += 1
-            rec = {
-                'id': 'nail_salon_clermont', 'name': shop.get('name', 'Neon Toes'),
-                'kind': 'nail_salon', 'pos': (interact[0], 0, interact[2]),
-                'shop': shop, 'npc': shop.get('npcName', 'Vee'),
-            }
-            self.stalls.append(rec)
-            self.pois.append({
-                'id': 'nail_salon_clermont', 'name': shop.get('name', 'Nail Salon'),
-                'pos': (interact[0], 0, interact[2]),
-                'npc_id': None, 'line': None, 'is_gas': False, 'pump_r': 3.0,
-            })
-        except Exception as exc:
-            print('  nail salon skip:', exc)
-
