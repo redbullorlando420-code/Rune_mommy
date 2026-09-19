@@ -1,3 +1,61 @@
+    def _cycle_outfit(self, delta=1):
+        """Adult feminine NPCs / Michelle / player: clothed -> underwear -> nude."""
+        from models3d._actors import cycle_humanoid_outfit
+        if getattr(self, 'mode', 'play') not in ('play', 'safe'):
+            return
+        if getattr(self, 'ui_open', False):
+            return
+        Entity = self.Entity
+        color = self.color
+        target = None
+        # Prefer Michelle if near, else nearest feminine adult NPC, else player visual
+        try:
+            px, pz = self.player.x, self.player.z
+        except Exception:
+            return
+        best_d = 3.2
+        m = getattr(self, 'michelle', None)
+        if m is not None:
+            try:
+                d = ((m.x - px) ** 2 + (m.z - pz) ** 2) ** 0.5
+                if d <= best_d:
+                    target, best_d = m, d
+            except Exception:
+                pass
+        for npc in list(getattr(self, 'npcs', []) or []):
+            if npc is None or npc is m:
+                continue
+            if not (getattr(npc, '_feminine_adult', False) or getattr(npc, 'feminine', False)
+                    or str(getattr(npc, '_base_style', '') or getattr(npc, 'humanoid_style', '') or '').startswith(('michelle', 'anime_f'))
+                    or getattr(npc, 'kind', '') in ('michelle', 'mira', 'lila', 'rosa', 'yara')):
+                continue
+            try:
+                d = ((npc.x - px) ** 2 + (npc.z - pz) ** 2) ** 0.5
+            except Exception:
+                continue
+            if d < best_d:
+                target, best_d = npc, d
+        if target is None:
+            target = getattr(self, 'visual', None)
+            if target is None:
+                return
+            # player undress allowed (adult)
+            try:
+                target._feminine_adult = True
+                if not getattr(target, '_base_style', None):
+                    target._base_style = 'player'
+            except Exception:
+                pass
+        try:
+            nxt = cycle_humanoid_outfit(Entity, color, target, delta=delta)
+        except Exception as exc:
+            print('  outfit cycle skip:', exc)
+            return
+        label = {'clothed': 'Outfit: Clothed', 'underwear': 'Outfit: Underwear', 'nude': 'Outfit: Nude'}.get(nxt, 'Outfit')
+        who = getattr(target, 'npc_name', None) or ('Michelle' if target is m else 'You')
+        # Never print a surname / deadname
+        if isinstance(who, str) and who.lower().startswith('lewis'):
+            who = 'Michelle'
         self.toast('%s — %s' % (who, label))
 
 
@@ -240,72 +298,3 @@
         p = self.player.world_position
         return (p.x, p.y, p.z)
 
-    def _nearest_car(self, pos, radius):
-        best, best_d = None, radius
-        for car in self.cars:
-            if not car:
-                continue
-            if getattr(car, 'disabled', False):
-                continue
-            d = dist_xz(pos, (car.x, 0, car.z))
-            if d < best_d:
-                best, best_d = car, d
-        return best, best_d
-
-    def _nearest_gas(self, pos, radius=None):
-        best, best_d = None, 99.0
-        for poi in getattr(self, 'pois', []) or []:
-            if not poi.get('is_gas'):
-                continue
-            r = float(radius if radius is not None else poi.get('pump_r', 4.2))
-            d = dist_xz(pos, poi['pos'])
-            if d < r and d < best_d:
-                best, best_d = poi, d
-        return best
-
-    def _nearest_npc(self, pos, radius):
-        best, best_d = None, radius
-        for npc in self.npcs:
-            if not npc:
-                continue
-            kind = getattr(npc, 'kind', '')
-            talkable = bool(getattr(npc, 'talkable', False) or kind == 'talk')
-            # Crowd combat kinds skipped unless marked talkable (life_sim subset / lines)
-            if kind in ('target', 'mob', 'barrel'):
-                continue
-            if kind in ('civilian', 'lot_rat', 'walker', 'thug', 'heat_hunter') and not talkable:
-                continue
-            if getattr(npc, 'hittable', False) and not talkable:
-                continue
-            if getattr(npc, 'enabled', True) is False:
-                continue
-            if getattr(npc, 'driving', False):
-                continue
-            d = dist_xz(pos, (npc.x, 0, npc.z))
-            if d < best_d:
-                best, best_d = npc, d
-        return best, best_d
-
-    def _nearest_stall(self, pos, radius):
-        best, best_d = None, radius
-        for st in self.stalls:
-            d = dist_xz(pos, st['pos'])
-            if d < best_d:
-                best, best_d = st, d
-        return best, best_d
-
-    # ----- input ----------------------------------------------------------
-
-    def on_input(self, key):
-        from ursina import application, mouse
-        self._dbg_last_key = str(key)
-        mode = getattr(self, 'mode', 'play')
-
-        if mode in ('menu', 'settings'):
-            if key == 'escape':
-                if mode == 'settings':
-                    self._show_menu()
-                else:
-                    application.quit()
-                return
-            if mode == 'menu':
