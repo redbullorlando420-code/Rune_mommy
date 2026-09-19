@@ -1,144 +1,3 @@
-        self.cam_mode = modes[(i + int(delta)) % len(modes)]
-        self._apply_camera_mode()
-        self.toast(self._camera_mode_label(self.cam_mode))
-        self._persist_cam_pref()
-
-    def _apply_camera_mode(self):
-        from ursina import Vec3, camera
-        mode = str(getattr(self, 'cam_mode', 'follow') or 'follow').lower()
-        in_car = bool(getattr(self, 'cam_in_car', False) and self.in_car)
-        if not in_car and mode == 'hood':
-            mode = 'follow'
-            self.cam_mode = mode
-        # tuple: y, z, pitch, x_off, fov
-        if in_car:
-            table = {
-                'follow': (2.4, -10.5, 14.0, 0.0, 80.0),
-                'near': (1.55, -4.2, 10.0, 0.55, 78.0),
-                'far': (5.2, -16.5, 26.0, 0.0, 82.0),
-                'hood': (1.05, 1.85, 8.0, 0.0, 75.0),
-            }
-            parent = self.in_car.cam_pivot
-        else:
-            table = {
-                'follow': (1.65, -8.8, 12.0, 0.0, 80.0),
-                'near': (1.35, -3.4, 8.0, 0.62, 78.0),
-                'far': (4.2, -15.0, 24.0, 0.0, 82.0),
-                'hood': (1.65, -8.8, 12.0, 0.0, 80.0),
-            }
-            parent = self.cam_pivot
-        y, z, pitch, x_off, fov = table.get(mode, table['follow'])
-        if parent is None:
-            return
-        camera.parent = parent
-        camera.position = Vec3(x_off, y, z)
-        camera.rotation = Vec3(pitch, 0, 0)
-        try:
-            camera.fov = fov
-        except Exception:
-            pass
-
-    def _cycle_outfit(self, delta=1):
-        """Adult feminine NPCs / Michelle / player: clothed -> underwear -> nude."""
-        from models3d._actors import cycle_humanoid_outfit
-        if getattr(self, 'mode', 'play') not in ('play', 'safe'):
-            return
-        if getattr(self, 'ui_open', False):
-            return
-        Entity = self.Entity
-        color = self.color
-        target = None
-        # Prefer Michelle if near, else nearest feminine adult NPC, else player visual
-        try:
-            px, pz = self.player.x, self.player.z
-        except Exception:
-            return
-        best_d = 3.2
-        m = getattr(self, 'michelle', None)
-        if m is not None:
-            try:
-                d = ((m.x - px) ** 2 + (m.z - pz) ** 2) ** 0.5
-                if d <= best_d:
-                    target, best_d = m, d
-            except Exception:
-                pass
-        for npc in list(getattr(self, 'npcs', []) or []):
-            if npc is None or npc is m:
-                continue
-            if not (getattr(npc, '_feminine_adult', False) or getattr(npc, 'feminine', False)
-                    or str(getattr(npc, '_base_style', '') or getattr(npc, 'humanoid_style', '') or '').startswith(('michelle', 'anime_f'))
-                    or getattr(npc, 'kind', '') in ('michelle', 'mira', 'lila', 'rosa', 'yara')):
-                continue
-            try:
-                d = ((npc.x - px) ** 2 + (npc.z - pz) ** 2) ** 0.5
-            except Exception:
-                continue
-            if d < best_d:
-                target, best_d = npc, d
-        if target is None:
-            target = getattr(self, 'visual', None)
-            if target is None:
-                return
-            # player undress allowed (adult)
-            try:
-                target._feminine_adult = True
-                if not getattr(target, '_base_style', None):
-                    target._base_style = 'player'
-            except Exception:
-                pass
-        try:
-            nxt = cycle_humanoid_outfit(Entity, color, target, delta=delta)
-        except Exception as exc:
-            print('  outfit cycle skip:', exc)
-            return
-        label = {'clothed': 'Outfit: Clothed', 'underwear': 'Outfit: Underwear', 'nude': 'Outfit: Nude'}.get(nxt, 'Outfit')
-        who = getattr(target, 'npc_name', None) or ('Michelle' if target is m else 'You')
-        # Never print a surname / deadname
-        if isinstance(who, str) and who.lower().startswith('lewis'):
-            who = 'Michelle'
-        self.toast('%s — %s' % (who, label))
-
-
-    def _wander_targets(self, dt):
-        from ursina import Vec3, raycast
-        for t in self.targets:
-            if getattr(t, 'kind', '') not in ('target', 'mob'):
-                continue
-            if not t or getattr(t, 'hp', 0) <= 0:
-                continue
-            t.wander_t += dt
-            if t.wander_t > 2.8:
-                t.heading = random.uniform(0, 360)
-                t.wander_t = 0
-            t.rotation_y = t.heading
-            step = t.forward * 1.15 * dt
-            t.position += step
-            t.y = 0
-            t.x = max(-40, min(40, t.x))
-            t.z = max(-40, min(8, t.z))
-
-    def _shoot(self):
-        from ursina import camera, raycast, Vec3, Entity, color, destroy, mouse
-        if not self.owned_pistol or not self.pistol_drawn:
-            return
-        if self.shoot_cd > 0:
-            return
-        if self.ammo <= 0:
-            self.toast('Empty. Buy ammo at Hancock Gun Hut.')
-            self.shoot_cd = 0.35
-            return
-        self.ammo -= 1
-        self.shoot_cd = 0.22
-        self.panic_t = max(self.panic_t, 4.5)
-        origin = camera.world_position
-        direction = camera.forward
-        ign = list(self.ignore)
-        if self.in_car:
-            ign += [self.in_car, self.in_car.body]
-        hit = raycast(origin, direction, distance=48, ignore=ign, debug=False)
-        end = hit.world_point if hit.hit else origin + direction * 48
-        mid = origin + (end - origin) * 0.5
-        length = max(0.2, (end - origin).length())
         tracer = Entity(model='cube', color=color.rgb32(255, 230, 80), scale=(0.04, 0.04, min(length, 18)), position=mid, collider=None)
         try:
             tracer.look_at(end)
@@ -318,3 +177,154 @@
         door_xz = (self.house_rooms or {}).get('door')
         if door_xz and not self.michelle_seen:
             dd = dist_xz(pos, (door_xz[0], 0, door_xz[1]))
+            if dd < 3.0:
+                options.append((dd, 'E  Sanctuary Drive'))
+        for poi in getattr(self, 'pois', []) or []:
+            if poi.get('is_gas'):
+                continue
+            pd = dist_xz(pos, poi['pos'])
+            if pd < 3.4:
+                options.append((pd, f"E  {poi.get('name', 'POI')}"))
+        if not options:
+            return ''
+        options.sort(key=lambda x: x[0])
+        return options[0][1]
+
+    def _actor_pos(self):
+        if self.in_car:
+            p = self.in_car.world_position
+            return (p.x, p.y, p.z)
+        p = self.player.world_position
+        return (p.x, p.y, p.z)
+
+    def _nearest_car(self, pos, radius):
+        best, best_d = None, radius
+        for car in self.cars:
+            if not car:
+                continue
+            if getattr(car, 'disabled', False):
+                continue
+            d = dist_xz(pos, (car.x, 0, car.z))
+            if d < best_d:
+                best, best_d = car, d
+        return best, best_d
+
+    def _nearest_gas(self, pos, radius=None):
+        best, best_d = None, 99.0
+        for poi in getattr(self, 'pois', []) or []:
+            if not poi.get('is_gas'):
+                continue
+            r = float(radius if radius is not None else poi.get('pump_r', 4.2))
+            d = dist_xz(pos, poi['pos'])
+            if d < r and d < best_d:
+                best, best_d = poi, d
+        return best
+
+    def _nearest_npc(self, pos, radius):
+        best, best_d = None, radius
+        for npc in self.npcs:
+            if not npc:
+                continue
+            kind = getattr(npc, 'kind', '')
+            talkable = bool(getattr(npc, 'talkable', False) or kind == 'talk')
+            # Crowd combat kinds skipped unless marked talkable (life_sim subset / lines)
+            if kind in ('target', 'mob', 'barrel'):
+                continue
+            if kind in ('civilian', 'lot_rat', 'walker', 'thug', 'heat_hunter') and not talkable:
+                continue
+            if getattr(npc, 'hittable', False) and not talkable:
+                continue
+            if getattr(npc, 'enabled', True) is False:
+                continue
+            if getattr(npc, 'driving', False):
+                continue
+            d = dist_xz(pos, (npc.x, 0, npc.z))
+            if d < best_d:
+                best, best_d = npc, d
+        return best, best_d
+
+    def _nearest_stall(self, pos, radius):
+        best, best_d = None, radius
+        for st in self.stalls:
+            d = dist_xz(pos, st['pos'])
+            if d < best_d:
+                best, best_d = st, d
+        return best, best_d
+
+    # ----- input ----------------------------------------------------------
+
+    def on_input(self, key):
+        from ursina import application, mouse
+        self._dbg_last_key = str(key)
+        mode = getattr(self, 'mode', 'play')
+
+        if mode in ('menu', 'settings'):
+            if key == 'escape':
+                if mode == 'settings':
+                    self._show_menu()
+                else:
+                    application.quit()
+                return
+            if mode == 'menu':
+                if key == '1':
+                    self._enter_safe_zone(from_load=False)
+                    return
+                if key == '2':
+                    self._try_load_game()
+                    return
+                if key == '3':
+                    self._enter_settings()
+                    return
+                return
+            # settings
+            if key == '1':
+                # mouse sens — bump through presets
+                presets = (80.0, 110.0, 140.0, 180.0, 220.0)
+                try:
+                    i = presets.index(float(self.mouse_sens))
+                    self.mouse_sens = presets[(i + 1) % len(presets)]
+                except ValueError:
+                    self.mouse_sens = 140.0
+                self._refresh_menu_labels()
+                self.toast('Mouse sensitivity %d' % int(self.mouse_sens))
+                return
+            if key == '2':
+                self.fullscreen_stub = not bool(getattr(self, 'fullscreen_stub', False))
+                try:
+                    self.window.fullscreen = self.fullscreen_stub
+                except Exception:
+                    pass
+                self._refresh_menu_labels()
+                self.toast('Fullscreen stub ' + ('ON' if self.fullscreen_stub else 'OFF'))
+                return
+            if key == '3':
+                self._show_menu()
+                return
+            return
+
+        if key == 'f3':
+            self.debug_on = not bool(getattr(self, 'debug_on', True))
+            if self.debug_hud:
+                self.debug_hud.enabled = self.debug_on
+            print('[Rune Mommy] debug', 'ON' if self.debug_on else 'OFF')
+            return
+
+        # Safe yard: Esc always returns to title (never soft-lock).
+        if mode == 'safe' and key == 'escape':
+            self._show_menu()
+            self.toast('Title menu.')
+            return
+
+        if key in ('enter', 'return') and getattr(self, 'tutorial_active', False) and mode == 'play':
+            self._finish_tutorial()
+            return
+        if key == 'escape':
+            if self.ui_open:
+                self.close_panel()
+                return
+            if mode == 'safe':
+                self._show_menu()
+                return
+            # Play: first Esc frees cursor (WASD still works); second Esc quits.
+            if not getattr(self, 'mouse_free', False) and getattr(self.mouse, 'locked', False):
+                self.mouse_free = True
