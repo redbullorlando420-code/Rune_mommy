@@ -127,3 +127,4 @@ def make_street_sign(Entity, color, Text, scene_parent, x, z, text):
         Text(parent=scene_parent, text=text, position=(x, 2.5, z), origin=(0, 0),
              billboard=True, color=_rgb(color, 240, 255, 240))
     return 2
+

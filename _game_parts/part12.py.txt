@@ -1,42 +1,3 @@
-    def _quest_hud_line(self):
-        for qid in self.quest_active:
-            q = self._quest_def(qid)
-            if not q:
-                continue
-            hud = q.get('hud') or q.get('name') or qid
-            prog = self.quest_progress.get(qid, 0)
-            if '{progress}' in hud:
-                hud = hud.replace('{progress}', str(prog))
-            return f'QUEST  {hud}'
-        if self.quest_completed:
-            return 'QUEST  done for now'
-        return 'QUEST  —'
-
-    def _quest_complete(self, qid):
-        if qid in self.quest_completed:
-            return
-        q = self._quest_def(qid)
-        if not q:
-            return
-        if qid in self.quest_active:
-            self.quest_active.remove(qid)
-        self.quest_completed.add(qid)
-        gold = int(q.get('reward_gold') or 0)
-        if gold:
-            self.gold += gold
-        self.toast(f"Quest complete: {q.get('name', qid)}  +{gold}g")
-        self._quest_unlock_ready()
-
-    def _quest_event(self, etype, **kw):
-        for qid in list(self.quest_active):
-            q = self._quest_def(qid)
-            if not q:
-                continue
-            qtype = q.get('type')
-            if etype == 'talk' and qtype == 'talk':
-                if kw.get('npc_id') == q.get('npc'):
-                    self._quest_complete(qid)
-            elif etype == 'buy' and qtype == 'buy':
                 if kw.get('item_id') == q.get('item'):
                     self._quest_complete(qid)
             elif etype == 'buy_pistol' and qtype == 'buy_pistol':
@@ -153,7 +114,7 @@
         from ursina import held_keys
         # step 0: any WASD movement
         if self.tutorial_step == 0:
-            if any(self._movement_down(held_keys, k) for k in ('w', 'a', 's', 'd')):
+            if any(held_keys[k] for k in ('w', 'a', 's', 'd')):
                 self.tutorial_step = 1
                 self._refresh_tutorial_text()
         elif self.tutorial_step == 2:
@@ -197,6 +158,58 @@
         self._save_flags(flags)
         self.toast('Tutorial done. Explore Hwy 50.')
 
+
+    def _debug_tick(self, dt):
+        """Console + HUD breadcrumbs when lagging or input-stuck."""
+        from ursina import held_keys, mouse, time as u_time
+        self._dbg_t += dt
+        wish = any(held_keys[k] for k in ('w', 'a', 's', 'd', 'up arrow', 'down arrow'))
+        self._dbg_wish = wish
+        if wish and getattr(self, 'mode', '') in ('safe', 'play') and not self.in_car:
+            # approximate movement by checking position change
+            pos = (round(float(self.player.x), 2), round(float(self.player.z), 2))
+            last = getattr(self, '_dbg_pos', None)
+            moved = last is not None and pos != last
+            self._dbg_pos = pos
+            if wish and not moved and not self.ui_open:
+                self._dbg_stuck_t += dt
+            else:
+                self._dbg_stuck_t = 0.0
+        else:
+            self._dbg_stuck_t = 0.0
+
+        fps = 1.0 / dt if dt > 1e-6 else 0.0
+        lag = dt > 0.08
+        stuck = self._dbg_stuck_t > 0.7
+        line = (
+            "DBG mode=%s paused=%s ui=%s locked=%s free=%s fps=%.0f dt=%.3f key=%s pos=(%.1f,%.1f) stuck=%.1fs"
+            % (
+                getattr(self, 'mode', '?'),
+                bool(getattr(self, 'world_paused', False)),
+                bool(self.ui_open),
+                bool(getattr(mouse, 'locked', False)),
+                bool(getattr(self, 'mouse_free', False)),
+                fps,
+                dt,
+                getattr(self, '_dbg_last_key', '-'),
+                float(self.player.x) if self.player else 0,
+                float(self.player.z) if self.player else 0,
+                self._dbg_stuck_t,
+            )
+        )
+        if self.debug_hud:
+            self.debug_hud.enabled = bool(getattr(self, 'debug_on', True))
+            if self.debug_on:
+                self.debug_hud.text = line
+        # Print on lag, stuck, or every 2s
+        if lag or stuck or self._dbg_t >= 2.0:
+            self._dbg_t = 0.0
+            tag = 'LAG' if lag else ('STUCK' if stuck else 'ok')
+            print('[Rune Mommy][%s] %s' % (tag, line))
+            if stuck:
+                print('[Rune Mommy][STUCK] tip: Esc=menu | click 3D view | arrows move | Q/right-arrow turn')
+
+
     def toast(self, msg):
         self.toast_timer = 2.6
         if self.hud_toast:
@@ -232,7 +245,7 @@ def run():
     TEST_T0 = pytime.time()
 
     print('Rune Mommy   -   Clermont / Hwy 50')
-    print('  >>> Choose Start (or press 1), then WASD to move <<<')
+    print('  >>> CLICK THE GAME WINDOW once, then WASD to move <<<')
     print('  WASD walk   mouse look   Space jump')
     print('  If a pink talk panel is open: press Esc, then WASD')
     print('  E enter/exit car, talk, buy')

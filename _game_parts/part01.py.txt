@@ -32,12 +32,11 @@ from loaders import (
 )
 from crowd import spawn_crowd, tick_crowd, spawn_heat_hunter
 from traffic import spawn_traffic, tick_traffic
-from world_layout import LayoutPlanner
-from lighting import apply_lighting, apply_perf, configure_renderer, tick_day_night
+from lighting import apply_lighting, apply_perf, set_visible
 from models3d import (
     make_humanoid, make_car, make_house, make_shop_stall,
     make_billboard, make_street_sign, make_poi_building,
-    make_florida_environment, set_world_textures,
+    set_world_textures,
 )
 
 _TEX_CACHE = {}
@@ -49,19 +48,17 @@ def load_tex(name):
     if key in _TEX_CACHE:
         return _TEX_CACHE[key]
     folder = ROOT / 'assets' / 'textures'
-    names = ('asphalt_pbr_v2', 'asphalt') if key == 'asphalt' else (key,)
-    for candidate in names:
-        for ext in ('.jpg', '.jpeg', '.png', '.webp'):
-            path = folder / f'{candidate}{ext}'
-            if path.is_file():
-                rel = str(path.relative_to(ROOT)).replace(chr(92), '/')
-                try:
-                    from ursina import load_texture
-                    tex = load_texture(rel)
-                except Exception:
-                    tex = rel
-                _TEX_CACHE[key] = tex
-                return tex
+    for ext in ('.jpg', '.jpeg', '.png', '.webp'):
+        path = folder / f'{key}{ext}'
+        if path.is_file():
+            rel = str(path.relative_to(ROOT)).replace(chr(92), '/')
+            try:
+                from ursina import load_texture
+                tex = load_texture(rel)
+            except Exception:
+                tex = rel
+            _TEX_CACHE[key] = tex
+            return tex
     _TEX_CACHE[key] = None
     return None
 
@@ -163,7 +160,6 @@ def data_report():
 
 def boot_ursina(window_type='onscreen'):
     from panda3d.core import loadPrcFileData
-    configure_renderer()
     loadPrcFileData('', 'audio-library-name null')
     loadPrcFileData('', 'notify-level-audio fatal')
     loadPrcFileData('', 'notify-level-glgsg warning')
@@ -180,7 +176,6 @@ def boot_ursina(window_type='onscreen'):
         size=(1280, 720),
         editor_ui_enabled=False,
         show_ursina_splash=False,
-        icon='textures/rune_mommy.ico',
         window_type=window_type,
     )
     return app
@@ -238,12 +233,7 @@ class Game:
         self.in_car = None
         self.ui_open = False
         self.mouse_free = False
-        # Keep a local key-state mirror. Ursina's held_keys can miss a key
-        # transition when a UI Button has just owned focus, so movement never
-        # depends on that global state alone.
-        self.move_keys = set()
-        # Debug overlay was removed; never log an exception every render frame.
-        self.debug_on = False
+        self.debug_on = True
         self.debug_hud = None
         self._dbg_t = 0.0
         self._dbg_last_key = '-'
@@ -261,7 +251,6 @@ class Game:
         self.world_paused = True
         self.intro_started = False
         self.mouse_sens = 140.0
-        self.mouse_look_cooldown = 0
         self.fullscreen_stub = False
         self.menu_ents = []
         self.menu_title = None
@@ -276,14 +265,8 @@ class Game:
         self.michelle = None
         self.building_count = 0
         self.pois = []
-        self.region_gates = []
-        self.current_region = 'clermont'
-        self.layout = LayoutPlanner()
-        self.static_chunks = []
-        self.world_clock = 305.0
-        self.light_rig = None
-        self.render_range = 'full'
-        self.interiors = {}
-        self.active_interior = None
-        self.atmosphere = None
         self.quest_defs = list((self.quests_data or {}).get('quests') or [])
+        self.quest_active = []
+        self.quest_completed = set()
+        self.quest_progress = {}
+        self.hud_quest = None

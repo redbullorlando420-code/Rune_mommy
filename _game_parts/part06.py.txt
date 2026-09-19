@@ -1,3 +1,27 @@
+        talk_spots = {
+            'lila': (-14.0, 5.5),
+            'yara': (8.0, -26.5),
+            'rosa': (mx - 3.2, mz + 0.4),
+            'tavi': (-24.0, -20.0),
+            'rook': (26.0, 7.0),
+            'rita': (18.0, -13.0),
+            'motel_clerk': (-8.0, 4.2),
+            'barista': (-20.0, -12.8),
+            'pharmacist': (30.0, -30.2),
+            'neighbor': (-40.0, 10.5),
+            'lot_attendant': (8.0, 2.8),
+            'amanda_friend': (-14.0, -30.0),
+        }
+        # place POI NPCs from self.pois (adds new ids + refreshes positions)
+        for poi in getattr(self, 'pois', []) or []:
+            nid = poi.get('npc_id')
+            if nid:
+                talk_spots[nid] = (poi['pos'][0], poi['pos'][2])
+        for nid, (nx, nz) in talk_spots.items():
+            spec = (self.npcs_data or {}).get(nid) or {'id': nid, 'name': nid.title(), 'greet': '...'}
+            shirt = hex_color(spec.get('color') or '#ff8fab')
+            named = nid in ('lila', 'rosa', 'yara', 'rita', 'deb')
+            npc = self._humanoid(
                 nx, nz, shirt=shirt, pants=color.rgb32(36, 24, 40),
                 skin=color.rgb32(255, 200, 160), detail='named' if named else 'crowd',
             )
@@ -6,26 +30,29 @@
             npc.kind = nid if nid in ('lila', 'rosa', 'yara') else 'talk'
             npc.line = spec.get('greet') or spec.get('lines', ['...'])[0]
             npc.portrait_tex = None
-            rel = portrait_asset_path(nid)
+            try:
+                rel = portrait_asset_path(nid)
+            except Exception:
+                rel = None
             if rel:
                 try:
                     from ursina import load_texture
                     tex = load_texture(rel)
+                    npc.portrait_tex = tex
+                    bill = Entity(
+                        parent=npc,
+                        model='quad',
+                        texture=tex,
+                        scale=(1.05, 1.4),
+                        position=(0, 1.45, -0.55),
+                        double_sided=True,
+                    )
+                    try:
+                        bill.billboard = True
+                    except Exception:
+                        pass
                 except Exception:
-                    tex = str(pp)
-                npc.portrait_tex = tex
-                bill = Entity(
-                    parent=npc,
-                    model='quad',
-                    texture=tex,
-                    scale=(1.05, 1.4),
-                    position=(0, 1.45, -0.55),
-                    double_sided=True,
-                )
-                try:
-                    bill.billboard = True
-                except Exception:
-                    pass
+                    npc.portrait_tex = None
             self.npcs.append(npc)
             self.talk_npcs.append({
                 'ent': npc,
@@ -152,11 +179,12 @@
         Vec3 = self.Vec3
 
         self.player = Entity(position=(-18.0, 0, 12.0), rotation_y=-90)
-        self.visual = make_humanoid(
-            Entity, color, 0, 0,
-            color.rgb32(40, 190, 200), color.rgb32(30, 40, 55),
-            skin=color.rgb32(255, 210, 175), detail='hero', style='hero', parent=self.player,
-        )
+        self.visual = Entity(parent=self.player)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(30, 40, 55), scale=(0.44, 0.55, 0.3), y=0.28)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.52, 0.62, 0.34), y=0.82)
+        Entity(parent=self.visual, model='sphere', color=color.rgb32(255, 210, 175), scale=0.33, y=1.32)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.12, 0.5, 0.12), x=0.34, y=0.78)
+        Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.12, 0.5, 0.12), x=-0.34, y=0.78)
         self.gun_model = Entity(
             parent=self.visual,
             model='cube',
@@ -172,8 +200,6 @@
         camera.position = Vec3(0, 1.65, -8.8)
         camera.rotation = Vec3(12, 0, 0)
         camera.fov = 80
-        # Stable desired endpoint for third-person camera collision.
-        self.player_camera_probe = Entity(parent=self.cam_pivot, position=(0, 1.65, -8.8), enabled=False)
 
     def _build_hud(self):
         Entity = self.Entity
@@ -181,30 +207,20 @@
         color = self.color
         camera = self.camera
 
-        # Grouped glass HUD replaces the former unframed top-left text stack.
-        self.hud_frame = Entity(parent=camera.ui, model='quad', scale=(0.36, 0.39), position=(-0.76, 0.31),
-                                color=color.rgba32(9, 12, 28, 205), z=1.2)
-        Entity(parent=camera.ui, model='quad', scale=(0.008, 0.39), position=(-0.934, 0.31), color=color.rgb32(255, 80, 190), z=1.1)
-        self.hud_static = [
-            Text(parent=camera.ui, text='RUNE MOMMY', position=(-0.86, 0.48), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 210)),
-            Text(parent=camera.ui, text='CLERMONT / HWY 50', position=(-0.86, 0.445), origin=(-0.5, 0.5), color=color.rgb32(140, 230, 255), scale=0.68),
-        ]
-        self.hud_gold = Text(parent=camera.ui, text='Gold  200', position=(-0.86, 0.40), origin=(-0.5, 0.5), color=color.rgb32(255, 220, 90))
-        self.hud_hp = Text(parent=camera.ui, text='HP  100', position=(-0.86, 0.370), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 170), scale=0.85)
-        self.hud_heat = Text(parent=camera.ui, text='HEAT  0.0', position=(-0.86, 0.340), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 90), scale=0.85)
-        self.hud_hp_bar_bg = Entity(parent=camera.ui, model='quad', scale=(0.27, 0.010), position=(-0.79, 0.356), color=color.rgb32(44, 27, 46), z=0.9)
-        self.hud_hp_bar = Entity(parent=self.hud_hp_bar_bg, model='quad', scale=(1, 0.72), origin=(-.5, 0), x=-.5, color=color.rgb32(255, 90, 150), z=-0.1)
-        self.hud_heat_bar_bg = Entity(parent=camera.ui, model='quad', scale=(0.27, 0.010), position=(-0.79, 0.326), color=color.rgb32(44, 27, 46), z=0.9)
-        self.hud_heat_bar = Entity(parent=self.hud_heat_bar_bg, model='quad', scale=(0.01, 0.72), origin=(-.5, 0), x=-.5, color=color.rgb32(255, 176, 70), z=-0.1)
-        self.hud_ammo = Text(parent=camera.ui, text='Pistol  --', position=(-0.86, 0.310), origin=(-0.5, 0.5), color=color.rgb32(200, 200, 210), scale=0.85)
-        self.hud_pack = Text(parent=camera.ui, text='Pack  0', position=(-0.86, 0.280), origin=(-0.5, 0.5), color=color.rgb32(180, 230, 200), scale=0.85)
-        self.hud_breed = Text(parent=camera.ui, text='BREED  0%', position=(-0.86, 0.250), origin=(-0.5, 0.5), color=color.rgb32(46, 196, 182), scale=0.85)
-        self.hud_quest = Text(parent=camera.ui, text='QUEST  —', position=(-0.86, 0.220), origin=(-0.5, 0.5), color=color.rgb32(180, 255, 200), scale=0.8)
-        self.hud_mode = Text(parent=camera.ui, text='WALK', position=(-0.86, 0.190), origin=(-0.5, 0.5), color=color.rgb32(200, 220, 255), scale=0.8)
-        self.hud_prompt = Text(parent=camera.ui, text='', position=(0, -0.42), origin=(0, 0), color=color.rgb32(255, 240, 180), scale=0.9)
-        self.hud_toast = Text(parent=camera.ui, text='', position=(0, 0.32), origin=(0, 0), color=color.rgb32(255, 180, 220), scale=0.85)
+        Text(text='RUNE MOMMY', position=(-0.86, 0.48), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 210))
+        Text(text='Clermont / Hwy 50', position=(-0.86, 0.445), origin=(-0.5, 0.5), color=color.rgb32(140, 230, 255), scale=0.75)
+        self.hud_gold = Text(text='Gold  200', position=(-0.86, 0.40), origin=(-0.5, 0.5), color=color.rgb32(255, 220, 90))
+        self.hud_hp = Text(text='HP  100', position=(-0.86, 0.370), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 170), scale=0.85)
+        self.hud_heat = Text(text='HEAT  0.0', position=(-0.86, 0.340), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 90), scale=0.85)
+        self.hud_ammo = Text(text='Pistol  --', position=(-0.86, 0.310), origin=(-0.5, 0.5), color=color.rgb32(200, 200, 210), scale=0.85)
+        self.hud_pack = Text(text='Pack  0', position=(-0.86, 0.280), origin=(-0.5, 0.5), color=color.rgb32(180, 230, 200), scale=0.85)
+        self.hud_breed = Text(text='BREED  0%', position=(-0.86, 0.250), origin=(-0.5, 0.5), color=color.rgb32(46, 196, 182), scale=0.85)
+        self.hud_quest = Text(text='QUEST  —', position=(-0.86, 0.220), origin=(-0.5, 0.5), color=color.rgb32(180, 255, 200), scale=0.8)
+        self.hud_mode = Text(text='WALK', position=(-0.86, 0.190), origin=(-0.5, 0.5), color=color.rgb32(200, 220, 255), scale=0.8)
+        self.hud_prompt = Text(text='', position=(0, -0.42), origin=(0, 0), color=color.rgb32(255, 240, 180), scale=0.9)
+        self.hud_toast = Text(text='', position=(0, 0.32), origin=(0, 0), color=color.rgb32(255, 180, 220), scale=0.85)
         self.crosshair = Entity(parent=camera.ui, model='quad', color=color.rgb32(255, 255, 255), scale=0.008, rotation_z=45)
-        self.debug_hud = Text(parent=camera.ui,
+        self.debug_hud = Text(
             text='',
             position=(-0.86, -0.36),
             origin=(-0.5, 0.5),
@@ -217,74 +233,40 @@
             parent=camera.ui,
             model='quad',
             color=color.rgba32(10, 4, 18, 235),
-            scale=(1.62, 0.58),
-            position=(0.03, -0.24),
+            scale=(1.58, 0.50),
+            position=(0.06, -0.28),
             enabled=False,
-            z=1.0,
+            z=0.1,
         )
         self.panel_portrait = Entity(
             parent=camera.ui,
             model='quad',
-            # Portrait occupies a dedicated left column; it never covers text.
-            scale=(0.22, 0.43),
-            position=(-0.73, -0.23),
+            scale=(0.34, 0.60),
+            position=(-0.68, -0.26),
             enabled=False,
-            z=0.7,
+            z=-0.05,
         )
         if self.mira_texture:
             self.panel_portrait.texture = self.mira_texture
-        self.panel_name = Text(parent=camera.ui, text='', position=(-0.47, -0.01), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 210), enabled=False, z=-0.1)
-        self.panel_body = Text(parent=camera.ui, text='', position=(-0.47, -0.06), origin=(-0.5, 0.5), color=color.rgb32(245, 230, 255), enabled=False, scale=0.72, z=-0.1)
+        self.panel_name = Text(text='', position=(-0.52, -0.08), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 210), enabled=False)
+        self.panel_body = Text(text='', position=(-0.52, -0.13), origin=(-0.5, 0.5), color=color.rgb32(245, 230, 255), enabled=False, scale=0.8)
         self.panel_choices = []
         for i in range(4):
             t = Text(
-                parent=camera.ui,
                 text='',
-                position=(-0.47, -0.29 - i * 0.047),
+                position=(-0.52, -0.34 - i * 0.045),
                 origin=(-0.5, 0.5),
                 color=color.rgb32(160, 230, 255),
                 enabled=False,
                 scale=0.75,
-                z=-0.1,
             )
             self.panel_choices.append(t)
-        controls = Text(parent=camera.ui,
+        Text(
             text='WASD walk   mouse look   E use   1 pistol   LMB shoot   ESC quit',
             position=(-0.86, -0.48),
             origin=(-0.5, 0.5),
             color=color.rgb32(160, 140, 180),
             scale=0.65,
         )
-        self.hud_static.append(controls)
 
     # ----- tick -----------------------------------------------------------
-
-    def tick(self):
-        from ursina import time, held_keys, mouse, raycast, Vec3, destroy, color
-        dt = min(time.dt, 0.05)
-        self.shoot_cd = max(0.0, self.shoot_cd - dt)
-        if getattr(self, 'mouse_look_cooldown', 0) > 0:
-            self.mouse_look_cooldown -= 1
-        self.world_clock = float(getattr(self, 'world_clock', 305.0)) + dt
-        try:
-            tick_day_night(getattr(self, 'light_rig', None), self.color, self.world_clock)
-        except Exception:
-            pass
-        if self.toast_timer > 0:
-            self.toast_timer -= dt
-            if self.toast_timer <= 0 and self.hud_toast:
-                self.hud_toast.text = ''
-
-        mode = getattr(self, 'mode', 'play')
-        if mode in ('menu', 'settings'):
-            # title / settings — no world sim, no walk
-            return
-
-        self.panic_t = max(0.0, getattr(self, 'panic_t', 0.0) - dt)
-        if self.atmosphere:
-            try:
-                self.atmosphere.tick(self._actor_pos(), dt)
-            except Exception:
-                pass
-        self._tick_static_chunks()
-        self._wander_targets(dt)

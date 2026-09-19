@@ -1,3 +1,26 @@
+
+    def tick(self):
+        from ursina import time, held_keys, mouse, raycast, Vec3, destroy, color
+        dt = min(time.dt, 0.05)
+        self.shoot_cd = max(0.0, self.shoot_cd - dt)
+        if self.toast_timer > 0:
+            self.toast_timer -= dt
+            if self.toast_timer <= 0 and self.hud_toast:
+                self.hud_toast.text = ''
+
+        mode = getattr(self, 'mode', 'play')
+        if mode in ('menu', 'settings'):
+            # title / settings — no world sim, no walk
+            if getattr(self, 'debug_on', True):
+                try:
+                    self._debug_tick(dt)
+                except Exception:
+                    pass
+            return
+
+        self.panic_t = max(0.0, getattr(self, 'panic_t', 0.0) - dt)
+        self._wander_targets(dt)
+
         if mode == 'play':
             tick_crowd(self, dt)
             tick_traffic(self, dt)
@@ -9,7 +32,7 @@
             self._refresh_hud()
             return
 
-        if mode in ('play', 'safe') and self.in_car:
+        if mode == 'play' and self.in_car:
             self._drive(dt)
         else:
             self._walk(dt)
@@ -21,24 +44,22 @@
                 self._shoot()
 
         self._refresh_hud()
+        if getattr(self, 'debug_on', True):
+            try:
+                self._debug_tick(dt)
+            except Exception as exc:
+                print('[Rune Mommy][DBGERR]', exc)
 
     def _walk(self, dt):
         from ursina import held_keys, mouse, raycast, Vec3
         player = self.player
         mode = getattr(self, 'mode', 'play')
 
-        # Look only while the relative cursor is captured. Moving a free Tab
-        # cursor must not rotate/invert the view behind the player's back.
+        # Free look always (locked OR unlocked OR right-mouse). Never soft-lock rotation.
         sens = float(getattr(self, 'mouse_sens', 140) or 140)
-        skip_look = int(getattr(self, 'mouse_look_cooldown', 0) or 0)
-        # Use game state rather than Panda's transient locked flag. Some
-        # Windows/Panda transitions report unlocked for a frame after leaving
-        # the safe yard even though the game owns mouse-look.
-        if not skip_look and not getattr(self, 'mouse_free', False) and not self.ui_open:
-            player.rotation_y += mouse.velocity[0] * sens
-            # Positive mouse Y looks upward, matching conventional desktop controls.
-            self.cam_pivot.rotation_x += mouse.velocity[1] * sens
-            self.cam_pivot.rotation_x = max(-35, min(40, self.cam_pivot.rotation_x))
+        player.rotation_y += mouse.velocity[0] * sens
+        self.cam_pivot.rotation_x -= mouse.velocity[1] * sens
+        self.cam_pivot.rotation_x = max(-35, min(40, self.cam_pivot.rotation_x))
         # Q/E and arrows turn even if mouse is dead
         if held_keys['q'] or held_keys['left arrow']:
             player.rotation_y += 90 * dt
@@ -51,15 +72,14 @@
         if mode == 'play' and not self.ui_open and not getattr(self, 'mouse_free', False):
             self._lock_mouse(True)
 
-        down = lambda key: self._movement_down(held_keys, key)
-        wish_x = int(down('d')) - int(down('a'))
-        wish_z = int(down('w')) - int(down('s'))
+        wish_x = held_keys['d'] - held_keys['a']
+        wish_z = held_keys['w'] - held_keys['s']
         # Arrow keys as backup movement
         wish_x += held_keys['right arrow'] * 0  # right arrow is turn
         wish_z += 0
-        if down('up arrow'):
+        if held_keys['up arrow']:
             wish_z += 1
-        if down('down arrow'):
+        if held_keys['down arrow']:
             wish_z -= 1
         wish = Vec3(wish_x, 0, wish_z)
         if wish.length() > 0:
@@ -89,8 +109,8 @@
                         hz = raycast(origin, mz.normalized(), distance=0.55 + mz.length(), ignore=ign, debug=False)
                         if not hz.hit:
                             player.z += mz.z
-                player.x = max(-330, min(330, player.x))
-                player.z = max(-165, min(195, player.z))
+                player.x = max(-55, min(58, player.x))
+                player.z = max(-55, min(28, player.z))
 
         self.y_vel -= 32 * dt
         player.y += self.y_vel * dt
@@ -109,21 +129,19 @@
             self.visual.enabled = True
         if self.cam_in_car:
             self._set_camera_follow(False)
-        self._update_camera_collision()
 
 
     def _drive(self, dt):
         from ursina import held_keys, mouse, raycast, Vec3, Entity, destroy, color
         from vendor.vehicle import bicycle_step
         car = self.in_car
-        if not getattr(self, 'mouse_free', False) and not int(getattr(self, 'mouse_look_cooldown', 0) or 0):
+        if getattr(mouse, 'locked', False):
             # Clamp mouse look while driving (pitch only on cam_pivot)
-            car.cam_pivot.rotation_x += mouse.velocity[1] * (float(getattr(self, "mouse_sens", 140) or 140) * 0.57)
+            car.cam_pivot.rotation_x -= mouse.velocity[1] * (float(getattr(self, "mouse_sens", 140) or 140) * 0.57)
             car.cam_pivot.rotation_x = max(-20, min(25, car.cam_pivot.rotation_x))
 
         dmg = float(getattr(car, 'damage', 0.0) or 0.0)
-        max_damage = float(getattr(car, 'max_damage', 240.0) or 240.0)
-        dmg_mul = max(0.30, 1.0 - 0.48 * (dmg / max_damage))
+        dmg_mul = max(0.15, 1.0 - 0.5 * (dmg / 100.0))
         base_vmax, base_accel = 24.0, 16.0
         vmax = base_vmax * dmg_mul
         accel_force = base_accel * dmg_mul
@@ -152,24 +170,14 @@
                 # Stronger handbrake
                 brake_force = max(brake_force, 52.0)
 
-        # Bicycle yaw uses positive = right (+X), therefore D must be positive.
-        # Reduce lock at speed to prevent arcade-like instant direction changes.
-        steer_input = float(held_keys['d'] - held_keys['a'])
-        speed_steer = max(0.34, 1.0 - abs(float(getattr(car, 'speed', 0.0))) / max(1.0, vmax) * 0.56)
-        steer = steer_input * speed_steer
-        if brake_force and abs(car.speed) > 0.05:
-            # Decelerate in the direction opposite current travel. The bicycle
-            # helper has no separate brake-force parameter.
-            accel = -math.copysign(brake_force, car.speed)
+        steer = float(held_keys['a'] - held_keys['d'])
         # Higher grip: less drag accelerating, more coasting
         nx, nz, nyaw, nspd = bicycle_step(
             car.x, car.z, car.rotation_y, car.speed,
             steer, accel, dt,
-            vmax=vmax, wheelbase=2.6,
-            # The bundled vehicle helper accepts one drag value. Brake force
-            # is applied above by reducing acceleration / speed, rather than
-            # passing unsupported keyword arguments that crash the game.
-            drag=3.2 if brake_force else 0.55,
+            vmax=vmax, wheelbase=2.6, drag=2.4,
+            steer_gain=1.05, brake_force=brake_force,
+            coast_drag=3.2, accel_drag=0.55,
         )
 
         # Fuel burn ~ full tank lasts a few minutes of continuous drive
@@ -229,13 +237,8 @@
 
         car.speed = nspd
         car.y = 0
-        if getattr(self, 'mode', 'play') == 'safe':
-            cx, _cy, cz = getattr(self, 'safe_yard_center', (80.0, 0.0, 80.0))
-            car.x = max(cx - 11.4, min(cx + 11.4, car.x))
-            car.z = max(cz - 11.4, min(cz + 11.4, car.z))
-        else:
-            car.x = max(-330, min(330, car.x))
-            car.z = max(-165, min(195, car.z))
+        car.x = max(-48, min(52, car.x))
+        car.z = max(-52, min(22, car.z))
 
         self._update_car_damage_visual(car, dt)
 
@@ -254,17 +257,13 @@
             self.visual.enabled = False
         if not self.cam_in_car:
             self._set_camera_follow(True)
-        self._update_camera_collision()
 
     def _car_take_damage(self, car, impact_speed):
         if getattr(car, 'traffic', False) and self.in_car is not car:
             return
-        max_damage = float(getattr(car, 'max_damage', 240.0) or 240.0)
-        # A slow curb contact should scuff, not total a car. High-speed impacts
-        # still matter, but the larger integrity budget supports long drives.
-        add = min(28.0, max(1.0, abs(float(impact_speed)) * 1.15))
-        car.damage = min(max_damage, float(getattr(car, 'damage', 0.0) or 0.0) + add)
-        if car.damage >= max_damage and not getattr(car, 'disabled', False):
+        add = min(42.0, max(3.0, abs(float(impact_speed)) * 2.4))
+        car.damage = min(100.0, float(getattr(car, 'damage', 0.0) or 0.0) + add)
+        if car.damage >= 100.0 and not getattr(car, 'disabled', False):
             car.disabled = True
             car.speed = 0.0
             self.toast('Car totaled.')

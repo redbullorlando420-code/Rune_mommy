@@ -16,6 +16,15 @@ ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
 PORTRAITS_DIR = ROOT / "client" / "portraits"
 MANIFEST_PATH = PORTRAITS_DIR / "portraits.json"
+_PORTRAITS_OPTIONAL_LOGGED = False
+
+def _log_portraits_optional():
+    global _PORTRAITS_OPTIONAL_LOGGED
+    if _PORTRAITS_OPTIONAL_LOGGED:
+        return
+    _PORTRAITS_OPTIONAL_LOGGED = True
+    print("portraits: optional (missing ok)")
+
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 
 # Built-in aliases if portraits.json is missing.
@@ -151,6 +160,13 @@ def _folder_for(who: str) -> Path | None:
 
 def portraits_for(who: str) -> dict[str, Path]:
     """NPC id or short name -> {expr: absolute Path} for files that exist."""
+    try:
+        if not PORTRAITS_DIR.is_dir():
+            _log_portraits_optional()
+            return {}
+    except Exception:
+        _log_portraits_optional()
+        return {}
     nid = npc_id(who)
     out: dict[str, Path] = {}
     folder = _folder_for(nid)
@@ -204,19 +220,35 @@ def _resolve_expr(pack: dict[str, Path], expr: str) -> Path | None:
 
 
 def portrait_texture_path(who: str, expr: str = "default") -> Path | None:
-    pack = portraits_for(who)
-    return _resolve_expr(pack, expr)
+    """Soft-fail: never raises if portraits folder/files are missing."""
+    try:
+        if not PORTRAITS_DIR.is_dir():
+            _log_portraits_optional()
+            return None
+        pack = portraits_for(who)
+        hit = _resolve_expr(pack, expr)
+        if hit is None:
+            _log_portraits_optional()
+        return hit
+    except Exception:
+        _log_portraits_optional()
+        return None
 
 
 def portrait_asset_path(who: str, expr: str = "default") -> str | None:
-    """Path relative to game ROOT, forward slashes — what Ursina load_texture needs."""
-    p = portrait_texture_path(who, expr)
-    if not p:
-        return None
+    """Path relative to game ROOT, forward slashes — what Ursina load_texture needs.
+    Soft-fail: returns None if missing; never raises."""
     try:
-        return p.resolve().relative_to(ROOT.resolve()).as_posix()
-    except ValueError:
-        return Path(p).as_posix()
+        p = portrait_texture_path(who, expr)
+        if not p:
+            return None
+        try:
+            return p.resolve().relative_to(ROOT.resolve()).as_posix()
+        except ValueError:
+            return Path(p).as_posix()
+    except Exception:
+        _log_portraits_optional()
+        return None
 
 
 def load_dialogue(who: str, path: Path | None = None) -> dict | None:

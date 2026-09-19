@@ -1,3 +1,20 @@
+
+    def _save_path(self):
+        return ROOT / 'data' / 'local_save.json'
+
+    def _write_local_save(self):
+        flags = self._load_flags()
+        tutorial_done = bool(flags.get('tutorial_done')) or (not self.tutorial_active)
+        data = {
+            'gold': int(self.gold),
+            'hp': int(self.hp),
+            'breed': int(self.breed),
+            'preg': bool(self.preg),
+            'owned_pistol': bool(self.owned_pistol),
+            'pistol': bool(self.owned_pistol),
+            'ammo': int(self.ammo),
+            'pack': list(self.pack),
+            'tutorial_done': tutorial_done,
             'intro_started': bool(self.intro_started),
             'michelle_seen': bool(self.michelle_seen),
             'mouse_sens': float(self.mouse_sens),
@@ -67,7 +84,6 @@
             self._hide_play_hud(False)
             self.mouse_free = False
             self._lock_mouse(True)
-            self.mouse_look_cooldown = 2
             sx, sy, sz = self.clermont_spawn
             if self.player:
                 self.player.position = (sx, 0, sz)
@@ -85,54 +101,61 @@
         asphalt = load_tex('asphalt')
         Entity(
             model='plane',
-            scale=(760, 1, 660),
+            scale=(220, 1, 200),
             color=color.rgb32(48, 90, 42) if grass else color.rgb32(32, 24, 36),
             texture=grass or 'white_cube',
             texture_scale=(70, 55),
-            collider='box',
+            collider=None,
             y=0,
         )
-        # lot asphalt patch
+        # Lot asphalt split N/S of Hwy 50 — unique Y, no stack under highway footprint.
+        lot_col = color.rgb32(36, 34, 38) if asphalt else color.rgb32(24, 18, 28)
+        lot_tex = asphalt or 'white_cube'
+        # North lot (stalls side): z center -5.5, depth ~9 → avoids hwy ~-20.75..-11.25
         Entity(
             model='cube',
-            scale=(78, 0.04, 52),
-            position=(2, 0.02, -14),
-            color=color.rgb32(36, 34, 38) if asphalt else color.rgb32(24, 18, 28),
-            texture=asphalt or 'white_cube',
-            texture_scale=(24, 16),
+            scale=(78, 0.04, 10),
+            position=(2, 0.02, -5.5),
+            color=lot_col,
+            texture=lot_tex,
+            texture_scale=(8, 2),
+        )
+        # South lot (town side)
+        Entity(
+            model='cube',
+            scale=(78, 0.04, 22),
+            position=(2, 0.02, -32),
+            color=lot_col,
+            texture=lot_tex,
+            texture_scale=(8, 2),
         )
 
     def _build_highway(self):
         Entity = self.Entity
         color = self.color
-        # Hwy 50 east-west between the two stall rows
+        # Hwy 50 east-west between the two stall rows — Y unique vs lot/paint/sidewalk
         asphalt = load_tex('asphalt')
         concrete = load_tex('concrete')
         Entity(
             model='cube',
             scale=(88, 0.08, 9.5),
-            position=(2, 0.05, -16),
+            position=(2, 0.09, -16),
             color=color.rgb32(28, 26, 30) if asphalt else color.rgb32(18, 16, 20),
             texture=asphalt,
-            texture_scale=(28, 3),
+            texture_scale=(8, 2),
         )
-        # Roads claim their footprint before districts are populated.  The
-        # planner is deliberately the authority here: future lot generation
-        # cannot accidentally drop a house on Hwy 50 without an explicit
-        # override for a bridge/driveway-like exception.
-        self.layout.reserve('hwy_50', 'road', 2, -16, 88, 9.5, override=True)
         for x in range(-40, 44, 5):
             Entity(
                 model='cube',
                 scale=(2.2, 0.09, 0.18),
-                position=(x, 0.1, -16),
+                position=(x, 0.12, -16),
                 color=color.rgb32(230, 200, 60),
             )
         # sidewalks
-        Entity(model='cube', scale=(88, 0.07, 1.6), position=(2, 0.06, -10.4),
+        Entity(model='cube', scale=(88, 0.07, 1.6), position=(2, 0.07, -10.4),
                color=color.rgb32(120, 115, 110) if concrete else color.rgb32(48, 38, 52),
                texture=concrete, texture_scale=(40, 1))
-        Entity(model='cube', scale=(88, 0.07, 1.6), position=(2, 0.06, -21.6),
+        Entity(model='cube', scale=(88, 0.07, 1.6), position=(2, 0.07, -21.6),
                color=color.rgb32(120, 115, 110) if concrete else color.rgb32(48, 38, 52),
                texture=concrete, texture_scale=(40, 1))
         # street lamps
@@ -140,112 +163,6 @@
             for z in (-10.2, -21.8):
                 Entity(model='cube', scale=(0.12, 3.2, 0.12), position=(x, 1.6, z), color=color.rgb32(40, 30, 50))
                 Entity(model='sphere', scale=0.35, position=(x, 3.3, z), color=color.rgb32(255, 90, 200))
-
-    def _build_road_expansion(self):
-        """Drivable race loop, regional approach roads, and first travel gates."""
-        Entity = self.Entity
-        color = self.color
-        Text = self.Text
-        asphalt = load_tex('asphalt')
-        concrete = load_tex('concrete')
-        road_col = color.rgb32(30, 31, 35) if asphalt else color.rgb32(24, 22, 28)
-        edge_col = color.rgb32(235, 215, 92)
-
-        def road(scale, pos, markings=True):
-            self.layout.reserve(
-                'road_%d' % len(self.layout.district('road')), 'road',
-                pos[0], pos[2], scale[0], scale[2], override=True,
-            )
-            Entity(model='cube', scale=scale, position=pos, color=road_col,
-                   texture=asphalt or 'white_cube', texture_scale=(max(2, scale[0] / 3), max(2, scale[2] / 3)))
-            if markings:
-                # Cheap dashed center line; road meshes have no collider, so cars can drive freely.
-                if scale[0] >= scale[2]:
-                    for x in range(int(pos[0] - scale[0] / 2 + 2), int(pos[0] + scale[0] / 2), 4):
-                        Entity(model='cube', scale=(1.7, 0.03, 0.14), position=(x, pos[1] + 0.055, pos[2]), color=edge_col)
-                else:
-                    for z in range(int(pos[2] - scale[2] / 2 + 2), int(pos[2] + scale[2] / 2), 4):
-                        Entity(model='cube', scale=(0.14, 0.03, 1.7), position=(pos[0], pos[1] + 0.055, z), color=edge_col)
-
-        # Citrus Run Raceway: a 26 x 19 closed loop in the south-east corner.
-        road((30, 0.06, 3.8), (38, 0.05, -28))
-        road((30, 0.06, 3.8), (38, 0.05, -46))
-        road((3.8, 0.06, 18), (23, 0.05, -37))
-        road((3.8, 0.06, 18), (53, 0.05, -37))
-        # Rounded asphalt aprons replace visually harsh 90-degree road joints.
-        for x, z in ((23, -28), (53, -28), (23, -46), (53, -46)):
-            Entity(model='sphere', scale=(4.0, 0.075, 4.0), position=(x, 0.045, z),
-                   color=road_col, texture=asphalt or 'white_cube', texture_scale=(2, 2))
-        for x, z in ((23, -28), (53, -28), (23, -46), (53, -46)):
-            Entity(model='sphere', scale=1.1, position=(x, 0.55, z), color=color.rgb32(255, 98, 55))
-        make_billboard(Entity, color, Text, self._scene(), 38, -25.4, 'CITRUS RUN\nRACE LOOP', face_yaw=0)
-        # Pit shell / timing stand.
-        if self.layout.reserve('citrus_pit', 'raceway', 39, -22.7, 7, 3.5):
-            Entity(model='cube', scale=(7, 2.8, 3.5), position=(39, 1.4, -22.7),
-                   color=color.rgb32(58, 50, 72), texture=concrete, texture_scale=(2, 1), collider='box')
-            self.building_count += 1
-
-        # Regional spine toward a compact Orlando preview district. Gates are
-        # functional travel points now; later regions can replace their pads.
-        road((24, 0.06, 6.0), (61, 0.05, -10))
-        road((6.0, 0.06, 26), (72, 0.05, 1))
-        self.region_gates = []
-        for x, z, label, region, spawn in (
-            (58, -10, 'ORLANDO\nGATE ->', 'orlando_preview', (68, 0, 2)),
-            (72, 12, 'CLERMONT\nGATE <-', 'clermont', (-18, 0, 12)),
-        ):
-            # Trigger is a thin floor slab; visible geometry is an open portal
-            # frame rather than a solid pink wall across the road.
-            gate = Entity(model='cube', scale=(3.7, 0.12, 4.2), position=(x, 0.06, z),
-                          color=color.rgba32(255, 72, 185, 70), collider='box')
-            for pz in (-1.65, 1.65):
-                Entity(model='cube', scale=(0.34, 3.9, 0.34), position=(x, 1.95, z + pz), color=color.rgb32(255, 72, 185))
-            Entity(model='cube', scale=(0.38, 0.38, 3.7), position=(x, 3.82, z), color=color.rgb32(90, 225, 255))
-            Entity(model='cube', scale=(0.08, 3.25, 3.05), position=(x, 1.85, z), color=color.rgba32(100, 205, 255, 65))
-            make_billboard(Entity, color, Text, self._scene(), x + 2.5, z, label, face_yaw=90)
-            self.region_gates.append({'entity': gate, 'id': 'orlando_gate' if region == 'orlando_preview' else 'clermont_gate',
-                                      'region': region, 'label': label.replace('\n', ' '), 'spawn': spawn})
-        # Small preview district makes the new gate a real destination rather than a dead sign.
-        for i, (x, z) in enumerate(((67, -4), (74, -2), (68, 8), (76, 8))):
-            if not self.layout.reserve('orlando_%d' % i, 'shop', x, z, 4.2, 3.4):
-                continue
-            Entity(model='cube', scale=(4.2, 3.0 + (i % 2), 3.4), position=(x, 1.6, z),
-                   color=color.rgb32(55 + i * 12, 45, 82 + i * 9), texture=load_tex('stucco'), texture_scale=(2, 2), collider='box')
-            self.building_count += 1
-        make_billboard(Entity, color, Text, self._scene(), 69, 14.5, 'ORLANDO\nPREVIEW DISTRICT', face_yaw=0)
-
-        # Metro perimeter: a genuinely useful long-distance highway loop,
-        # roughly ten times the original city footprint. Every segment shares
-        # the same planner reservations as the core roads.
-        road((620, 0.06, 9.0), (0, 0.05, -16), markings=True)
-        road((620, 0.06, 9.0), (0, 0.05, -145), markings=True)
-        road((620, 0.06, 9.0), (0, 0.05, 175), markings=True)
-        road((9.0, 0.06, 320), (-305, 0.05, 15), markings=True)
-        road((9.0, 0.06, 320), (305, 0.05, 15), markings=True)
-        # Sparse service districts make the distance worth driving, while the
-        # central Clermont slice remains dense and on foot.
-        for district, dx, dz in (
-            ('Westgate homes', -245, -132), ('Lakeside service', 240, -132),
-            ('North outlet', -245, 158), ('East logistics', 240, 158),
-        ):
-            make_billboard(Entity, color, Text, self._scene(), dx, dz - 10, district.upper(), face_yaw=0)
-            chunk_root = Entity()
-            self.static_chunks.append({'x': dx, 'z': dz, 'root': chunk_root, 'name': district})
-            for i in range(5):
-                bx = dx + (i % 3) * 11
-                bz = dz + (i // 3) * 13
-                bw, bh, bd = 7.5, 3.0 + (i % 3) * 0.7, 6.0
-                if not self.layout.reserve('metro_%s_%d' % (district[:2], i), 'metro', bx, bz, bw, bd):
-                    continue
-                if 'homes' in district:
-                    make_house(Entity, color, Text, self._scene(), bx, bz, w=5.4, h=3.0, d=4.6,
-                               label='Westgate %d' % (i + 1), porch=True, garage=(i % 2 == 0))
-                else:
-                    Entity(parent=chunk_root, model='cube', scale=(bw, bh, bd), position=(bx, bh / 2, bz),
-                           color=color.rgb32(58 + i * 12, 62 + i * 6, 78 + i * 9),
-                           texture=load_tex('brick') or load_tex('stucco'), texture_scale=(3, 2), collider='box')
-                    Entity(parent=chunk_root, model='cube', scale=(bw + .45, .22, bd + .45), position=(bx, bh + .12, bz), color=color.rgb32(55, 65, 82))
-                self.building_count += 1
 
     def _build_skyline(self):
         Entity = self.Entity
@@ -280,11 +197,8 @@
         for x, z in ((-30, 6), (26, 8), (-22, -38), (24, -38), (40, -10), (-36, -8), (8, 10), (-8, -42)):
             if math.hypot(x + 32.0, z - 12.0) < 12.0:
                 continue
-            # Taller, brighter bark silhouette remains visible below the canopy.
-            Entity(model='cube', scale=(0.52, 4.4, 0.52), position=(x, 2.2, z),
-                   color=color.rgb32(112, 72, 42), texture=load_tex('brick'), texture_scale=(1, 3), collider='box')
-            Entity(model='sphere', scale=1.85, position=(x, 4.55, z), color=color.rgb32(30, 110, 55))
-            Entity(model='sphere', scale=1.15, position=(x + 0.65, 4.15, z - 0.3), color=color.rgb32(42, 132, 62))
+            Entity(model='cube', scale=(0.28, 2.4, 0.28), position=(x, 1.2, z), color=color.rgb32(70, 42, 28), collider='box')
+            Entity(model='sphere', scale=1.6, position=(x, 2.8, z), color=color.rgb32(30, 110, 55))
 
     def _build_town_slice(self):
         """Residential south of Hwy 50 + Sanctuary Drive row (~12 labeled houses)."""
@@ -300,9 +214,6 @@
         )
         for x, z, label in houses:
             w, h, d = rng.uniform(2.8, 4.0), rng.uniform(2.4, 3.4), rng.uniform(2.6, 3.4)
-            # The garage/porch need a small buffer beyond the wall footprint.
-            if not self.layout.reserve(label, 'residential', x, z, w * 1.75, d + 1.8):
-                continue
             make_house(
                 Entity, color, Text, self._scene(), x, z,
                 w=w, h=h, d=d, label=label, porch=True, garage=(rng.random() < 0.4), rng=rng,
@@ -321,12 +232,9 @@
             if math.hypot(x + 32.0, z - 12.0) < 9.0:
                 continue
             roof = teal if i % 3 == 0 else color.rgb32(rng.randint(50, 100), rng.randint(80, 140), rng.randint(100, 160))
-            w, h, d = rng.uniform(3.2, 4.2), rng.uniform(2.5, 3.3), rng.uniform(2.8, 3.6)
-            if not self.layout.reserve(label, 'residential', x, z, w * 1.75, d + 1.8):
-                continue
             make_house(
                 Entity, color, Text, self._scene(), x, z,
-                w=w, h=h, d=d,
+                w=rng.uniform(3.2, 4.2), h=rng.uniform(2.5, 3.3), d=rng.uniform(2.8, 3.6),
                 roof_col=roof, label=label, porch=True, garage=(i % 2 == 0), rng=rng,
             )
             self.building_count += 1
@@ -350,10 +258,6 @@
             ('gas', 18.0, -8.0, 'rita'),
             # Hwy 27 Fuel — US-27 near Club 27 / east
             ('gas_hwy27', 38.0, -14.0, None),
-            # Perimeter fuel stops support long drives between the spread-out districts.
-            ('gas_westgate', -246.0, -145.0, None),
-            ('gas_lakeside', 242.0, -145.0, None),
-            ('gas_north', -245.0, 175.0, None),
             ('motel', -8.0, 6.5, 'motel_clerk'),
             ('laundromat', 8.0, 5.0, 'lot_attendant'),
             ('starbucks', -20.0, -10.5, 'barista'),
@@ -366,88 +270,3 @@
             # Citrus Tower — US-27 north of Hwy 50
             ('citrus_tower', 36.0, 6.0, 'citrus_guide'),
             # Waterfront Park / Lake Minneola — SE of downtown slice
-            ('waterfront', 16.0, -42.0, 'park_ranger'),
-            # roadside kitsch density (buildings only — no shared NPC overwrite)
-            ('showcase_citrus', 28.0, -6.0, None),
-            ('presidents_hall', 44.0, -8.0, None),
-        )
-        for kind, x, z, npc_id in specs:
-            # POIs have authored parcels. If the old coordinate is now a
-            # road/race lane, move it to the closest valid commercial parcel
-            # instead of rendering an impossible overlap or deleting content.
-            placed = None
-            for ox, oz in (
-                (0, 0), (0, 7), (0, -7), (7, 0), (-7, 0), (7, 7), (-7, 7),
-                (14, 0), (-14, 0), (0, 14), (0, -14), (14, 7), (-14, 7),
-                (14, -7), (-14, -7), (21, 0), (-21, 0), (0, 21), (0, -21),
-            ):
-                px, pz = x + ox, z + oz
-                if self.layout.reserve(kind, 'commercial', px, pz, 5.8, 5.8):
-                    placed = (px, pz)
-                    break
-            if placed is None:
-                print('[Rune Mommy] no valid commercial parcel:', kind)
-                continue
-            x, z = placed
-            parts, interact, label = make_poi_building(Entity, color, Text, self._scene(), kind, x, z)
-            self.building_count += 1
-            is_gas = kind in ('gas', 'gas_hwy27') or (label or '').lower().find('gas') >= 0 or (label or '').lower().find('fuel') >= 0
-            self.pois.append({
-                'id': kind,
-                'name': label,
-                'pos': (interact[0], 0, interact[2]),
-                'npc_id': npc_id,
-                'line': None,
-                'is_gas': is_gas,
-                'pump_r': 4.2 if is_gas else 3.4,
-            })
-
-    def _build_environment(self):
-        """Florida-specific horizon props and a pooled ambient VFX layer."""
-        try:
-            self.atmosphere = make_florida_environment(
-                self.Entity, self.color, quality=(self.render_opts or {}).get('quality', 'med'),
-            )
-        except Exception as exc:
-            # Set dressing must never prevent the playable world from loading.
-            self.atmosphere = None
-            print('[Rune Mommy] environment fallback:', exc)
-
-    def _build_enterable_interiors(self):
-        """One small, physical gas-market interior with an explicit return point."""
-        Entity = self.Entity
-        color = self.color
-        Text = self.Text
-        # A separate, nearby cell lets the exterior retain its collision shell
-        # while the shop has a walkable floor and an unobstructed doorway.
-        x, z = 94.0, -9.0
-        self.layout.reserve('hancock_market_interior', 'interior', x, z, 12.0, 10.0)
-        floor = Entity(model='cube', scale=(12.0, 0.08, 10.0), position=(x, 0.04, z),
-                       color=color.rgb32(72, 70, 78), texture=load_tex('concrete'), texture_scale=(4, 3))
-        # Back/side walls keep the space visually enclosed; front is left open.
-        for scale, pos in (
-            ((12.0, 3.6, 0.28), (x, 1.8, z + 4.86)),
-            ((0.28, 3.6, 10.0), (x - 5.86, 1.8, z)),
-            ((0.28, 3.6, 10.0), (x + 5.86, 1.8, z)),
-        ):
-            Entity(model='cube', scale=scale, position=pos, color=color.rgb32(50, 44, 62),
-                   texture=load_tex('stucco'), texture_scale=(3, 2), collider='box')
-        Entity(model='cube', scale=(12.4, 0.24, 10.4), position=(x, 3.65, z), color=color.rgb32(255, 185, 45))
-        Entity(model='cube', scale=(6.5, 1.0, 0.65), position=(x - 1.2, 0.52, z + 2.6), color=color.rgb32(80, 115, 125), collider='box')
-        # Shelf rows are collidable and make this a real navigable interior.
-        for sx in (-3.2, 0.2, 3.5):
-            Entity(model='cube', scale=(1.1, 1.65, 3.1), position=(x + sx, 0.82, z - 0.5),
-                   color=color.rgb32(70, 74, 84), collider='box')
-        make_billboard(Entity, color, Text, self._scene(), x, z + 4.15, 'HANCOCK GAS\nMARKET', face_yaw=0)
-        self.interiors['gas_market'] = {
-            'entry': (x, 0, z - 3.55),
-            'return': (18.0, 0, -11.8),
-            'label': 'Hancock Gas Market',
-        }
-
-    def _build_house(self):
-        """Suburban cubes at about (-32, 0, 12). Body, teal roof, garage, door, back lawn, Sanctuary Drive."""
-        Entity = self.Entity
-        color = self.color
-        Text = self.Text
-        teal = color.rgb32(46, 196, 182)

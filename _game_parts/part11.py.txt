@@ -1,32 +1,3 @@
-                return cb
-
-            choices.append((label, make()))
-        if not choices:
-            choices = [('Walk away.', self.close_panel)]
-        expr = node.get('expression') or 'default'
-        por = node.get('portrait') or who
-        tex = self._tex_for(por, expr)
-        if tex is None:
-            pp = portrait_texture_path(por, expr)
-            tex = str(pp) if pp else None
-        self.open_panel(title, node.get('text', ''), choices, portrait=True, portrait_tex=tex)
-
-    def open_talk(self, name, line, portrait_tex=None):
-        self.open_panel(name, line, [('Later.', self.close_panel)], portrait=bool(portrait_tex), portrait_tex=portrait_tex)
-
-    def open_gun_shop(self):
-        pistol = self.items.get('pistol', {})
-        ammo = self.items.get('ammo', {})
-        p_name = pistol.get('name', 'Lot Pistol')
-        a_name = ammo.get('name', 'Pistol Ammo')
-        body = "Cash on the plank. Pistol if you want polite. Ammo is not a suggestion."
-        choices = [
-            (f'{p_name}   -   70g', self._buy_pistol),
-            (f'{a_name} x12   -   48g', self._buy_ammo),
-            ('Leave.', self.close_panel),
-        ]
-        self.open_panel('Gage   ·   Hancock Gun Hut', body, choices)
-
     def _buy_pistol(self):
         if self.owned_pistol:
             self.toast('You already have the lot pistol.')
@@ -224,27 +195,6 @@
         self.hp = min(self.max_hp, self.hp + 28)
         self.toast(f'{name}  +28 HP')
 
-    def open_inventory(self):
-        """Compact inventory management without a second always-on UI tree."""
-        if not self.pack:
-            self.open_panel('PACK', 'Empty pack. Buy food at a shake shop or pick up drops.', [('Close.', self.close_panel)])
-            return
-        counts = {}
-        for name in self.pack:
-            counts[name] = counts.get(name, 0) + 1
-        body = '\n'.join(f'{name}  x{count}' for name, count in list(counts.items())[:8])
-        choices = []
-        for name in list(counts)[:3]:
-            def use(item=name):
-                if item in self.pack:
-                    self.pack.remove(item)
-                    self.hp = min(self.max_hp, self.hp + 28)
-                    self.toast(f'{item} used. +28 HP')
-                self.open_inventory()
-            choices.append((f'Use {name}', use))
-        choices.append(('Close pack.', self.close_panel))
-        self.open_panel('PACK  ·  I', body, choices)
-
     def _apply_preg_look(self):
         m = self.michelle
         if not m:
@@ -279,3 +229,43 @@
             if all(r in self.quest_completed for r in reqs):
                 self.quest_active.append(qid)
                 self.quest_progress[qid] = 0
+
+    def _quest_hud_line(self):
+        for qid in self.quest_active:
+            q = self._quest_def(qid)
+            if not q:
+                continue
+            hud = q.get('hud') or q.get('name') or qid
+            prog = self.quest_progress.get(qid, 0)
+            if '{progress}' in hud:
+                hud = hud.replace('{progress}', str(prog))
+            return f'QUEST  {hud}'
+        if self.quest_completed:
+            return 'QUEST  done for now'
+        return 'QUEST  —'
+
+    def _quest_complete(self, qid):
+        if qid in self.quest_completed:
+            return
+        q = self._quest_def(qid)
+        if not q:
+            return
+        if qid in self.quest_active:
+            self.quest_active.remove(qid)
+        self.quest_completed.add(qid)
+        gold = int(q.get('reward_gold') or 0)
+        if gold:
+            self.gold += gold
+        self.toast(f"Quest complete: {q.get('name', qid)}  +{gold}g")
+        self._quest_unlock_ready()
+
+    def _quest_event(self, etype, **kw):
+        for qid in list(self.quest_active):
+            q = self._quest_def(qid)
+            if not q:
+                continue
+            qtype = q.get('type')
+            if etype == 'talk' and qtype == 'talk':
+                if kw.get('npc_id') == q.get('npc'):
+                    self._quest_complete(qid)
+            elif etype == 'buy' and qtype == 'buy':

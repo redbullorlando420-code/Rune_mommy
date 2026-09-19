@@ -1,3 +1,28 @@
+            ('waterfront', 16.0, -42.0, 'park_ranger'),
+            # roadside kitsch density (buildings only — no shared NPC overwrite)
+            ('showcase_citrus', 28.0, -6.0, None),
+            ('presidents_hall', 44.0, -8.0, None),
+        )
+        for kind, x, z, npc_id in specs:
+            parts, interact, label = make_poi_building(Entity, color, Text, self._scene(), kind, x, z)
+            self.building_count += 1
+            is_gas = kind in ('gas', 'gas_hwy27') or (label or '').lower().find('gas') >= 0 or (label or '').lower().find('fuel') >= 0
+            self.pois.append({
+                'id': kind,
+                'name': label,
+                'pos': (interact[0], 0, interact[2]),
+                'npc_id': npc_id,
+                'line': None,
+                'is_gas': is_gas,
+                'pump_r': 4.2 if is_gas else 3.4,
+            })
+
+    def _build_house(self):
+        """Suburban cubes at about (-32, 0, 12). Body, teal roof, garage, door, back lawn, Sanctuary Drive."""
+        Entity = self.Entity
+        color = self.color
+        Text = self.Text
+        teal = color.rgb32(46, 196, 182)
         body_col = color.rgb32(232, 214, 188)
         wood = color.rgb32(90, 55, 40)
         hx, hz = -32.0, 12.0
@@ -19,9 +44,10 @@
         # body + porch + windows + AC (composed, not a lone cube)
         Entity(model='cube', scale=(8.0, 3.2, 6.4), position=(hx, 1.6, hz), color=body_col,
                texture=stucco, texture_scale=(2.5, 1.6), collider='box')
-        Entity(model='cube', scale=(8.6, 0.35, 3.6), position=(hx - 1.2, 3.55, hz), color=teal, rotation_z=18)
-        Entity(model='cube', scale=(8.6, 0.35, 3.6), position=(hx + 1.2, 3.55, hz), color=teal, rotation_z=-18)
-        Entity(model='cube', scale=(0.3, 0.25, 7.0), position=(hx, 3.95, hz), color=color.rgb32(245, 248, 252))
+        # A-frame roof: ridge above wall top (h=3.2 → ridge ~3.75), ±28 slopes
+        Entity(model='cube', scale=(8.6, 0.22, 3.6), position=(hx - 1.2, 3.63, hz), color=teal, rotation_z=28)
+        Entity(model='cube', scale=(8.6, 0.22, 3.6), position=(hx + 1.2, 3.63, hz), color=teal, rotation_z=-28)
+        Entity(model='cube', scale=(0.22, 0.14, 7.0), position=(hx, 3.83, hz), color=color.rgb32(245, 248, 252))
         for wz in (-1.6, 1.6):
             Entity(model='cube', scale=(0.08, 0.7, 0.7), position=(hx + 4.05, 1.7, hz + wz), color=color.rgb32(120, 200, 230))
         Entity(model='cube', scale=(2.8, 0.14, 2.2), position=(hx + 5.2, 0.1, hz),
@@ -95,26 +121,29 @@
         michelle.hittable = False
         michelle.line = "Alec, I just got off the plane, can you not stare at my tits for five seconds?"
         michelle.portrait_tex = None
-        rel = portrait_asset_path('michelle')
+        try:
+            rel = portrait_asset_path('michelle')
+        except Exception:
+            rel = None
         if rel:
             try:
                 from ursina import load_texture
                 tex = load_texture(rel)
+                michelle.portrait_tex = tex
+                bill = Entity(
+                    parent=michelle,
+                    model='quad',
+                    texture=tex,
+                    scale=(1.05, 1.4),
+                    position=(0, 1.45, -0.55),
+                    double_sided=True,
+                )
+                try:
+                    bill.billboard = True
+                except Exception:
+                    pass
             except Exception:
-                tex = str(pp)
-            michelle.portrait_tex = tex
-            bill = Entity(
-                parent=michelle,
-                model='quad',
-                texture=tex,
-                scale=(1.05, 1.4),
-                position=(0, 1.45, -0.55),
-                double_sided=True,
-            )
-            try:
-                bill.billboard = True
-            except Exception:
-                pass
+                michelle.portrait_tex = None
         self.npcs.append(michelle)
         self.michelle = michelle
 
@@ -186,13 +215,12 @@
         if mp_ok:
             try:
                 from ursina import load_texture
-                # prefer relative asset path for Ursina
                 _rel = portrait_asset_path('mira') or (str(mp) if mp else None)
                 portrait = load_texture(_rel) if _rel else None
                 self.mira_texture = portrait
             except Exception:
-                portrait = str(mp)
-                self.mira_texture = portrait
+                portrait = None
+                self.mira_texture = None
 
         shake = next((s for s in self.stalls if s['id'] == 'shake_bar'), None)
         mx, mz = (0.0, -2.6)
@@ -242,27 +270,3 @@
             self.npcs.append(deb)
 
         # Extra talkable Clermont NPCs from npcs.json. Keep them off Mira.
-        talk_spots = {
-            'lila': (-14.0, 5.5),
-            'yara': (8.0, -26.5),
-            'rosa': (mx - 3.2, mz + 0.4),
-            'tavi': (-24.0, -20.0),
-            'rook': (26.0, 7.0),
-            'rita': (18.0, -13.0),
-            'motel_clerk': (-8.0, 4.2),
-            'barista': (-20.0, -12.8),
-            'pharmacist': (30.0, -30.2),
-            'neighbor': (-40.0, 10.5),
-            'lot_attendant': (8.0, 2.8),
-            'amanda_friend': (-14.0, -30.0),
-        }
-        # place POI NPCs from self.pois (adds new ids + refreshes positions)
-        for poi in getattr(self, 'pois', []) or []:
-            nid = poi.get('npc_id')
-            if nid:
-                talk_spots[nid] = (poi['pos'][0], poi['pos'][2])
-        for nid, (nx, nz) in talk_spots.items():
-            spec = (self.npcs_data or {}).get(nid) or {'id': nid, 'name': nid.title(), 'greet': '...'}
-            shirt = hex_color(spec.get('color') or '#ff8fab')
-            named = nid in ('lila', 'rosa', 'yara', 'rita', 'deb')
-            npc = self._humanoid(

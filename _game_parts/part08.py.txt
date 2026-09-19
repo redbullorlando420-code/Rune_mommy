@@ -1,17 +1,9 @@
-        if car.damage >= float(getattr(car, 'max_damage', 240.0) or 240.0) and not getattr(car, 'disabled', False):
-            car.disabled = True
-            car.speed = 0.0
-            self.toast('Car totaled.')
-            if self.in_car is car:
-                # stall — force exit shortly via disabled flag in enter check
-                pass
 
     def _update_car_damage_visual(self, car, dt=0.016):
         dmg = float(getattr(car, 'damage', 0.0) or 0.0)
-        max_damage = float(getattr(car, 'max_damage', 240.0) or 240.0)
         base = getattr(car, 'base_paint', None) or getattr(car, 'paint', None)
         if base is not None and getattr(car, 'body', None):
-            t = min(1.0, dmg / max_damage)
+            t = min(1.0, dmg / 100.0)
             try:
                 # darker / redder as damage rises
                 if hasattr(base, 'r'):
@@ -54,112 +46,12 @@
         self.cam_in_car = bool(in_car)
         if in_car:
             camera.parent = self.in_car.cam_pivot
-            camera.position = Vec3(0, 3.5, -11.0)
-            camera.rotation = Vec3(19, 0, 0)
+            camera.position = Vec3(0, 2.4, -10.5)
+            camera.rotation = Vec3(14, 0, 0)
         else:
             camera.parent = self.cam_pivot
             camera.position = Vec3(0, 1.65, -8.8)
             camera.rotation = Vec3(12, 0, 0)
-
-    def _update_camera_collision(self):
-        """Pull the third-person camera in before an intervening collider."""
-        try:
-            from ursina import camera, raycast, Vec3
-            pivot = self.in_car.cam_pivot if self.cam_in_car and self.in_car else self.cam_pivot
-            desired_y, desired_z = ((3.5, -11.0) if self.cam_in_car else (1.65, -8.8))
-            origin = pivot.world_position + Vec3(0, 0.10, 0)
-            desired = pivot.world_position + pivot.up * desired_y - pivot.forward * abs(desired_z)
-            delta = desired - origin
-            length = delta.length()
-            if length <= 0.01:
-                return
-            ignore = [self.player, self.visual, self.cam_pivot, camera]
-            # Raycasts do not always inherit an ignored root Entity. Ignoring
-            # mesh/collider children prevents the camera being pulled into the
-            # player and creating the apparent post-portal look lock.
-            ignore.extend(list(getattr(self.visual, 'children', []) or []))
-            if self.in_car:
-                ignore.extend([self.in_car, getattr(self.in_car, 'body', None), getattr(self.in_car, 'cabin', None)])
-            hit = raycast(origin, delta.normalized(), distance=length, ignore=[e for e in ignore if e], debug=False)
-            ratio = 1.0
-            if hit.hit:
-                ratio = max(0.16, min(1.0, (float(hit.distance) - 0.25) / length))
-            camera.position = Vec3(0, desired_y * ratio, desired_z * ratio)
-        except Exception:
-            # Camera collision must never prevent player movement.
-            pass
-
-    def _nearest_region_gate(self, pos, radius=3.5):
-        best, best_d = None, radius
-        for gate in getattr(self, 'region_gates', []) or []:
-            ent = gate.get('entity') if isinstance(gate, dict) else None
-            if not ent:
-                continue
-            d = dist_xz(pos, (ent.x, 0, ent.z))
-            if d < best_d:
-                best, best_d = gate, d
-        return best, best_d
-
-    def _tick_static_chunks(self):
-        """Hide distant district roots; roads remain available for travel."""
-        if not self.player:
-            return
-        px, pz = self.player.x, self.player.z
-        radius = 150.0 if getattr(self, 'render_range', 'full') == 'full' else 95.0
-        for item in getattr(self, 'static_chunks', []) or []:
-            root = item.get('root') if isinstance(item, dict) else None
-            if not root:
-                continue
-            dx, dz = px - float(item.get('x', 0)), pz - float(item.get('z', 0))
-            on = dx * dx + dz * dz <= radius * radius
-            try:
-                root.enabled = on
-            except Exception:
-                try:
-                    root.visible = on
-                except Exception:
-                    pass
-
-    def _travel_region_gate(self, gate):
-        if not gate:
-            return
-        if self.in_car:
-            self.toast('Exit the car before taking a regional gate.')
-            return
-        spawn = gate.get('spawn') or (-18, 0, 12)
-        self.player.position = spawn
-        self.player.y = 0
-        self.mouse_free = False
-        self._lock_mouse(True)
-        self.mouse_look_cooldown = 2
-        self.current_region = gate.get('region') or 'clermont'
-        self._quest_event('visit', poi_id=gate.get('id'))
-        self.toast('Entered ' + self.current_region.replace('_', ' ').title() + '.')
-
-    def _enter_interior(self, interior_id):
-        if self.in_car:
-            self.toast('Exit the car before entering.')
-            return
-        interior = (getattr(self, 'interiors', {}) or {}).get(interior_id)
-        if not interior:
-            self.toast('This building is closed.')
-            return
-        self.player.position = interior['entry']
-        self.player.y = 0
-        self.y_vel = 0.0
-        self.active_interior = interior_id
-        self.toast('Entered ' + interior['label'] + '. E to return outside.')
-
-    def _leave_interior(self):
-        interior = (getattr(self, 'interiors', {}) or {}).get(getattr(self, 'active_interior', None))
-        if not interior:
-            self.active_interior = None
-            return
-        self.player.position = interior['return']
-        self.player.y = 0
-        self.y_vel = 0.0
-        self.active_interior = None
-        self.toast('Back outside.')
 
     def _wander_targets(self, dt):
         from ursina import Vec3, raycast
@@ -264,12 +156,8 @@
             self.hud_gold.text = f'Gold  {self.gold}'
         if self.hud_hp:
             self.hud_hp.text = f'HP  {int(self.hp)}'
-        if getattr(self, 'hud_hp_bar', None):
-            self.hud_hp_bar.scale_x = max(0.01, min(1.0, float(self.hp) / 100.0))
         if self.hud_heat:
             self.hud_heat.text = f'HEAT  {self.heat:.1f}'
-        if getattr(self, 'hud_heat_bar', None):
-            self.hud_heat_bar.scale_x = max(0.01, min(1.0, float(self.heat) / 5.0))
         if getattr(self, 'hud_breed', None):
             flag = '  PREG' if self.preg else ''
             self.hud_breed.text = f'Breed  {int(self.breed)}%{flag}'
@@ -287,9 +175,8 @@
         if getattr(self, 'hud_mode', None):
             if self.in_car:
                 fuel = int(getattr(self.in_car, 'fuel', 0) or 0)
-                dmg = float(getattr(self.in_car, 'damage', 0) or 0)
-                max_dmg = float(getattr(self.in_car, 'max_damage', 240) or 240)
-                self.hud_mode.text = f'DRIVE   FUEL {fuel}%   COND {int(100 - dmg * 100 / max_dmg)}%'
+                dmg = int(getattr(self.in_car, 'damage', 0) or 0)
+                self.hud_mode.text = f'DRIVE   FUEL {fuel}%   DMG {dmg}%'
             else:
                 self.hud_mode.text = 'WALK'
         if self.gun_model:
@@ -314,9 +201,6 @@
             g = self.safe_gate
             if dist_xz(pos, (g.x, 0, g.z)) < 3.5:
                 return 'E  leave safe yard — start game'
-        gate, gate_d = self._nearest_region_gate(pos)
-        if gate:
-            return f"E  travel: {gate.get('label', 'regional gate')}"
         gas = self._nearest_gas(pos)
         if self.in_car:
             if gas:
@@ -368,3 +252,20 @@
             else:
                 options.append((sd, f'E  {stall["name"]}'))
         door_xz = (self.house_rooms or {}).get('door')
+        if door_xz and not self.michelle_seen:
+            dd = dist_xz(pos, (door_xz[0], 0, door_xz[1]))
+            if dd < 3.0:
+                options.append((dd, 'E  Sanctuary Drive'))
+        for poi in getattr(self, 'pois', []) or []:
+            if poi.get('is_gas'):
+                continue
+            pd = dist_xz(pos, poi['pos'])
+            if pd < 3.4:
+                options.append((pd, f"E  {poi.get('name', 'POI')}"))
+        if not options:
+            return ''
+        options.sort(key=lambda x: x[0])
+        return options[0][1]
+
+    def _actor_pos(self):
+        if self.in_car:
