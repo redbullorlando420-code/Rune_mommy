@@ -34,11 +34,15 @@ from crowd import spawn_crowd, tick_crowd, spawn_heat_hunter
 from traffic import spawn_traffic, tick_traffic
 from lighting import apply_lighting, apply_perf, set_visible
 from models3d import (
-    make_humanoid, make_car, attach_humanoid_parts, make_house, make_shop_stall,
+    make_humanoid, make_car, make_house, make_shop_stall,
     make_billboard, make_street_sign, make_poi_building,
     set_world_textures,
     make_food_truck, make_walmart, densify_hwy50,
 )
+try:
+    from models3d import attach_humanoid_parts
+except ImportError:  # older zips missing re-export
+    from models3d._actors import attach_humanoid_parts
 
 import life_sim
 import interiors
@@ -252,6 +256,7 @@ class Game:
         self.heat_spawn_cd = 0.0
         self.michelle_auto_opened = False
         self.michelle_node = 'door'
+        self.michelle_open_idx = 0
         self.mode = 'menu'  # menu | settings | safe | play
         self.world_paused = True
         self.intro_started = False
