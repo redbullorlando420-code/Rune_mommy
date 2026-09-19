@@ -209,11 +209,15 @@
 
         self.player = Entity(position=(-18.0, 0, 12.0), rotation_y=-90)
         self.visual = Entity(parent=self.player)
-        Entity(parent=self.visual, model='cube', color=color.rgb32(30, 40, 55), scale=(0.44, 0.55, 0.3), y=0.28)
-        Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.52, 0.62, 0.34), y=0.82)
-        Entity(parent=self.visual, model='sphere', color=color.rgb32(255, 210, 175), scale=0.33, y=1.32)
-        Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.12, 0.5, 0.12), x=0.34, y=0.78)
-        Entity(parent=self.visual, model='cube', color=color.rgb32(40, 190, 200), scale=(0.12, 0.5, 0.12), x=-0.34, y=0.78)
+        # Alec — casual cyan tee / dark jeans (procedural multi-part)
+        attach_humanoid_parts(
+            Entity, color, self.visual,
+            shirt=color.rgb32(40, 190, 200),
+            pants=color.rgb32(30, 40, 55),
+            skin=color.rgb32(255, 210, 175),
+            detail='named',
+            style='player',
+        )
         self.gun_model = Entity(
             parent=self.visual,
             model='cube',

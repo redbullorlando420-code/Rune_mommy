@@ -1,4 +1,4 @@
-"""Lot crowd for Rune Mommy — cube humanoids, wander / run crazy / panic.
+"""Lot crowd for Rune Mommy — procedural multi-part humanoids, wander / run crazy / panic.
 
 Named NPCs (Mira, Gage, Michelle) live in game.py and are NOT in this loot crowd.
 """
@@ -9,29 +9,7 @@ import random
 
 from lighting import should_sim, set_visible, CULL_PED
 
-PED_COUNT = 72
-
-# Public-service nodes used by the local NPC simulation.  They deliberately
-# sit on sidewalks / POI forecourts, not in road parcels.  ATM visits add a
-# small public stipend so a civilian can continue buying food and water.
-NEED_NODES = (
-    ('food', -19.0, -7.8, 'Shake Bar'),
-    ('food', 8.0, 5.0, 'food counter'),
-    ('food', 40.0, -20.0, 'Club 27'),
-    ('water', -8.0, 6.5, 'motel water'),
-    ('water', -14.0, -28.0, 'park fountain'),
-    ('water', 16.0, -42.0, 'waterfront fountain'),
-    ('atm', -3.0, -9.0, 'free community ATM'),
-    ('atm', 32.0, -8.0, 'free community ATM'),
-)
-
-SOCIAL_LINES = (
-    ('You heading toward the outlets?', 'After I grab water.'),
-    ('Traffic is wild tonight.', 'Take the loop, not the shortcut.'),
-    ('The gas market is open.', 'Good. I need a snack.'),
-    ('Nice weather for a walk.', 'Until the neon rain starts.'),
-    ('You hear about the raceway?', 'Citrus Run? Every night.'),
-)
+PED_COUNT = 52
 
 CIVILIAN_SHIRTS = (
     (255, 90, 180),
@@ -59,11 +37,11 @@ def _atan_yaw(dx, dz):
 
 
 def _role_mix(i):
-    if i < 32:
+    if i < 20:
         return 'civilian'
-    if i < 45:
+    if i < 32:
         return 'lot_rat'
-    if i < 52:
+    if i < 42:
         return 'walker'
     return 'thug'
 
@@ -71,15 +49,14 @@ def _role_mix(i):
 def _spot(i, rng):
     band = i % 5
     if band == 0:
-        # Active storefront sidewalk: a visible pedestrian stream near spawn.
-        return rng.uniform(-24, 28), rng.choice((-8.7, -6.3, 2.8)) + rng.uniform(-0.35, 0.35)
+        return rng.uniform(-22, 26), rng.uniform(-7.5, 3.5)
     if band == 1:
         return rng.uniform(-38, 40), rng.choice((-10.6, -21.4)) + rng.uniform(-0.4, 0.4)
     if band == 2:
         return rng.uniform(-30, 34), rng.uniform(-40, -26)
     if band == 3:
         return rng.uniform(-36, 38), rng.uniform(2.5, 9.0)
-    return rng.uniform(-22, 26), rng.uniform(-20, -6)
+    return rng.uniform(-16, 20), rng.uniform(-20, -6)
 
 
 def spawn_crowd(game):
@@ -96,7 +73,7 @@ def spawn_crowd(game):
         run_crazy = (i % 5 != 0) and (role in ('civilian', 'lot_rat', 'thug') or rng.random() < 0.45)
         if role == 'civilian':
             rgb = CIVILIAN_SHIRTS[i % len(CIVILIAN_SHIRTS)]
-            pants = color.rgb32(36, 24, 48)
+            pants = color.rgb32(36 + (i * 7) % 40, 24 + (i * 3) % 28, 48 + (i * 5) % 36)
             skin = color.rgb32(255, 200, 160)
             hp = rng.randint(18, 26)
             name = 'lot civilian'
@@ -104,7 +81,7 @@ def spawn_crowd(game):
             walk = rng.uniform(1.3, 2.0)
         elif role == 'lot_rat':
             rgb = LOT_RAT_SHIRTS[i % len(LOT_RAT_SHIRTS)]
-            pants = color.rgb32(28, 22, 26)
+            pants = color.rgb32(28 + (i * 5) % 24, 22 + (i * 3) % 18, 26 + (i * 4) % 20)
             skin = color.rgb32(230, 180, 140)
             hp = rng.randint(20, 30)
             name = 'lot rat'
@@ -147,21 +124,6 @@ def spawn_crowd(game):
         ped.sprint_t = 0.0
         ped.melee_cd = 0.0
         ped.panic_speed = rng.uniform(7.6, 10.2) if run_crazy else rng.uniform(6.4, 8.4)
-        # Needs only advance while the NPC is in an active world chunk.  This
-        # keeps the system readable and avoids spending frames on offscreen AI.
-        ped.hunger = rng.uniform(70.0, 100.0)
-        ped.thirst = rng.uniform(70.0, 100.0)
-        ped.cash = rng.uniform(5.0, 18.0)
-        ped.need_target = None
-        ped.need_label = ''
-        ped.social_t = 0.0
-        ped.social_partner = None
-        try:
-            ped.bubble = game.Text(parent=ped, text='', position=(0, 2.05, 0), origin=(0, 0),
-                                   billboard=True, color=color.rgb32(245, 245, 255), scale=0.55, enabled=False)
-            ped.bubble.background = True
-        except Exception:
-            ped.bubble = None
         game.peds.append(ped)
         game.npcs.append(ped)
         game.targets.append(ped)
@@ -219,7 +181,6 @@ def tick_crowd(game, dt):
     heat = getattr(game, 'heat', 0.0)
     opts = getattr(game, 'render_opts', None) or {}
     cull = float(opts.get('cull_ped', CULL_PED))
-    visible = []
     for npc in game.peds:
         if not npc:
             continue
@@ -236,24 +197,9 @@ def tick_crowd(game, dt):
             set_visible(npc, False)
             continue
         set_visible(npc, True)
-        visible.append(npc)
 
         speed = getattr(npc, 'walk_speed', 1.6)
         charging = False
-
-        # Local survival loop: choose the most urgent accessible service node.
-        # Combat/panic continues to win for safety, then the NPC resumes its
-        # errand. Thugs keep the same system so the world is internally fair.
-        npc.hunger = max(0.0, float(getattr(npc, 'hunger', 100.0)) - 0.18 * dt)
-        npc.thirst = max(0.0, float(getattr(npc, 'thirst', 100.0)) - 0.27 * dt)
-        need = getattr(npc, 'need_target', None)
-        if need is None and (npc.hunger < 48.0 or npc.thirst < 48.0 or float(getattr(npc, 'cash', 0.0)) < 2.0):
-            wanted = 'atm' if float(getattr(npc, 'cash', 0.0)) < 2.0 else ('water' if npc.thirst <= npc.hunger else 'food')
-            options = [node for node in NEED_NODES if node[0] == wanted]
-            if options:
-                need = min(options, key=lambda node: math.hypot(node[1] - npc.x, node[2] - npc.z))
-                npc.need_target = need
-                npc.need_label = need[3]
 
         if kind == 'heat_hunter' and heat >= 1.6:
             npc.heading = _atan_yaw(px - npc.x, pz - npc.z)
@@ -267,25 +213,6 @@ def tick_crowd(game, dt):
             else:
                 npc.heading = _atan_yaw(dx, dz)
                 speed = getattr(npc, 'panic_speed', 8.0)
-        elif need is not None:
-            _, tx, tz, _label = need
-            nd = math.hypot(tx - npc.x, tz - npc.z)
-            if nd < 1.15:
-                service = need[0]
-                if service == 'food':
-                    npc.hunger = 100.0
-                    npc.cash = max(0.0, float(getattr(npc, 'cash', 0.0)) - 2.0)
-                elif service == 'water':
-                    npc.thirst = 100.0
-                    npc.cash = max(0.0, float(getattr(npc, 'cash', 0.0)) - 1.0)
-                else:  # public ATM: a free, limited survival stipend
-                    npc.cash = min(20.0, float(getattr(npc, 'cash', 0.0)) + 12.0)
-                npc.need_target = None
-                npc.need_label = ''
-                npc.wander_t = 0.0
-            else:
-                npc.heading = _atan_yaw(tx - npc.x, tz - npc.z)
-                speed = min(3.0, max(1.5, float(getattr(npc, 'walk_speed', 1.6)) + 0.7))
         else:
             npc.wander_t = getattr(npc, 'wander_t', 0.0) - dt
             npc.sprint_t = max(0.0, getattr(npc, 'sprint_t', 0.0) - dt)
@@ -313,37 +240,6 @@ def tick_crowd(game, dt):
         npc.y = 0
         npc.x = max(-46, min(50, npc.x))
         npc.z = max(-50, min(16, npc.z))
-
-        # An ignored NPC cannot quietly survive with both needs empty.  The
-        # gradual health loss leaves time for a reachable node to recover them.
-        if npc.hunger <= 0.0 or npc.thirst <= 0.0:
-            npc.hp = max(0.0, float(npc.hp) - 3.0 * dt)
-
-        bubble = getattr(npc, 'bubble', None)
-        if bubble:
-            npc.social_t = max(0.0, float(getattr(npc, 'social_t', 0.0) or 0.0) - dt)
-            if npc.social_t <= 0.0:
-                bubble.enabled = False
-
-    # One nearby pair at a time makes the block feel social without updating
-    # dozens of text objects or doing an expensive all-world simulation.
-    game.social_cd = max(0.0, float(getattr(game, 'social_cd', 0.0) or 0.0) - dt)
-    if game.social_cd <= 0.0 and len(visible) >= 2:
-        first = random.choice(visible)
-        partners = [n for n in visible if n is not first and math.hypot(n.x - first.x, n.z - first.z) < 7.0]
-        if partners:
-            second = random.choice(partners)
-            line_a, line_b = random.choice(SOCIAL_LINES)
-            for npc, line in ((first, line_a), (second, line_b)):
-                bubble = getattr(npc, 'bubble', None)
-                if bubble:
-                    bubble.text = line
-                    bubble.enabled = True
-                    npc.social_t = 3.6
-                    npc.social_partner = getattr(second if npc is first else first, 'npc_id', None)
-            game.social_cd = random.uniform(5.0, 9.0)
-        else:
-            game.social_cd = 1.5
 
         if charging and dist < 1.45 and hasattr(game, '_hurt'):
             npc.melee_cd = getattr(npc, 'melee_cd', 0.0) - dt

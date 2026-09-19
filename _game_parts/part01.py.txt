@@ -34,7 +34,7 @@ from crowd import spawn_crowd, tick_crowd, spawn_heat_hunter
 from traffic import spawn_traffic, tick_traffic
 from lighting import apply_lighting, apply_perf, set_visible
 from models3d import (
-    make_humanoid, make_car, make_house, make_shop_stall,
+    make_humanoid, make_car, attach_humanoid_parts, make_house, make_shop_stall,
     make_billboard, make_street_sign, make_poi_building,
     set_world_textures,
     make_food_truck, make_walmart, densify_hwy50,
