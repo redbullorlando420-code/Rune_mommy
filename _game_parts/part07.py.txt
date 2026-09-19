@@ -1,3 +1,73 @@
+    def _build_traffic(self):
+        spawn_traffic(self)
+
+    def _rebuild_ignore(self):
+        ign = [self.player, self.visual, self.cam_pivot]
+        if self.gun_model:
+            ign.append(self.gun_model)
+        for npc in self.npcs:
+            if npc:
+                ign.append(npc)
+        for car in self.cars:
+            if not car:
+                continue
+            ign.append(car)
+            body = getattr(car, 'body', None)
+            if body:
+                ign.append(body)
+        self.ignore = ign
+
+    def _build_targets(self):
+        color = self.color
+        # Six shootable hostiles from mobs.json, south of Hwy 50 (z < -16).
+        mix = ('dusk_walker', 'road_thug', 'cinder_hound', 'dusk_walker', 'road_thug', 'cinder_hound')
+        spots = [(-12, -32), (2, -34), (14, -31), (22, -36), (-22, -30), (6, -40)]
+        for i, (mid, (x, z)) in enumerate(zip(mix, spots)):
+            spec = (self.mobs_data or {}).get(mid) or {'id': mid, 'name': mid, 'hp': 30, 'xp': 10, 'color': '#6d6875'}
+            shirt = hex_color(spec.get('color') or '#6d6875')
+            skin = color.rgb32(170, 190, 150) if 'walker' in mid else color.rgb32(220, 160, 120)
+            t = self._humanoid(x, z, shirt=shirt, pants=color.rgb32(24, 24, 28), skin=skin, hitbox=True)
+            t.npc_id = f"{mid}_{i}"
+            t.mob_id = mid
+            t.npc_name = spec.get('name', mid)
+            t.kind = 'mob'
+            t.hp = int(spec.get('hp', 30))
+            t.max_hp = t.hp
+            t.xp = int(spec.get('xp', 10))
+            t.heading = random.uniform(0, 360)
+            t.wander_t = random.uniform(0, 2)
+            t.hittable = True
+            try:
+                sz = float(spec.get('size') or 1.0)
+                t.scale = sz
+            except Exception:
+                pass
+            self.targets.append(t)
+            self.npcs.append(t)
+        # barrels
+        Entity = self.Entity
+        for x, z in ((12, -8), (11.2, -8.6), (-6, -22)):
+            b = Entity(model='cube', color=color.rgb32(150, 70, 30), scale=(0.7, 1.0, 0.7), position=(x, 0.5, z), collider='box')
+            b.kind = 'barrel'
+            b.hittable = True
+            b.hp = 15
+            b.xp = 0
+            b.npc_name = 'barrel'
+            self.targets.append(b)
+
+    def _build_player(self):
+        Entity = self.Entity
+        color = self.color
+        camera = self.camera
+        Vec3 = self.Vec3
+
+        self.player = Entity(position=(-18.0, 0, 12.0), rotation_y=-90)
+        self.visual = Entity(parent=self.player)
+        # Alec — casual cyan tee / dark jeans (procedural multi-part)
+        attach_humanoid_parts(
+            Entity, color, self.visual,
+            shirt=color.rgb32(40, 190, 200),
+            pants=color.rgb32(30, 40, 55),
             skin=color.rgb32(255, 210, 175),
             detail='named',
             style='player',
@@ -190,6 +260,18 @@
         except Exception:
             pass
 
+
+        # Light adult jiggle (only entities that opted in; near-zero if empty)
+        try:
+            moving = bool(getattr(self, '_was_moving', False))
+            if self.player:
+                _tick_jiggle(self.player, dt, moving=moving)
+            for n in list(getattr(self, 'npcs', None) or [])[:8]:
+                if n and getattr(n, 'jiggle_parts', None):
+                    _tick_jiggle(n, dt, moving=False)
+        except Exception:
+            pass
+
         self._refresh_hud()
         if getattr(self, 'debug_on', True):
             try:
@@ -217,95 +299,3 @@
             player.rotation_y -= 90 * dt
 
 
-        wish_x = held_keys['d'] - held_keys['a']
-        wish_z = held_keys['w'] - held_keys['s']
-        # Arrow keys as backup movement
-        wish_x += held_keys['right arrow'] * 0  # right arrow is turn
-        wish_z += 0
-        if held_keys['up arrow']:
-            wish_z += 1
-        if held_keys['down arrow']:
-            wish_z -= 1
-        wish = Vec3(wish_x, 0, wish_z)
-        if wish.length() > 0:
-            wish = wish.normalized()
-            speed = 10.0 if mode == 'safe' else 8.5
-            move = (player.forward * wish.z + player.right * wish.x) * speed * dt
-            if mode == 'safe':
-                # Nuclear: no clip tests in the yard — just move and clamp.
-                player.position += move
-                cx, _cy, cz = getattr(self, 'safe_yard_center', (80.0, 0.0, 80.0))
-                player.x = max(cx - 12.0, min(cx + 12.0, player.x))
-                player.z = max(cz - 12.0, min(cz + 12.0, player.z))
-            else:
-                origin = player.world_position + Vec3(0, 0.9, 0)
-                ign = list(self.ignore)
-                hit = raycast(origin, move.normalized(), distance=0.55 + move.length(), ignore=ign, debug=False)
-                if not hit.hit:
-                    player.position += move
-                else:
-                    mx = Vec3(move.x, 0, 0)
-                    mz = Vec3(0, 0, move.z)
-                    if mx.length() > 1e-5:
-                        hx = raycast(origin, mx.normalized(), distance=0.55 + mx.length(), ignore=ign, debug=False)
-                        if not hx.hit:
-                            player.x += mx.x
-                    if mz.length() > 1e-5:
-                        hz = raycast(origin, mz.normalized(), distance=0.55 + mz.length(), ignore=ign, debug=False)
-                        if not hz.hit:
-                            player.z += mz.z
-                player.x = max(-60, min(78, player.x))
-                player.z = max(-58, min(30, player.z))
-
-        self.y_vel -= 32 * dt
-        player.y += self.y_vel * dt
-        if player.y <= 0:
-            player.y = 0
-            self.y_vel = 0
-            self.grounded = True
-        else:
-            self.grounded = False
-
-        if held_keys['space'] and self.grounded:
-            self.y_vel = 8.2
-            self.grounded = False
-
-        if not self.visual.enabled:
-            self.visual.enabled = True
-        if self.cam_in_car:
-            self._set_camera_follow(False)
-
-
-    def _drive(self, dt):
-        from ursina import held_keys, mouse, raycast, Vec3, Entity, destroy, color
-        from vendor.vehicle import bicycle_step
-        car = self.in_car
-        if getattr(mouse, 'locked', False):
-            # Clamp mouse look while driving (pitch only on cam_pivot)
-            car.cam_pivot.rotation_x -= mouse.velocity[1] * (float(getattr(self, "mouse_sens", 140) or 140) * 0.57)
-            car.cam_pivot.rotation_x = max(-20, min(25, car.cam_pivot.rotation_x))
-
-        dmg = float(getattr(car, 'damage', 0.0) or 0.0)
-        dmg_mul = max(0.15, 1.0 - 0.5 * (dmg / 100.0))
-        wear = float(getattr(car, 'tire_wear', 0.0) or 0.0)
-        wear_n = max(0.0, min(1.0, wear / 100.0))
-        steer_gain = 1.05 * (1.0 - 0.55 * wear_n)
-        coast_drag = 3.2 + 2.8 * wear_n
-        accel_drag = 0.55 + 0.9 * wear_n
-        base_vmax, base_accel = 24.0, 16.0
-        vmax = base_vmax * dmg_mul * (1.0 - 0.18 * wear_n)
-        accel_force = base_accel * dmg_mul * (1.0 - 0.12 * wear_n)
-        brake_force = 0.0
-        accel = 0.0
-
-        fuel = float(getattr(car, 'fuel', 100.0) or 0.0)
-        out_of_gas = fuel <= 0.0 or getattr(car, 'disabled', False)
-
-        if out_of_gas:
-            brake_force = 14.0
-            if not getattr(car, 'out_of_gas_toasted', False) and fuel <= 0.0 and not getattr(car, 'disabled', False):
-                car.out_of_gas_toasted = True
-                self.toast('Out of gas. Find a pump.')
-        else:
-            if held_keys['w']:
-                accel = accel_force
