@@ -10,6 +10,11 @@ from models3d._extras import (  # noqa: F401
     Y_LOT, Y_SIDEWALK, Y_HWY, Y_PAINT,
 )
 
+from models3d._tokyo import (  # noqa: F401
+    make_torii_portal, make_jp_narrow_shop, make_neon_billboard_jp,
+    make_covered_arcade, make_station_facade, make_donki_box,
+)
+
 __all__ = [
     'set_world_textures',
     'make_humanoid',
@@ -27,4 +32,10 @@ __all__ = [
     'Y_SIDEWALK',
     'Y_HWY',
     'Y_PAINT',
+    'make_torii_portal',
+    'make_jp_narrow_shop',
+    'make_neon_billboard_jp',
+    'make_covered_arcade',
+    'make_station_facade',
+    'make_donki_box',
 ]

@@ -64,10 +64,11 @@ def attach_humanoid_parts(
 
     # --- proportions (meters-ish Ursina units) ---
     # Keep crown near y=1.55 and feet on ground so talk ranges / cam stay valid.
-    hip_w = 0.46 if michelle else (0.40 if player else 0.42)
-    shoulder_w = 0.48 if michelle else (0.54 if player else 0.50)
-    torso_d = 0.30 if michelle else 0.28
-    leg_gap = 0.13 if michelle else 0.12
+    # Michelle: adult hourglass — wider hips, smaller waist, fuller chest silhouette.
+    hip_w = 0.54 if michelle else (0.40 if player else 0.42)
+    shoulder_w = 0.46 if michelle else (0.54 if player else 0.50)
+    torso_d = 0.32 if michelle else 0.28
+    leg_gap = 0.14 if michelle else 0.12
 
     # Hips / pelvis
     if michelle:
@@ -80,12 +81,12 @@ def attach_humanoid_parts(
 
     # Upper + lower legs
     if michelle:
-        # bare legs under dress hem
+        # bare toned legs under dress hem (thicker thigh read)
         for sx in (-leg_gap, leg_gap):
             Entity(parent=parent, model='cube', color=skin,
-                   scale=(0.12, 0.34, 0.12), x=sx, y=0.52)
+                   scale=(0.15, 0.34, 0.14), x=sx, y=0.52)
             Entity(parent=parent, model='cube', color=_tint(skin, -0.05),
-                   scale=(0.11, 0.32, 0.11), x=sx, y=0.22)
+                   scale=(0.13, 0.32, 0.12), x=sx, y=0.22)
     else:
         for sx in (-leg_gap, leg_gap):
             Entity(parent=parent, model='cube', color=pants,
@@ -119,29 +120,43 @@ def attach_humanoid_parts(
     # --- torso / clothing ---
     if michelle:
         dress = shirt
-        # fitted bodice
+        # fitted bodice (narrower waist read)
         Entity(parent=parent, model='cube', color=dress,
-               scale=(0.46, 0.42, torso_d), y=1.12)
-        # waist cinch
-        Entity(parent=parent, model='cube', color=_tint(dress, -0.08),
-               scale=(0.40, 0.10, torso_d * 0.95), y=0.92)
-        # skirt flare (A-line)
+               scale=(0.44, 0.40, torso_d), y=1.14)
+        # tiny waist cinch
+        Entity(parent=parent, model='cube', color=_tint(dress, -0.10),
+               scale=(0.34, 0.11, torso_d * 0.92), y=0.94)
+        # hip shelf under dress
+        Entity(parent=parent, model='cube', color=_tint(dress, -0.04),
+               scale=(hip_w * 0.98, 0.16, 0.34), y=0.82)
+        # skirt flare (knee-length A-line, rides thigh)
         Entity(parent=parent, model='cube', color=_tint(dress, 0.04),
-               scale=(0.58, 0.36, 0.36), y=0.70)
+               scale=(0.62, 0.34, 0.38), y=0.68)
         Entity(parent=parent, model='cube', color=_tint(dress, 0.08),
-               scale=(0.66, 0.14, 0.40), y=0.54)
-        # body shape (existing NSFW tone — improve fidelity, don't strip)
+               scale=(0.70, 0.16, 0.42), y=0.52)
+        # soft ass volume under skirt
+        Entity(parent=parent, model='sphere', color=_tint(dress, -0.06),
+               scale=(0.42, 0.22, 0.28), y=0.78, z=0.10)
+        # fuller chest silhouette (tasteful NSFW — teal dress fabric)
         parent.chest = Entity(
             parent=parent, model='sphere', color=dress,
-            scale=(0.50, 0.28, 0.34), y=1.20, z=-0.04,
+            scale=(0.58, 0.34, 0.40), y=1.22, z=-0.06,
         )
-        Entity(parent=parent, model='sphere', color=_tint(dress, 0.06),
-               scale=(0.20, 0.18, 0.18), x=-0.12, y=1.22, z=-0.10)
-        Entity(parent=parent, model='sphere', color=_tint(dress, 0.06),
-               scale=(0.20, 0.18, 0.18), x=0.12, y=1.22, z=-0.10)
-        # soft neckline / collarbone
+        Entity(parent=parent, model='sphere', color=_tint(dress, 0.08),
+               scale=(0.24, 0.22, 0.22), x=-0.14, y=1.24, z=-0.12)
+        Entity(parent=parent, model='sphere', color=_tint(dress, 0.08),
+               scale=(0.24, 0.22, 0.22), x=0.14, y=1.24, z=-0.12)
+        # cleavage / neckline skin
         Entity(parent=parent, model='cube', color=skin,
-               scale=(0.28, 0.08, 0.16), y=1.34, z=0.02)
+               scale=(0.26, 0.10, 0.14), y=1.36, z=-0.02)
+        # thin shoulder straps
+        Entity(parent=parent, model='cube', color=_tint(dress, 0.05),
+               scale=(0.05, 0.22, 0.04), x=-0.16, y=1.40, z=-0.02)
+        Entity(parent=parent, model='cube', color=_tint(dress, 0.05),
+               scale=(0.05, 0.22, 0.04), x=0.16, y=1.40, z=-0.02)
+        # sunglasses cue (dark lenses)
+        Entity(parent=parent, model='cube', color=_rgb(color, 20, 18, 22),
+               scale=(0.28, 0.06, 0.06), y=1.54, z=0.14)
     else:
         # shirt torso
         torso = Entity(
@@ -183,18 +198,23 @@ def attach_humanoid_parts(
 
     # Hair / silhouette — never a bare cube head
     if michelle:
-        # blonde volume + bangs + side fall
+        # long wavy blonde volume + soft bangs + side fall (adult silhouette)
         Entity(parent=parent, model='sphere', color=hair,
-               scale=(0.40, 0.34, 0.38), y=head_y + 0.06, z=-0.02)
-        Entity(parent=parent, model='cube', color=_tint(hair, -0.05),
-               scale=(0.44, 0.10, 0.20), y=head_y + 0.14, z=0.06)  # bangs
-        Entity(parent=parent, model='cube', color=_tint(hair, -0.08),
-               scale=(0.16, 0.28, 0.12), x=-0.20, y=head_y - 0.02, z=-0.06)
-        Entity(parent=parent, model='cube', color=_tint(hair, -0.08),
-               scale=(0.16, 0.28, 0.12), x=0.20, y=head_y - 0.02, z=-0.06)
-        # short ponytail / back fall
-        Entity(parent=parent, model='sphere', color=_tint(hair, -0.10),
-               scale=(0.22, 0.28, 0.18), y=head_y - 0.06, z=-0.18)
+               scale=(0.42, 0.36, 0.40), y=head_y + 0.08, z=-0.02)
+        Entity(parent=parent, model='cube', color=_tint(hair, -0.04),
+               scale=(0.46, 0.11, 0.22), y=head_y + 0.16, z=0.08)  # bangs
+        Entity(parent=parent, model='cube', color=_tint(hair, -0.06),
+               scale=(0.18, 0.36, 0.14), x=-0.22, y=head_y - 0.06, z=-0.04)
+        Entity(parent=parent, model='cube', color=_tint(hair, -0.06),
+               scale=(0.18, 0.36, 0.14), x=0.22, y=head_y - 0.06, z=-0.04)
+        # longer back fall / waves
+        Entity(parent=parent, model='sphere', color=_tint(hair, -0.08),
+               scale=(0.26, 0.36, 0.20), y=head_y - 0.10, z=-0.20)
+        Entity(parent=parent, model='cube', color=_tint(hair, -0.12),
+               scale=(0.20, 0.40, 0.12), y=head_y - 0.22, z=-0.22)
+        # lips cue
+        Entity(parent=parent, model='cube', color=_rgb(color, 210, 90, 110),
+               scale=(0.10, 0.03, 0.04), y=head_y - 0.06, z=0.16)
     elif player:
         # short dark crop
         Entity(parent=parent, model='sphere', color=hair,

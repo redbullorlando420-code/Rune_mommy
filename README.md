@@ -26,7 +26,7 @@ A window titled **Rune Mommy** opens. **Click the window once**, then use WASD. 
 - **H** drink a shake (heals)
 - **Tab** free the cursor
 - **Esc** close talk panel, or quit
-- **1–4** pick dialogue choices
+- **1–8** pick dialogue choices (or **click** the buttons)
 
 You spawn in the **Sanctuary Drive** driveway. Walk to Michelle and press **E** (talk does not auto-open anymore).
 
@@ -87,5 +87,7 @@ Portraits: `client/portraits/<npc>/<expr>.png`
 - **Food trucks** — three Hwy 50 trucks in `data/shops.json` (append-only).
 - **Lakes + gators** — deep water you can wade; alligators chase/bite; hunt for loot.
 - **Walmart** — far-east big box, enterable, shop stock in shops.json.
+- **Tokyo / Akihabara** — torii portal north of Hwy 50 (~16, 3.5); Electric Town pocket with real store pins; return gate by the station. See `DEVNOTES.md`.
+- **Michelle dialogue** — clickable choices (mouse + 1–8); branching openings from mood/flags.
 
 Do not empty `data/shops.json`. Michelle first name only.

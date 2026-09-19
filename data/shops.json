@@ -500,7 +500,7 @@
       "city": "Clermont",
       "npcName": "Luz",
       "npcTitle": "night cooker",
-      "blurb": "Late truck by the motel \u2014 chips, water, and whatever is still warm.",
+      "blurb": "Late truck by the motel — chips, water, and whatever is still warm.",
       "examine": "String lights and a speaker humming reggaeton at half volume.",
       "greeting": "Tamale sold out. I still got chips, water, soda. Do not wake the motel.",
       "tileX": 12,
@@ -590,6 +590,334 @@
         {
           "itemId": "ammo",
           "price": 4
+        }
+      ]
+    },
+    {
+      "id": "radio_kaikan",
+      "name": "Radio Kaikan",
+      "flagship": false,
+      "kind": "akihabara_shop",
+      "address": "1-15-16 Sotokanda",
+      "city": "Akihabara",
+      "npcName": "Sora",
+      "npcTitle": "parts hunter",
+      "blurb": "Floors of electronics nostalgia and odd gadgets.",
+      "examine": "Vertical neon and radio-era signage stacked to the sky.",
+      "greeting": "Radio Kaikan. Parts, kits, and things that blink. Gold only.",
+      "tileX": 200,
+      "tileY": 0,
+      "w": 3,
+      "h": 4,
+      "world": {
+        "x": 472.0,
+        "z": -2.0,
+        "yaw": 0
+      },
+      "palette": [
+        "#2d3050",
+        "#ff5a28",
+        "#101018"
+      ],
+      "stock": [
+        {
+          "itemId": "aki_usb_gadget",
+          "price": 28
+        },
+        {
+          "itemId": "aki_ramune",
+          "price": 9
+        },
+        {
+          "itemId": "soda_can",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "super_potato",
+      "name": "Super Potato",
+      "flagship": false,
+      "kind": "akihabara_shop",
+      "address": "1-13-2 Sotokanda",
+      "city": "Akihabara",
+      "npcName": "Clerk",
+      "npcTitle": "retro desk",
+      "blurb": "Retro games stacked behind glass. Don't breathe on the carts.",
+      "examine": "A tower of CRTs and cartridge nostalgia.",
+      "greeting": "Super Potato. Retro only. Handle the carts like eggs.",
+      "tileX": 201,
+      "tileY": 0,
+      "w": 3,
+      "h": 5,
+      "world": {
+        "x": 477.0,
+        "z": -6.0,
+        "yaw": 0
+      },
+      "palette": [
+        "#322818",
+        "#ffc828",
+        "#101010"
+      ],
+      "stock": [
+        {
+          "itemId": "aki_retro_cart",
+          "price": 60
+        },
+        {
+          "itemId": "aki_ramune",
+          "price": 8
+        },
+        {
+          "itemId": "stale_chips",
+          "price": 6
+        }
+      ]
+    },
+    {
+      "id": "animate_akihabara",
+      "name": "Animate Akihabara",
+      "flagship": false,
+      "kind": "akihabara_shop",
+      "address": "1-1 Kanda Hanaokacho",
+      "city": "Akihabara",
+      "npcName": "Yuki",
+      "npcTitle": "floor guide",
+      "blurb": "Figures, posters, and the line that never ends.",
+      "examine": "Pink neon and acrylic display cases.",
+      "greeting": "Animate! New figures upstairs. Don't block the escalator.",
+      "tileX": 202,
+      "tileY": 0,
+      "w": 3,
+      "h": 4,
+      "world": {
+        "x": 484.0,
+        "z": -5.5,
+        "yaw": 0
+      },
+      "palette": [
+        "#28385a",
+        "#ff64b4",
+        "#f0f0ff"
+      ],
+      "stock": [
+        {
+          "itemId": "aki_mecha_fig",
+          "price": 45
+        },
+        {
+          "itemId": "aki_idol_poster",
+          "price": 20
+        },
+        {
+          "itemId": "aki_pocky",
+          "price": 7
+        }
+      ]
+    },
+    {
+      "id": "don_quijote",
+      "name": "Don Quijote (Donki)",
+      "flagship": false,
+      "kind": "akihabara_shop",
+      "address": "4-3-3 Sotokanda",
+      "city": "Akihabara",
+      "npcName": "Mio",
+      "npcTitle": "night shift",
+      "blurb": "The clown never sleeps. Snacks, chaos, and questionable deals.",
+      "examine": "Loud vertical signs and a maze of impulse buys.",
+      "greeting": "Donki! If you can find it, you can buy it. Probably.",
+      "tileX": 203,
+      "tileY": 0,
+      "w": 5,
+      "h": 4,
+      "world": {
+        "x": 492.0,
+        "z": -3.0,
+        "yaw": 0
+      },
+      "palette": [
+        "#c81e28",
+        "#ffe028",
+        "#ffffff"
+      ],
+      "stock": [
+        {
+          "itemId": "aki_pocky",
+          "price": 6
+        },
+        {
+          "itemId": "aki_ramune",
+          "price": 8
+        },
+        {
+          "itemId": "bottled_water",
+          "price": 4
+        },
+        {
+          "itemId": "stale_chips",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "mandarake",
+      "name": "Mandarake",
+      "flagship": false,
+      "kind": "akihabara_shop",
+      "address": "3-11-12 Sotokanda",
+      "city": "Akihabara",
+      "npcName": "Buyer",
+      "npcTitle": "used desk",
+      "blurb": "Used doujin, figures, and treasures with history.",
+      "examine": "Narrow aisles of carefully priced nostalgia.",
+      "greeting": "Mandarake. Used is not broken. Mostly.",
+      "tileX": 204,
+      "tileY": 0,
+      "w": 3,
+      "h": 3,
+      "world": {
+        "x": 468.0,
+        "z": -8.0,
+        "yaw": 0
+      },
+      "palette": [
+        "#3c232d",
+        "#dc3c5a",
+        "#201018"
+      ],
+      "stock": [
+        {
+          "itemId": "aki_idol_poster",
+          "price": 16
+        },
+        {
+          "itemId": "aki_mecha_fig",
+          "price": 38
+        },
+        {
+          "itemId": "aki_ramune",
+          "price": 9
+        }
+      ]
+    },
+    {
+      "id": "yodobashi_akihabara",
+      "name": "Yodobashi Camera",
+      "flagship": false,
+      "kind": "akihabara_shop",
+      "address": "1-1 Kanda Hanaokacho",
+      "city": "Akihabara",
+      "npcName": "Floor staff",
+      "npcTitle": "electronics",
+      "blurb": "Megastore energy — cameras, cables, and everything in between.",
+      "examine": "Glass and steel sprawl beside the station.",
+      "greeting": "Yodobashi. If it plugs in, we probably sell it.",
+      "tileX": 205,
+      "tileY": 0,
+      "w": 4,
+      "h": 4,
+      "world": {
+        "x": 498.0,
+        "z": -1.0,
+        "yaw": 0
+      },
+      "palette": [
+        "#1e325a",
+        "#508cff",
+        "#d0d8e8"
+      ],
+      "stock": [
+        {
+          "itemId": "aki_camera_strap",
+          "price": 18
+        },
+        {
+          "itemId": "aki_usb_gadget",
+          "price": 30
+        },
+        {
+          "itemId": "bottled_water",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "yodobashi",
+      "name": "Yodobashi Camera",
+      "flagship": false,
+      "kind": "akihabara_shop",
+      "address": "1-1 Kanda Hanaokacho",
+      "city": "Akihabara",
+      "npcName": "Floor staff",
+      "npcTitle": "electronics",
+      "blurb": "Megastore energy — cameras, cables, and everything in between.",
+      "examine": "Glass and steel sprawl beside the station.",
+      "greeting": "Yodobashi. If it plugs in, we probably sell it.",
+      "tileX": 205,
+      "tileY": 0,
+      "w": 4,
+      "h": 4,
+      "world": {
+        "x": 498.0,
+        "z": -1.0,
+        "yaw": 0
+      },
+      "palette": [
+        "#1e325a",
+        "#508cff",
+        "#d0d8e8"
+      ],
+      "stock": [
+        {
+          "itemId": "aki_camera_strap",
+          "price": 18
+        },
+        {
+          "itemId": "aki_usb_gadget",
+          "price": 30
+        },
+        {
+          "itemId": "bottled_water",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "udx",
+      "name": "Akihabara UDX",
+      "flagship": false,
+      "kind": "akihabara_shop",
+      "address": "4-14-1 Sotokanda",
+      "city": "Akihabara",
+      "npcName": "Concierge",
+      "npcTitle": "lobby",
+      "blurb": "Glass tower overlooking Electric Town.",
+      "examine": "Clean lobby and event boards.",
+      "greeting": "UDX lobby shop. Quiet compared to the street.",
+      "tileX": 206,
+      "tileY": 0,
+      "w": 3,
+      "h": 5,
+      "world": {
+        "x": 488.0,
+        "z": 10.0,
+        "yaw": 0
+      },
+      "palette": [
+        "#373c4b",
+        "#64ffdc",
+        "#e8eef5"
+      ],
+      "stock": [
+        {
+          "itemId": "aki_ramune",
+          "price": 10
+        },
+        {
+          "itemId": "aki_idol_poster",
+          "price": 22
         }
       ]
     }
