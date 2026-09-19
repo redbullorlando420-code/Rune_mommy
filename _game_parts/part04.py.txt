@@ -1,3 +1,4 @@
+
     def _leave_safe_to_world(self):
         """Gate exit: jump into Clermont, enable systems."""
         self._ensure_world_populated()
@@ -271,6 +272,12 @@
         )
         for x, z, label in houses:
             w, h, d = rng.uniform(2.8, 4.0), rng.uniform(2.4, 3.4), rng.uniform(2.6, 3.4)
+            try:
+                x, z, ok = footprints.place_or_nudge(self, x, z, w=w, d=d, label=label)
+                if not ok:
+                    continue
+            except Exception:
+                pass
             make_house(
                 Entity, color, Text, self._scene(), x, z,
                 w=w, h=h, d=d, label=label, porch=True, garage=(rng.random() < 0.4), rng=rng,
@@ -288,10 +295,17 @@
         for i, (x, z, label) in enumerate(sanctuary_row):
             if math.hypot(x + 32.0, z - 12.0) < 9.0:
                 continue
+            ww, dd = rng.uniform(3.2, 4.2), rng.uniform(2.8, 3.6)
+            try:
+                x, z, ok = footprints.place_or_nudge(self, x, z, w=ww, d=dd, label=label)
+                if not ok:
+                    continue
+            except Exception:
+                pass
             roof = teal if i % 3 == 0 else color.rgb32(rng.randint(50, 100), rng.randint(80, 140), rng.randint(100, 160))
             make_house(
                 Entity, color, Text, self._scene(), x, z,
-                w=rng.uniform(3.2, 4.2), h=rng.uniform(2.5, 3.3), d=rng.uniform(2.8, 3.6),
+                w=ww, h=rng.uniform(2.5, 3.3), d=dd,
                 roof_col=roof, label=label, porch=True, garage=(i % 2 == 0), rng=rng,
             )
             self.building_count += 1
