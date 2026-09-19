@@ -55,13 +55,25 @@ def boot(game):
     except Exception as exc:
         print('  tokyo portal skip:', exc)
 
+    # PERF: do NOT build Akihabara at boot — only the Clermont portal.
+    # District meshes+crowd spawn on first portal enter (ensure_akihabara).
+    game.akihabara_built = False
+
+
+def ensure_akihabara(game):
+    """Lazy-build Akihabara district the first time the portal is used."""
+    if getattr(game, 'akihabara_built', False):
+        return
     try:
         akihabara.build(game)
+        game.akihabara_built = True
     except Exception as exc:
         print('  akihabara skip:', exc)
 
 
 def teleport_to_akihabara(game):
+    ensure_akihabara(game)
+
     ox, _, oz = akihabara.ORIGIN
     # Spawn on Electric Town spine facing station
     sx, sz = ox, oz - 6.0
