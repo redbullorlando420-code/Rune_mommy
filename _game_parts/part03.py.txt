@@ -1,142 +1,3 @@
-        sub = Text(
-            text='Clermont - click a button or press 1 / 2 / 3',
-            position=(0, 0.22),
-            origin=(0, 0),
-            color=color.rgb32(140, 230, 255),
-            scale=0.9,
-            enabled=False,
-            z=-0.1,
-        )
-        self.menu_ents.append(sub)
-        self.menu_lines = []
-        # Keep text lines for settings mode reuse
-        for i in range(5):
-            tline = Text(
-                text='',
-                position=(0, 0.06 - i * 0.07),
-                origin=(0, 0),
-                color=color.rgb32(255, 230, 255),
-                scale=1.0,
-                enabled=False,
-                z=-0.1,
-            )
-            self.menu_lines.append(tline)
-            self.menu_ents.append(tline)
-        self.settings_lines = []
-        for i in range(5):
-            tline = Text(
-                text='',
-                position=(0, 0.08 - i * 0.07),
-                origin=(0, 0),
-                color=color.rgb32(255, 230, 255),
-                scale=1.0,
-                enabled=False,
-                z=-0.1,
-            )
-            self.settings_lines.append(tline)
-            self.menu_ents.append(tline)
-
-        def mk_btn(label, y, action):
-            # Empty Button text + child Text — avoids Ursina Button font-atlas garbage
-            # (white pixel blocks) when text_entity scale/parent fights the panel.
-            btn = Button(
-                text='',
-                scale=(0.55, 0.09),
-                position=(0, y),
-                color=color.rgba32(40, 10, 50, 220),
-                highlight_color=color.rgba32(255, 60, 180, 220),
-                pressed_color=color.rgba32(180, 40, 120, 240),
-                parent=camera.ui,
-                enabled=False,
-                z=1.5,
-            )
-            try:
-                btn.text_entity.text = ''
-                btn.text_entity.enabled = False
-            except Exception:
-                pass
-            # Text parented to UI (not button) with readable scale/color
-            lbl = Text(
-                text=label,
-                parent=camera.ui,
-                position=(0, y),
-                origin=(0, 0),
-                color=color.rgb32(255, 245, 255),
-                scale=1.35,
-                enabled=False,
-                z=1.4,
-            )
-            btn._label = lbl
-            btn.on_click = action
-            self.menu_buttons.append(btn)
-            self.menu_ents.append(btn)
-            self.menu_ents.append(lbl)
-            return btn
-
-        self.btn_start = mk_btn('1  Start', 0.06, lambda: self._enter_safe_zone(from_load=False))
-        self.btn_load = mk_btn('2  Load', -0.02, lambda: self._try_load_game())
-        self.btn_settings = mk_btn('3  Settings', -0.10, lambda: self._enter_settings())
-        hint = Text(
-            text='Esc quit',
-            position=(0, -0.22),
-            origin=(0, 0),
-            color=color.rgb32(160, 140, 180),
-            scale=0.85,
-            enabled=False,
-            z=-0.1,
-        )
-        self.menu_ents.append(hint)
-        self.menu_hint = hint
-
-
-    def _set_menu_visible(self, visible):
-        vis = bool(visible)
-        for e in getattr(self, 'menu_ents', []) or []:
-            try:
-                e.enabled = vis
-            except Exception:
-                pass
-        # Settings: hide Start/Load/Settings buttons + labels
-        if vis and getattr(self, 'mode', '') == 'settings':
-            for b in getattr(self, 'menu_buttons', []) or []:
-                try:
-                    b.enabled = False
-                    lab = getattr(b, '_label', None)
-                    if lab is not None:
-                        lab.enabled = False
-                except Exception:
-                    pass
-            if getattr(self, 'menu_hint', None):
-                try:
-                    self.menu_hint.enabled = False
-                except Exception:
-                    pass
-        elif vis:
-            for b in getattr(self, 'menu_buttons', []) or []:
-                try:
-                    b.enabled = True
-                    lab = getattr(b, '_label', None)
-                    if lab is not None:
-                        lab.enabled = True
-                except Exception:
-                    pass
-            if getattr(self, 'menu_hint', None):
-                try:
-                    self.menu_hint.enabled = True
-                except Exception:
-                    pass
-            # spare menu_lines are settings-only; hide on main menu
-            for line in getattr(self, 'menu_lines', []) or []:
-                try:
-                    line.enabled = False
-                except Exception:
-                    pass
-        else:
-            for b in getattr(self, 'menu_buttons', []) or []:
-                try:
-                    b.enabled = False
-                    lab = getattr(b, '_label', None)
-                    if lab is not None:
                         lab.enabled = False
                 except Exception:
                     pass
@@ -319,3 +180,197 @@
         crowd_n = len(getattr(self, 'peds', None) or [])
         print('  world ready: buildings=%d named_npcs=%d crowd=%d cars=%d' % (
             self.building_count, named_n, crowd_n, len(getattr(self, 'cars', None) or [])))
+
+    def _leave_safe_to_world(self):
+        """Gate exit: jump into Clermont, enable systems."""
+        self._ensure_world_populated()
+        self.mode = 'play'
+        self.world_paused = False
+        self.intro_started = True
+        self.mouse_free = False
+        self._set_menu_visible(False)
+        self._hide_play_hud(False)
+        self._lock_mouse(True)
+        sx, sy, sz = self.clermont_spawn
+        if self.player:
+            self.player.position = (sx, 0, sz)
+            self.player.rotation_y = -90
+        # restore tutorial UI if still active
+        if self.tutorial_active:
+            try:
+                if self.tutorial_overlay:
+                    self.tutorial_overlay.enabled = True
+                if self.tutorial_text:
+                    self.tutorial_text.enabled = True
+                    self._refresh_tutorial_text()
+            except Exception:
+                pass
+        self._write_local_save()
+        flags = self._load_flags()
+        flags['intro_started'] = True
+        self._save_flags(flags)
+        # Reveal ALL named NPCs + crowd after safe-yard → play (cull / y bury / multipart hide).
+        try:
+            n_show = 0
+            for ped in list(getattr(self, 'peds', None) or []) + list(getattr(self, 'npcs', None) or []):
+                if not ped:
+                    continue
+                try:
+                    set_visible(ped, True)
+                    if getattr(ped, 'y', None) is not None and float(ped.y) < -0.05:
+                        ped.y = 0.0
+                    try:
+                        ped.enabled = True
+                    except Exception:
+                        pass
+                    n_show += 1
+                except Exception:
+                    pass
+            print('  reveal_npcs=%d (named+crowd) after yard→gate' % n_show)
+        except Exception as exc:
+            print('  reveal_npcs skip:', exc)
+        self.toast('Clermont. Michelle is at Sanctuary Drive — E to talk.')
+
+    def _save_path(self):
+        return ROOT / 'data' / 'local_save.json'
+
+    def _write_local_save(self):
+        flags = self._load_flags()
+        tutorial_done = bool(flags.get('tutorial_done')) or (not self.tutorial_active)
+        data = {
+            'gold': int(self.gold),
+            'hp': int(self.hp),
+            'breed': int(self.breed),
+            'preg': bool(self.preg),
+            'owned_pistol': bool(self.owned_pistol),
+            'pistol': bool(self.owned_pistol),
+            'ammo': int(self.ammo),
+            'pack': list(self.pack),
+            'tutorial_done': tutorial_done,
+            'intro_started': bool(self.intro_started),
+            'michelle_seen': bool(self.michelle_seen),
+            'mouse_sens': float(self.mouse_sens),
+            'cam_mode': str(getattr(self, 'cam_mode', 'follow') or 'follow'),
+        }
+        path = self._save_path()
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
+        except Exception as exc:
+            print('  local_save failed:', exc)
+
+    def _load_local_save(self):
+        path = self._save_path()
+        if not path.exists():
+            # honor flags-only as a soft save marker? require local_save for Load
+            return None
+        try:
+            return json.loads(path.read_text(encoding='utf-8')) or {}
+        except Exception:
+            return None
+
+    def _apply_local_save(self, data):
+        if not data:
+            return
+        self.gold = int(data.get('gold', self.gold))
+        self.hp = int(data.get('hp', self.hp))
+        self.breed = int(data.get('breed', self.breed))
+        self.preg = bool(data.get('preg', self.preg))
+        self.owned_pistol = bool(data.get('pistol', data.get('owned_pistol', self.owned_pistol)))
+        self.ammo = int(data.get('ammo', self.ammo))
+        self.pack = list(data.get('pack') or [])
+        self.intro_started = bool(data.get('intro_started', False))
+        self.michelle_seen = bool(data.get('michelle_seen', False))
+        if 'mouse_sens' in data:
+            try:
+                self.mouse_sens = float(data['mouse_sens'])
+            except Exception:
+                pass
+        if 'cam_mode' in data:
+            try:
+                cm = str(data.get('cam_mode') or 'follow').strip().lower()
+                if cm in ('follow', 'near', 'far', 'hood'):
+                    self.cam_mode = cm
+            except Exception:
+                pass
+        if data.get('tutorial_done'):
+            self.tutorial_active = False
+            try:
+                if self.tutorial_overlay:
+                    self.tutorial_overlay.enabled = False
+                if self.tutorial_text:
+                    self.tutorial_text.enabled = False
+            except Exception:
+                pass
+            flags = self._load_flags()
+            flags['tutorial_done'] = True
+            self._save_flags(flags)
+        if self.preg:
+            try:
+                self._apply_preg_look()
+            except Exception:
+                pass
+
+    def _try_load_game(self):
+        data = self._load_local_save()
+        if not data:
+            self.toast('No save yet')
+            return
+        self._apply_local_save(data)
+        if data.get('intro_started'):
+            self.mode = 'play'
+            self.world_paused = False
+            self._set_menu_visible(False)
+            self._hide_play_hud(False)
+            self.mouse_free = False
+            self._lock_mouse(True)
+            sx, sy, sz = self.clermont_spawn
+            if self.player:
+                self.player.position = (sx, 0, sz)
+                self.player.rotation_y = -90
+            self.toast('Clermont. Michelle is at Sanctuary Drive — E to talk.')
+        else:
+            self._enter_safe_zone(from_load=True)
+
+    # ----- world ----------------------------------------------------------
+
+    def _build_ground(self):
+        Entity = self.Entity
+        color = self.color
+        grass = load_tex('grass')
+        asphalt = load_tex('asphalt')
+        Entity(
+            model='plane',
+            scale=(220, 1, 200),
+            color=color.rgb32(48, 90, 42) if grass else color.rgb32(32, 24, 36),
+            texture=grass or 'white_cube',
+            texture_scale=(70, 55),
+            collider=None,
+            y=0,
+        )
+        # Lot asphalt split N/S of Hwy 50 — unique Y, no stack under highway footprint.
+        lot_col = color.rgb32(36, 34, 38) if asphalt else color.rgb32(24, 18, 28)
+        lot_tex = asphalt or 'white_cube'
+        # North lot (stalls side): z center -5.5, depth ~9 → avoids hwy ~-20.75..-11.25
+        Entity(
+            model='cube',
+            scale=(78, 0.04, 10),
+            position=(2, 0.02, -5.5),
+            color=lot_col,
+            texture=lot_tex,
+            texture_scale=(8, 2),
+        )
+        # South lot (town side)
+        Entity(
+            model='cube',
+            scale=(78, 0.04, 22),
+            position=(2, 0.02, -32),
+            color=lot_col,
+            texture=lot_tex,
+            texture_scale=(8, 2),
+        )
+
+    def _build_highway(self):
+        Entity = self.Entity
+        color = self.color
+        # Hwy 50 east-west between the two stall rows — Y unique vs lot/paint/sidewalk
