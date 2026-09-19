@@ -1,3 +1,72 @@
+    def _nearest_car(self, pos, radius):
+        best, best_d = None, radius
+        for car in self.cars:
+            if not car:
+                continue
+            if getattr(car, 'disabled', False):
+                continue
+            d = dist_xz(pos, (car.x, 0, car.z))
+            if d < best_d:
+                best, best_d = car, d
+        return best, best_d
+
+    def _nearest_gas(self, pos, radius=None):
+        best, best_d = None, 99.0
+        for poi in getattr(self, 'pois', []) or []:
+            if not poi.get('is_gas'):
+                continue
+            r = float(radius if radius is not None else poi.get('pump_r', 4.2))
+            d = dist_xz(pos, poi['pos'])
+            if d < r and d < best_d:
+                best, best_d = poi, d
+        return best
+
+    def _nearest_npc(self, pos, radius):
+        best, best_d = None, radius
+        for npc in self.npcs:
+            if not npc:
+                continue
+            kind = getattr(npc, 'kind', '')
+            talkable = bool(getattr(npc, 'talkable', False) or kind == 'talk')
+            # Crowd combat kinds skipped unless marked talkable (life_sim subset / lines)
+            if kind in ('target', 'mob', 'barrel'):
+                continue
+            if kind in ('civilian', 'lot_rat', 'walker', 'thug', 'heat_hunter') and not talkable:
+                continue
+            if getattr(npc, 'hittable', False) and not talkable:
+                continue
+            if getattr(npc, 'enabled', True) is False:
+                continue
+            if getattr(npc, 'driving', False):
+                continue
+            d = dist_xz(pos, (npc.x, 0, npc.z))
+            if d < best_d:
+                best, best_d = npc, d
+        return best, best_d
+
+    def _nearest_stall(self, pos, radius):
+        best, best_d = None, radius
+        for st in self.stalls:
+            d = dist_xz(pos, st['pos'])
+            if d < best_d:
+                best, best_d = st, d
+        return best, best_d
+
+    # ----- input ----------------------------------------------------------
+
+    def on_input(self, key):
+        from ursina import application, mouse
+        self._dbg_last_key = str(key)
+        mode = getattr(self, 'mode', 'play')
+
+        if mode in ('menu', 'settings'):
+            if key == 'escape':
+                if mode == 'settings':
+                    self._show_menu()
+                else:
+                    application.quit()
+                return
+            if mode == 'menu':
                 if key == '1':
                     self._enter_safe_zone(from_load=False)
                     return
@@ -243,69 +312,3 @@
                 d = dist_xz(pos, (xz[0], 0, xz[1]))
                 if d < best_rd:
                     best_room, best_rd = rname, d
-            if best_room and (car is None or best_rd <= cd + 0.1):
-                if best_room in ('guest', 'shower') and self.michelle_seen:
-                    # Offer intimacy mini-game from bedroom/shower after meeting Michelle
-                    self.open_panel(
-                        'Michelle',
-                        "The room's warm. Michelle's teal is already half a suggestion.\n"
-                        "First name only.",
-                        [
-                            ('Start intimacy scene', lambda: adult_minigames.start_michelle_sex(self)),
-                            ('Just talk', lambda: self.open_michelle(best_room)),
-                            ('Leave', self.close_panel),
-                        ],
-                        portrait=True,
-                        portrait_tex=self._michelle_portrait(),
-                    )
-                else:
-                    self.open_michelle(best_room)
-                self._quest_event('michelle_room', room=best_room)
-                return
-        if stall and sd <= 3.6 and (car is None or sd < cd):
-            if stall['kind'] == 'gun':
-                self.open_gun_shop()
-                return
-            if stall.get('kind') == 'tire_shop' or stall.get('id') == 'tire_shop_clermont':
-                self.open_tire_shop()
-                return
-            if stall.get('kind') == 'nail_salon' or stall.get('id') == 'nail_salon_clermont':
-                try:
-                    adult_minigames.start_nail_salon(self)
-                except Exception as exc:
-                    print('  nail interact skip:', exc)
-                return
-            if stall.get('kind') in ('food_truck', 'retail', 'big_box', 'shake') or stall.get('shop'):
-                self.open_shake_shop(stall)
-                return
-            self._buy_first_stock(stall)
-            return
-        if car:
-            self._enter_car(car)
-            return
-        self.toast('Nothing in range. Cars in the median. Mira at The Shake Bar.')
-
-    def _enter_car(self, car):
-        from ursina import camera, Vec3
-        if getattr(car, 'disabled', False) or float(getattr(car, 'damage', 0) or 0) >= 100:
-            self.toast('Car totaled.')
-            return
-        self.in_car = car
-        car.speed = 0
-        was_traffic = bool(getattr(car, 'traffic', False))
-        car.traffic = False
-        car.parked = True
-        # Kick NPC driver out when player takes the car
-        try:
-            if getattr(car, 'has_driver', False) or getattr(car, 'driver', None):
-                parking.unseat_driver(self, car, to_crowd=True)
-        except Exception:
-            car.driver = None
-            car.has_driver = False
-        if was_traffic or not hasattr(car, 'fuel'):
-            car.fuel = float(random.uniform(35, 70))
-        car.out_of_gas_toasted = False
-        self.visual.enabled = False
-        self.pistol_drawn = False
-        if self.gun_model:
-            self.gun_model.enabled = False
