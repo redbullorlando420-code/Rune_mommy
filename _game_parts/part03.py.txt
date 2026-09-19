@@ -1,3 +1,43 @@
+    def _build_menu(self):
+        from ursina import Button, color as u_color
+        Entity = self.Entity
+        Text = self.Text
+        color = self.color
+        camera = self.camera
+        self.menu_ents = []
+        self.menu_buttons = []
+        self.menu_backdrop = Entity(
+            parent=camera.ui,
+            model='quad',
+            color=color.rgba32(6, 2, 14, 230),
+            scale=(2.2, 1.4),
+            position=(0, 0),
+            z=2,
+            enabled=False,
+        )
+        self.menu_ents.append(self.menu_backdrop)
+        neon = Entity(
+            parent=camera.ui,
+            model='quad',
+            color=color.rgba32(255, 40, 180, 50),
+            scale=(1.1, 0.02),
+            position=(0, 0.22),
+            z=1.9,
+            enabled=False,
+        )
+        self.menu_ents.append(neon)
+        self.menu_title = Text(
+            text='RUNE MOMMY',
+            position=(0, 0.30),
+            origin=(0, 0),
+            color=color.rgb32(255, 90, 210),
+            scale=2.0,
+            enabled=False,
+            z=-0.1,
+        )
+        self.menu_ents.append(self.menu_title)
+        sub = Text(
+            text='Clermont - click a button or press 1 / 2 / 3',
             position=(0, 0.22),
             origin=(0, 0),
             color=color.rgb32(140, 230, 255),
@@ -35,30 +75,45 @@
             self.menu_ents.append(tline)
 
         def mk_btn(label, y, action):
+            # Empty Button text + child Text — avoids Ursina Button font-atlas garbage
+            # (white pixel blocks) when text_entity scale/parent fights the panel.
             btn = Button(
-                text=label,
-                scale=(0.55, 0.08),
+                text='',
+                scale=(0.55, 0.09),
                 position=(0, y),
                 color=color.rgba32(40, 10, 50, 220),
                 highlight_color=color.rgba32(255, 60, 180, 220),
                 pressed_color=color.rgba32(180, 40, 120, 240),
-                text_color=color.rgb32(255, 240, 255),
                 parent=camera.ui,
                 enabled=False,
                 z=1.5,
             )
             try:
-                btn.text_entity.scale = 1.0
+                btn.text_entity.text = ''
+                btn.text_entity.enabled = False
             except Exception:
                 pass
+            # Text parented to UI (not button) with readable scale/color
+            lbl = Text(
+                text=label,
+                parent=camera.ui,
+                position=(0, y),
+                origin=(0, 0),
+                color=color.rgb32(255, 245, 255),
+                scale=1.35,
+                enabled=False,
+                z=1.4,
+            )
+            btn._label = lbl
             btn.on_click = action
             self.menu_buttons.append(btn)
             self.menu_ents.append(btn)
+            self.menu_ents.append(lbl)
             return btn
 
-        self.btn_start = mk_btn('1   Start', 0.06, lambda: self._enter_safe_zone(from_load=False))
-        self.btn_load = mk_btn('2   Load', -0.02, lambda: self._try_load_game())
-        self.btn_settings = mk_btn('3   Settings', -0.10, lambda: self._enter_settings())
+        self.btn_start = mk_btn('1  Start', 0.06, lambda: self._enter_safe_zone(from_load=False))
+        self.btn_load = mk_btn('2  Load', -0.02, lambda: self._try_load_game())
+        self.btn_settings = mk_btn('3  Settings', -0.10, lambda: self._enter_settings())
         hint = Text(
             text='Esc quit',
             position=(0, -0.22),
@@ -79,27 +134,48 @@
                 e.enabled = vis
             except Exception:
                 pass
-        # In settings mode, hide main Start/Load/Settings buttons
+        # Settings: hide Start/Load/Settings buttons + labels
         if vis and getattr(self, 'mode', '') == 'settings':
             for b in getattr(self, 'menu_buttons', []) or []:
                 try:
                     b.enabled = False
+                    lab = getattr(b, '_label', None)
+                    if lab is not None:
+                        lab.enabled = False
                 except Exception:
                     pass
             if getattr(self, 'menu_hint', None):
-                self.menu_hint.enabled = False
+                try:
+                    self.menu_hint.enabled = False
+                except Exception:
+                    pass
         elif vis:
             for b in getattr(self, 'menu_buttons', []) or []:
                 try:
                     b.enabled = True
+                    lab = getattr(b, '_label', None)
+                    if lab is not None:
+                        lab.enabled = True
                 except Exception:
                     pass
             if getattr(self, 'menu_hint', None):
-                self.menu_hint.enabled = True
-            # hide the spare menu_lines text (buttons carry the labels)
+                try:
+                    self.menu_hint.enabled = True
+                except Exception:
+                    pass
+            # spare menu_lines are settings-only; hide on main menu
             for line in getattr(self, 'menu_lines', []) or []:
                 try:
                     line.enabled = False
+                except Exception:
+                    pass
+        else:
+            for b in getattr(self, 'menu_buttons', []) or []:
+                try:
+                    b.enabled = False
+                    lab = getattr(b, '_label', None)
+                    if lab is not None:
+                        lab.enabled = False
                 except Exception:
                     pass
         if vis:
@@ -220,8 +296,7 @@
             msg = 'Loaded. ' + msg
         if not getattr(self, '_safe_yard_toasted', False) or from_load:
             self._safe_yard_toasted = True
-            self.toast(msg)
-            print('[Rune Mommy]', msg)
+            self.toast(msg)  # toast() already prints once — do not print again
         # Refocus after UI button steals keyboard on Windows.
         def _refocus():
             try:
@@ -246,66 +321,40 @@
             _refocus()
 
 
-    def _leave_safe_to_world(self):
-        """Gate exit: jump into Clermont, enable systems."""
-        self.mode = 'play'
-        self.world_paused = False
-        self.intro_started = True
-        self.mouse_free = False
-        self._set_menu_visible(False)
-        self._hide_play_hud(False)
-        self._lock_mouse(True)
-        sx, sy, sz = self.clermont_spawn
-        if self.player:
-            self.player.position = (sx, 0, sz)
-            self.player.rotation_y = -90
-        # restore tutorial UI if still active
-        if self.tutorial_active:
-            try:
-                if self.tutorial_overlay:
-                    self.tutorial_overlay.enabled = True
-                if self.tutorial_text:
-                    self.tutorial_text.enabled = True
-                    self._refresh_tutorial_text()
-            except Exception:
-                pass
-        self._write_local_save()
-        flags = self._load_flags()
-        flags['intro_started'] = True
-        self._save_flags(flags)
-        # Reveal ALL named NPCs + crowd after safe-yard → play (cull / y bury / multipart hide).
+
+    def _ensure_world_populated(self):
+        """Build Clermont + agents once — called on yard→gate (not at title)."""
+        if getattr(self, '_world_populated', False):
+            return
+        self._world_populated = True
+        print('  populating Clermont world (deferred from title)...')
         try:
-            n_show = 0
-            for ped in list(getattr(self, 'peds', None) or []) + list(getattr(self, 'npcs', None) or []):
-                if not ped:
-                    continue
-                try:
-                    set_visible(ped, True)
-                    if getattr(ped, 'y', None) is not None and float(ped.y) < -0.05:
-                        ped.y = 0.0
-                    try:
-                        ped.enabled = True
-                    except Exception:
-                        pass
-                    n_show += 1
-                except Exception:
-                    pass
-            print('  reveal_npcs=%d (named+crowd) after yard→gate' % n_show)
+            self._build_ground()
+            self._build_highway()
+            self._build_skyline()
+            self._build_town_slice()
+            self._build_pois()
+            self._build_house()
+            self._build_stalls()
+            self._build_npcs()
+            self._build_cars()
+            self._build_targets()
+            self._build_crowd()
+            self._build_traffic()
+            self._build_deferred_content()
         except Exception as exc:
-            print('  reveal_npcs skip:', exc)
-        self.toast('Clermont. Michelle is at Sanctuary Drive — E to talk.')
+            print('  world populate FAILED:', exc)
+        try:
+            self._rebuild_ignore()
+        except Exception:
+            pass
+        named_n = sum(
+            1 for n in (self.npcs or [])
+            if n and getattr(n, 'kind', '') in (
+                'mira', 'michelle', 'gun', 'talk', 'lila', 'rosa', 'yara'
+            )
+        )
+        crowd_n = len(getattr(self, 'peds', None) or [])
+        print('  world ready: buildings=%d named_npcs=%d crowd=%d cars=%d' % (
+            self.building_count, named_n, crowd_n, len(getattr(self, 'cars', None) or [])))
 
-    def _save_path(self):
-        return ROOT / 'data' / 'local_save.json'
-
-    def _write_local_save(self):
-        flags = self._load_flags()
-        tutorial_done = bool(flags.get('tutorial_done')) or (not self.tutorial_active)
-        data = {
-            'gold': int(self.gold),
-            'hp': int(self.hp),
-            'breed': int(self.breed),
-            'preg': bool(self.preg),
-            'owned_pistol': bool(self.owned_pistol),
-            'pistol': bool(self.owned_pistol),
-            'ammo': int(self.ammo),
