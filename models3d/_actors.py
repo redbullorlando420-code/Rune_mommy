@@ -87,13 +87,32 @@ def clear_humanoid_parts(parent):
                     pass
     except Exception:
         pass
-    for attr in ('chest', 'humanoid_style', 'outfit_state'):
+    for attr in ('chest', 'humanoid_style', 'outfit_state', 'jiggle_parts'):
         try:
             if attr == 'chest':
                 parent.chest = None
+            elif attr == 'jiggle_parts':
+                parent.jiggle_parts = []
         except Exception:
             pass
 
+
+
+def _tag_jiggle(ent, kind, amp, parent_list):
+    """Mark bust/hip part for damped-spring jiggle (kind: bust|hip)."""
+    try:
+        ent.jiggle_kind = kind
+        ent.jiggle_amp = float(amp)
+        ent.jiggle_base_y = float(getattr(ent, 'y', 0) or 0)
+        ent.jiggle_base_z = float(getattr(ent, 'z', 0) or 0)
+        ent.jiggle_base_x = float(getattr(ent, 'x', 0) or 0)
+        ent.jiggle_vy = 0.0
+        ent.jiggle_vz = 0.0
+        ent.lod_keep = True
+        parent_list.append(ent)
+    except Exception:
+        pass
+    return ent
 
 def _face(Entity, color, parent, head_y, head_s, head_col, *, fancy, michelle, anime_f, feminine, player):
     """Higher-fidelity face cues (still primitives)."""
@@ -264,77 +283,90 @@ def _hitbox_ghost(Entity, parent):
     return ghost
 
 
-def _body_nude_feminine(Entity, color, parent, skin, hip_w, torso_d, leg_gap, *, michelle=False):
-    """Adult nude silhouette — hourglass. Never underage."""
+def _body_nude_feminine(Entity, color, parent, skin, hip_w, torso_d, leg_gap, *, michelle=False, jiggle=None):
+    """Adult nude silhouette — hourglass. Face/+Z forward: bust +Z, butt -Z. Never underage."""
+    jiggle = jiggle if jiggle is not None else []
     waist = 0.28 if michelle else 0.32
     bust = (0.90, 0.54, 0.60) if michelle else (0.72, 0.42, 0.46)
     Entity(parent=parent, model='cube', color=skin,
            scale=(waist, 0.44, torso_d * 0.82), y=1.12)
     Entity(parent=parent, model='cube', color=_tint(skin, -0.04),
            scale=(waist * 0.85, 0.10, torso_d * 0.78), y=0.92)
+    # hip plate (centered) + 3D butt cheeks toward -Z (back)
     Entity(parent=parent, model='sphere', color=_tint(skin, -0.02),
-           scale=(hip_w * 1.00, 0.34 if michelle else 0.28, 0.40 if michelle else 0.34),
-           y=0.76, z=0.08)
+           scale=(hip_w * 1.00, 0.34 if michelle else 0.28, 0.36 if michelle else 0.30),
+           y=0.76, z=-0.04)
+    gap = hip_w * (0.28 if michelle else 0.26)
+    bs_butt = (0.30, 0.28, 0.26) if michelle else (0.22, 0.20, 0.18)
+    for sx in (-gap, gap):
+        cheek = Entity(parent=parent, model='sphere', color=_tint(skin, -0.05),
+                       scale=bs_butt, x=sx, y=0.72, z=-0.18)
+        _tag_jiggle(cheek, 'hip', 0.016 if michelle else 0.010, jiggle)
     parent.chest = Entity(
         parent=parent, model='sphere', color=skin,
-        scale=bust, y=1.26, z=-0.08,
+        scale=bust, y=1.26, z=0.08,
     )
+    _tag_jiggle(parent.chest, 'bust', 0.022 if michelle else 0.014, jiggle)
     bx = 0.20 if michelle else 0.14
     bs = (0.36, 0.34, 0.34) if michelle else (0.26, 0.24, 0.24)
-    Entity(parent=parent, model='sphere', color=_tint(skin, 0.04),
-           scale=bs, x=-bx, y=1.28, z=-0.14)
-    Entity(parent=parent, model='sphere', color=_tint(skin, 0.04),
-           scale=bs, x=bx, y=1.28, z=-0.14)
-    # Visible nipples + soft areola (adult nude only)
+    for sx in (-bx, bx):
+        globe = Entity(parent=parent, model='sphere', color=_tint(skin, 0.04),
+                       scale=bs, x=sx, y=1.28, z=0.14)
+        _tag_jiggle(globe, 'bust', 0.026 if michelle else 0.016, jiggle)
+    # Visible nipples + soft areola on FRONT (+Z)
     Entity(parent=parent, model='sphere', color=_rgb(color, 210, 120, 130),
-           scale=0.10 if michelle else 0.08, x=-bx, y=1.28, z=-0.22)
+           scale=0.10 if michelle else 0.08, x=-bx, y=1.28, z=0.22)
     Entity(parent=parent, model='sphere', color=_rgb(color, 210, 120, 130),
-           scale=0.10 if michelle else 0.08, x=bx, y=1.28, z=-0.22)
+           scale=0.10 if michelle else 0.08, x=bx, y=1.28, z=0.22)
     Entity(parent=parent, model='sphere', color=_rgb(color, 180, 70, 90),
-           scale=0.045 if michelle else 0.035, x=-bx, y=1.28, z=-0.28)
+           scale=0.045 if michelle else 0.035, x=-bx, y=1.28, z=0.28)
     Entity(parent=parent, model='sphere', color=_rgb(color, 180, 70, 90),
-           scale=0.045 if michelle else 0.035, x=bx, y=1.28, z=-0.28)
+           scale=0.045 if michelle else 0.035, x=bx, y=1.28, z=0.28)
+    # navel on front
     Entity(parent=parent, model='sphere', color=_tint(skin, -0.08),
-           scale=0.04, y=1.00, z=-0.14)
-    # legs already from shared bare-leg path
+           scale=0.04, y=1.00, z=0.14)
 
 
-def _body_underwear_feminine(Entity, color, parent, skin, shirt, hip_w, torso_d, leg_gap, *, michelle=False):
-    """Bra + panties — adult feminine only."""
+def _body_underwear_feminine(Entity, color, parent, skin, shirt, hip_w, torso_d, leg_gap, *, michelle=False, jiggle=None):
+    """Bra + panties — adult feminine only. Bust +Z / butt -Z (match face)."""
+    jiggle = jiggle if jiggle is not None else []
     bra = _rgb(color, 245, 230, 235) if michelle else _tint(shirt, 0.25)
     panty = _rgb(color, 40, 36, 42) if michelle else _tint(shirt, -0.35)
-    # bra band + cups
     Entity(parent=parent, model='cube', color=bra,
            scale=(0.42 if michelle else 0.38, 0.10, torso_d * 0.9), y=1.18)
     parent.chest = Entity(
         parent=parent, model='sphere', color=bra,
         scale=(0.78, 0.44, 0.50) if michelle else (0.58, 0.32, 0.36),
-        y=1.24, z=-0.08,
+        y=1.24, z=0.08,
     )
+    _tag_jiggle(parent.chest, 'bust', 0.020 if michelle else 0.012, jiggle)
     bx = 0.19 if michelle else 0.13
-    Entity(parent=parent, model='sphere', color=_tint(bra, 0.06),
-           scale=(0.32, 0.30, 0.30) if michelle else (0.22, 0.20, 0.20),
-           x=-bx, y=1.26, z=-0.14)
-    Entity(parent=parent, model='sphere', color=_tint(bra, 0.06),
-           scale=(0.32, 0.30, 0.30) if michelle else (0.22, 0.20, 0.20),
-           x=bx, y=1.26, z=-0.14)
-    # straps
+    for sx in (-bx, bx):
+        cup = Entity(parent=parent, model='sphere', color=_tint(bra, 0.06),
+                     scale=(0.32, 0.30, 0.30) if michelle else (0.22, 0.20, 0.20),
+                     x=sx, y=1.26, z=0.14)
+        _tag_jiggle(cup, 'bust', 0.022 if michelle else 0.014, jiggle)
     Entity(parent=parent, model='cube', color=bra,
-           scale=(0.04, 0.22, 0.03), x=-0.16, y=1.40, z=-0.02)
+           scale=(0.04, 0.22, 0.03), x=-0.16, y=1.40, z=0.02)
     Entity(parent=parent, model='cube', color=bra,
-           scale=(0.04, 0.22, 0.03), x=0.16, y=1.40, z=-0.02)
-    # slim midriff
+           scale=(0.04, 0.22, 0.03), x=0.16, y=1.40, z=0.02)
     Entity(parent=parent, model='cube', color=skin,
            scale=(0.30 if michelle else 0.34, 0.28, torso_d * 0.8), y=1.02)
-    # panties
     Entity(parent=parent, model='cube', color=panty,
            scale=(hip_w * 0.92, 0.14, 0.30), y=0.80)
     Entity(parent=parent, model='sphere', color=_tint(panty, -0.05),
-           scale=(hip_w * 0.85, 0.18, 0.28), y=0.74, z=0.06)
+           scale=(hip_w * 0.85, 0.18, 0.28), y=0.74, z=-0.06)
+    gap = hip_w * 0.26
+    for sx in (-gap, gap):
+        cheek = Entity(parent=parent, model='sphere', color=_tint(skin, -0.04),
+                       scale=(0.20, 0.18, 0.16) if michelle else (0.16, 0.14, 0.12),
+                       x=sx, y=0.70, z=-0.16)
+        _tag_jiggle(cheek, 'hip', 0.012 if michelle else 0.008, jiggle)
 
 
-def _body_michelle_dress(Entity, color, parent, dress, skin, hip_w, torso_d):
-    """Sexier teal anime-waifu dress — cinched waist, deep neckline, short flare."""
+def _body_michelle_dress(Entity, color, parent, dress, skin, hip_w, torso_d, *, jiggle=None):
+    """Sexier teal anime-waifu dress — bust +Z / hip flare -Z (match face forward)."""
+    jiggle = jiggle if jiggle is not None else []
     Entity(parent=parent, model='cube', color=dress,
            scale=(0.36, 0.42, torso_d), y=1.14)
     Entity(parent=parent, model='cube', color=_tint(dress, -0.12),
@@ -345,24 +377,32 @@ def _body_michelle_dress(Entity, color, parent, dress, skin, hip_w, torso_d):
            scale=(0.80, 0.32, 0.46), y=0.62)
     Entity(parent=parent, model='cube', color=_tint(dress, 0.10),
            scale=(0.88, 0.16, 0.50), y=0.46)
+    # hip / butt under dress toward BACK (-Z)
     Entity(parent=parent, model='sphere', color=_tint(dress, -0.06),
-           scale=(0.62, 0.30, 0.40), y=0.74, z=0.14)
+           scale=(0.62, 0.30, 0.40), y=0.74, z=-0.14)
+    gap = hip_w * 0.28
+    for sx in (-gap, gap):
+        cheek = Entity(parent=parent, model='sphere', color=_tint(dress, -0.10),
+                       scale=(0.26, 0.24, 0.22), x=sx, y=0.70, z=-0.20)
+        _tag_jiggle(cheek, 'hip', 0.014, jiggle)
     parent.chest = Entity(
         parent=parent, model='sphere', color=dress,
-        scale=(0.80, 0.48, 0.54), y=1.24, z=-0.10,
+        scale=(0.80, 0.48, 0.54), y=1.24, z=0.10,
     )
-    Entity(parent=parent, model='sphere', color=_tint(dress, 0.10),
-           scale=(0.34, 0.32, 0.32), x=-0.20, y=1.27, z=-0.16)
-    Entity(parent=parent, model='sphere', color=_tint(dress, 0.10),
-           scale=(0.34, 0.32, 0.32), x=0.20, y=1.27, z=-0.16)
+    _tag_jiggle(parent.chest, 'bust', 0.022, jiggle)
+    for sx in (-0.20, 0.20):
+        cup = Entity(parent=parent, model='sphere', color=_tint(dress, 0.10),
+                     scale=(0.34, 0.32, 0.32), x=sx, y=1.27, z=0.16)
+        _tag_jiggle(cup, 'bust', 0.024, jiggle)
+    # deep neckline skin on FRONT
     Entity(parent=parent, model='cube', color=skin,
-           scale=(0.30, 0.14, 0.12), y=1.38, z=-0.04)
+           scale=(0.30, 0.14, 0.12), y=1.38, z=0.04)
     Entity(parent=parent, model='sphere', color=_tint(skin, 0.04),
-           scale=(0.22, 0.12, 0.10), y=1.34, z=-0.12)
+           scale=(0.22, 0.12, 0.10), y=1.34, z=0.12)
     Entity(parent=parent, model='cube', color=_tint(dress, 0.08),
-           scale=(0.04, 0.26, 0.035), x=-0.18, y=1.42, z=-0.02)
+           scale=(0.04, 0.26, 0.035), x=-0.18, y=1.42, z=0.02)
     Entity(parent=parent, model='cube', color=_tint(dress, 0.08),
-           scale=(0.04, 0.26, 0.035), x=0.18, y=1.42, z=-0.02)
+           scale=(0.04, 0.26, 0.035), x=0.18, y=1.42, z=0.02)
     Entity(parent=parent, model='cube', color=_rgb(color, 20, 18, 22),
            scale=(0.30, 0.05, 0.06), y=1.54, z=0.12)
     Entity(parent=parent, model='sphere', color=_rgb(color, 255, 180, 200),
@@ -373,20 +413,33 @@ def _body_michelle_dress(Entity, color, parent, dress, skin, hip_w, torso_d):
            scale=0.055, x=0.22, y=1.50, z=0.02)
 
 
-def _body_anime_f_clothed(Entity, parent, shirt, skin, hip_w, torso_d, leg_gap):
+def _body_anime_f_clothed(Entity, parent, shirt, skin, hip_w, torso_d, leg_gap, *, jiggle=None, heavy=True):
+    """Crowd/named anime_f clothed. Bust +Z, hip flare -Z."""
+    jiggle = jiggle if jiggle is not None else []
     Entity(parent=parent, model='cube', color=shirt,
            scale=(0.40, 0.38, torso_d), y=1.14)
     Entity(parent=parent, model='cube', color=_tint(shirt, -0.12),
            scale=(0.30, 0.10, torso_d * 0.9), y=0.96)
     parent.chest = Entity(
         parent=parent, model='sphere', color=_tint(shirt, 0.05),
-        scale=(0.60, 0.34, 0.38), y=1.22, z=-0.06,
+        scale=(0.60, 0.34, 0.38), y=1.22, z=0.06,
     )
+    _tag_jiggle(parent.chest, 'bust', 0.014 if heavy else 0.010, jiggle)
+    if heavy:
+        for sx in (-0.12, 0.12):
+            cup = Entity(parent=parent, model='sphere', color=_tint(shirt, 0.10),
+                         scale=(0.22, 0.20, 0.20), x=sx, y=1.24, z=0.12)
+            _tag_jiggle(cup, 'bust', 0.014, jiggle)
     Entity(parent=parent, model='cube', color=_tint(shirt, 0.06),
            scale=(0.70, 0.32, 0.42), y=0.68)
     Entity(parent=parent, model='sphere', color=_tint(shirt, -0.05),
-           scale=(0.50, 0.24, 0.32), y=0.78, z=0.10)
-    # collar
+           scale=(0.50, 0.24, 0.32), y=0.78, z=-0.10)
+    if heavy:
+        gap = hip_w * 0.24
+        for sx in (-gap, gap):
+            cheek = Entity(parent=parent, model='sphere', color=_tint(shirt, -0.08),
+                           scale=(0.18, 0.16, 0.14), x=sx, y=0.72, z=-0.16)
+            _tag_jiggle(cheek, 'hip', 0.010, jiggle)
     Entity(parent=parent, model='cube', color=_tint(shirt, 0.12),
            scale=(0.24, 0.05, 0.16), y=1.34, z=0.02)
 
@@ -403,7 +456,7 @@ def _body_player(Entity, color, parent, shirt, pants, hip_w, shoulder_w, torso_d
     Entity(parent=parent, model='cube', color=_tint(shirt, 0.12),
            scale=(0.24, 0.05, 0.18), y=1.36, z=0.02)
     Entity(parent=parent, model='cube', color=_tint(shirt, -0.08),
-           scale=(0.14, 0.16, 0.02), x=0.16, y=1.12, z=-torso_d * 0.52)
+           scale=(0.14, 0.16, 0.02), x=0.16, y=1.12, z=torso_d * 0.52)
     Entity(parent=parent, model='cube', color=_rgb(color, 24, 28, 36),
            scale=(hip_w * 0.88, 0.06, 0.22), y=0.86)
     # jeans layering
@@ -430,11 +483,11 @@ def _body_named_or_crowd(Entity, color, parent, shirt, pants, skin, hip_w, shoul
                scale=(0.20, 0.04, 0.14), y=1.34, z=0.02)  # collar
     if fancy and not player and feminine:
         Entity(parent=parent, model='sphere', color=_tint(shirt, 0.05),
-               scale=(0.48, 0.24, 0.30), y=1.20, z=-0.04)
+               scale=(0.48, 0.24, 0.30), y=1.20, z=0.04)
         Entity(parent=parent, model='sphere', color=_tint(shirt, 0.10),
-               scale=(0.16, 0.14, 0.14), x=-0.10, y=1.22, z=-0.10)
+               scale=(0.16, 0.14, 0.14), x=-0.10, y=1.22, z=0.10)
         Entity(parent=parent, model='sphere', color=_tint(shirt, 0.10),
-               scale=(0.16, 0.14, 0.14), x=0.10, y=1.22, z=-0.10)
+               scale=(0.16, 0.14, 0.14), x=0.10, y=1.22, z=0.10)
     # pants hips
     Entity(parent=parent, model='cube', color=pants,
            scale=(hip_w, 0.22, 0.26), y=0.78)
@@ -486,13 +539,15 @@ def attach_humanoid_parts(
     bare_legs = michelle or anime_f or outfit_state in ('underwear', 'nude') or (
         feminine and not player and outfit_state != 'clothed')
 
+    jiggle = []
+
     # Hips / pelvis foundation
     if michelle or (feminine and outfit_state != 'clothed'):
         Entity(parent=parent, model='cube', color=skin,
                scale=(hip_w * 0.98, 0.20, 0.28), y=0.76)
         if michelle:
             Entity(parent=parent, model='sphere', color=_tint(skin, -0.03),
-                   scale=(hip_w * 1.02, 0.30, 0.34), y=0.74, z=0.08)
+                   scale=(hip_w * 1.02, 0.30, 0.34), y=0.74, z=-0.08)
     elif anime_f and outfit_state == 'clothed':
         Entity(parent=parent, model='cube', color=skin,
                scale=(hip_w * 0.95, 0.18, 0.26), y=0.78)
@@ -557,28 +612,28 @@ def attach_humanoid_parts(
     # --- torso / clothing by outfit ---
     dress = shirt
     if outfit_state == 'nude' and allow_undress:
-        _body_nude_feminine(Entity, color, parent, skin, hip_w, torso_d, leg_gap, michelle=michelle)
+        _body_nude_feminine(Entity, color, parent, skin, hip_w, torso_d, leg_gap, michelle=michelle, jiggle=jiggle)
         if michelle:
             Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
                    scale=0.055, x=-0.22, y=1.50, z=0.02)
             Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
                    scale=0.055, x=0.22, y=1.50, z=0.02)
     elif outfit_state == 'underwear' and allow_undress:
-        _body_underwear_feminine(Entity, color, parent, skin, shirt, hip_w, torso_d, leg_gap, michelle=michelle)
+        _body_underwear_feminine(Entity, color, parent, skin, shirt, hip_w, torso_d, leg_gap, michelle=michelle, jiggle=jiggle)
         if michelle:
             Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
                    scale=0.055, x=-0.22, y=1.50, z=0.02)
             Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
                    scale=0.055, x=0.22, y=1.50, z=0.02)
     elif michelle:
-        _body_michelle_dress(Entity, color, parent, dress, skin, hip_w, torso_d)
+        _body_michelle_dress(Entity, color, parent, dress, skin, hip_w, torso_d, jiggle=jiggle)
         # thigh cue under short hem
         Entity(parent=parent, model='cube', color=_tint(skin, 0.06),
                scale=(0.18, 0.24, 0.14), x=-0.16, y=0.38, z=-0.02)
         Entity(parent=parent, model='cube', color=_tint(skin, 0.06),
                scale=(0.18, 0.24, 0.14), x=0.16, y=0.38, z=-0.02)
     elif anime_f:
-        _body_anime_f_clothed(Entity, parent, shirt, skin, hip_w, torso_d, leg_gap)
+        _body_anime_f_clothed(Entity, parent, shirt, skin, hip_w, torso_d, leg_gap, jiggle=jiggle, heavy=(detail=='named'))
         for sx in (-leg_gap, leg_gap):
             Entity(parent=parent, model='cube', color=skin,
                    scale=(0.14, 0.28, 0.13), x=sx, y=0.48)
@@ -660,19 +715,9 @@ def attach_humanoid_parts(
                 gch.lod_detail = getattr(gch, 'lod_detail', None) or 'high'
     except Exception:
         pass
-    # Soft jiggle stubs (chest / hip) — light sine in game tick if present
+    # Jiggle parts tagged during body build (bust/hip); empty for males/crowd light
     try:
-        jiggle = []
-        for ch in list(getattr(parent, 'children', []) or []):
-            nm = str(getattr(ch, 'name', '') or '')
-            sc = getattr(ch, 'scale', None)
-            # sphere-ish breast/butt proxies
-            if getattr(ch, 'model', None) == 'sphere' and float(getattr(ch, 'y', 0) or 0) > 0.6:
-                ch.jiggle_amp = 0.012
-                ch.jiggle_base_y = float(ch.y)
-                ch.jiggle_base_z = float(getattr(ch, 'z', 0) or 0)
-                jiggle.append(ch)
-        parent.jiggle_parts = jiggle
+        parent.jiggle_parts = list(jiggle)
     except Exception:
         parent.jiggle_parts = []
     return parent
@@ -849,28 +894,52 @@ def make_car(Entity, color, pos, yaw, paint):
     return car
 
 
-def tick_jiggle(ent, dt, moving=False):
-    """Tiny bust/hip bob while moving — zero cost if no jiggle_parts."""
+def tick_jiggle(ent, dt, moving=False, *, active=True):
+    """Damped spring on bust/hip while walking. Skip when culled/LOD (active=False)."""
     parts = getattr(ent, 'jiggle_parts', None) or []
     if not parts:
         return
-    import math, time as _t
-    if not moving:
-        # ease back
+    if not active:
         for p in parts:
             try:
-                by = getattr(p, 'jiggle_base_y', p.y)
-                p.y = by + (float(p.y) - by) * 0.85
+                by = float(getattr(p, 'jiggle_base_y', p.y))
+                bz = float(getattr(p, 'jiggle_base_z', getattr(p, 'z', 0) or 0))
+                p.y = by + (float(p.y) - by) * 0.5
+                p.z = bz + (float(getattr(p, 'z', 0) or 0) - bz) * 0.5
+                p.jiggle_vy = 0.0
+                p.jiggle_vz = 0.0
             except Exception:
                 pass
         return
-    phase = (_t.time() * 9.0 + id(ent) * 0.01) % 6.28318
+    dt = max(0.0, min(0.05, float(dt or 0.016)))
+    k, damp = 85.0, 14.0
+    impulse = 0.0
+    if moving:
+        import math, time as _t
+        phase = (_t.time() * 8.5 + (id(ent) % 997) * 0.017) % 6.28318
+        impulse = math.sin(phase)
     for i, p in enumerate(parts):
         try:
-            amp = float(getattr(p, 'jiggle_amp', 0.01) or 0.01)
+            amp = float(getattr(p, 'jiggle_amp', 0.012) or 0.012)
+            kind = getattr(p, 'jiggle_kind', 'bust')
             by = float(getattr(p, 'jiggle_base_y', p.y))
             bz = float(getattr(p, 'jiggle_base_z', getattr(p, 'z', 0) or 0))
-            p.y = by + math.sin(phase + i) * amp
-            p.z = bz + math.cos(phase * 0.5 + i) * amp * 0.4
+            vy = float(getattr(p, 'jiggle_vy', 0.0) or 0.0)
+            vz = float(getattr(p, 'jiggle_vz', 0.0) or 0.0)
+            y = float(p.y)
+            z = float(getattr(p, 'z', 0) or 0)
+            if kind == 'hip':
+                fy = -k * (y - by) + impulse * amp * 18.0 * (1 if (i % 2) else -1)
+                fz = -k * (z - bz) + impulse * amp * 28.0
+            else:
+                fy = -k * (y - by) + impulse * amp * 32.0
+                fz = -k * (z - bz) + impulse * amp * 12.0 * (1 if (i % 2) else -1)
+            vy = (vy + fy * dt) * max(0.0, 1.0 - damp * dt)
+            vz = (vz + fz * dt) * max(0.0, 1.0 - damp * dt)
+            max_off = amp * 2.8
+            p.y = by + max(-max_off, min(max_off, (y - by) + vy * dt))
+            p.z = bz + max(-max_off, min(max_off, (z - bz) + vz * dt))
+            p.jiggle_vy = vy
+            p.jiggle_vz = vz
         except Exception:
             pass
