@@ -1,3 +1,18 @@
+        # Free look always (locked OR unlocked OR right-mouse). Never soft-lock rotation.
+        sens = float(getattr(self, 'mouse_sens', 140) or 140)
+        player.rotation_y += mouse.velocity[0] * sens
+        self.cam_pivot.rotation_x -= mouse.velocity[1] * sens
+        self.cam_pivot.rotation_x = max(-35, min(40, self.cam_pivot.rotation_x))
+        # Q/E and arrows turn even if mouse is dead
+        if held_keys['q'] or held_keys['left arrow']:
+            player.rotation_y += 90 * dt
+        if held_keys['e'] and mode == 'safe':
+            # E is gate in safe — only turn with E if not near gate; use right arrow instead
+            pass
+        if held_keys['right arrow']:
+            player.rotation_y -= 90 * dt
+
+
         wish_x = held_keys['d'] - held_keys['a']
         wish_z = held_keys['w'] - held_keys['s']
         # Arrow keys as backup movement
@@ -8,6 +23,7 @@
         if held_keys['down arrow']:
             wish_z -= 1
         wish = Vec3(wish_x, 0, wish_z)
+        self._was_moving = bool(wish.length() > 0)
         if wish.length() > 0:
             wish = wish.normalized()
             speed = 10.0 if mode == 'safe' else 8.5
@@ -303,43 +319,3 @@
         if cur not in modes:
             cur = 'follow'
         i = modes.index(cur)
-        self.cam_mode = modes[(i + int(delta)) % len(modes)]
-        self._apply_camera_mode()
-        self.toast(self._camera_mode_label(self.cam_mode))
-        self._persist_cam_pref()
-
-    def _apply_camera_mode(self):
-        from ursina import Vec3, camera
-        mode = str(getattr(self, 'cam_mode', 'follow') or 'follow').lower()
-        in_car = bool(getattr(self, 'cam_in_car', False) and self.in_car)
-        if not in_car and mode == 'hood':
-            mode = 'follow'
-            self.cam_mode = mode
-        # tuple: y, z, pitch, x_off, fov
-        if in_car:
-            table = {
-                'follow': (2.4, -10.5, 14.0, 0.0, 80.0),
-                'near': (1.55, -4.2, 10.0, 0.55, 78.0),
-                'far': (5.2, -16.5, 26.0, 0.0, 82.0),
-                'hood': (1.05, 1.85, 8.0, 0.0, 75.0),
-            }
-            parent = self.in_car.cam_pivot
-        else:
-            table = {
-                'follow': (1.65, -8.8, 12.0, 0.0, 80.0),
-                'near': (1.35, -3.4, 8.0, 0.62, 78.0),
-                'far': (4.2, -15.0, 24.0, 0.0, 82.0),
-                'hood': (1.65, -8.8, 12.0, 0.0, 80.0),
-            }
-            parent = self.cam_pivot
-        y, z, pitch, x_off, fov = table.get(mode, table['follow'])
-        if parent is None:
-            return
-        camera.parent = parent
-        camera.position = Vec3(x_off, y, z)
-        camera.rotation = Vec3(pitch, 0, 0)
-        try:
-            camera.fov = fov
-        except Exception:
-            pass
-
