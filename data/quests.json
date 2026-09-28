@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "Clermont / Hwy 50 / US-27 starter quests. Pins: Sanctuary Drive, shakes, Club 27 Cabaret (215 US-27), Quiet Spa, Citrus Tower, Waterfront Park. Bot girl deepens dialogue later. Shakes stay. Expanded NPC mission board + visit/talk chains (radar/waypoints).",
+  "note": "Clermont / Hwy 50 / US-27 starter quests. Pins: Sanctuary Drive, shakes, Club 27 Cabaret (215 US-27), Quiet Spa, Citrus Tower, Waterfront Park. Bot girl deepens dialogue later. Shakes stay. Expanded NPC mission board + visit/talk/fetch/drive-to chains (radar/waypoints). World pass: denser living-town quests.",
   "quests": [
     {
       "id": "tutorial_walk",
@@ -538,6 +538,231 @@
       "hud": "Visit Club 27",
       "requires": [
         "club_cover"
+      ]
+    },
+    {
+      "id": "bestbuy_browse",
+      "name": "Blue Box Browse",
+      "desc": "Visit Best Buy on the north strip.",
+      "type": "visit",
+      "poi": "bestbuy_clermont",
+      "reward_gold": 20,
+      "hud": "Visit Best Buy",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "gamestop_drop",
+      "name": "Pixel Errand",
+      "desc": "Swing by GameStop.",
+      "type": "visit",
+      "poi": "gamestop_clermont",
+      "reward_gold": 16,
+      "hud": "Visit GameStop",
+      "requires": [
+        "bestbuy_browse"
+      ]
+    },
+    {
+      "id": "pet_store_peek",
+      "name": "Pet Store Peek",
+      "desc": "Visit the pet store north of Sanctuary.",
+      "type": "visit",
+      "poi": "pet_store_clermont",
+      "reward_gold": 14,
+      "hud": "Visit pet store",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "tire_shop_stop",
+      "name": "Rubber Check",
+      "desc": "Visit Hwy 50 Tire & Lube.",
+      "type": "visit",
+      "poi": "tire_shop_clermont",
+      "reward_gold": 18,
+      "hud": "Visit tire shop",
+      "requires": [
+        "fill_er_up"
+      ]
+    },
+    {
+      "id": "neon_toes_visit",
+      "name": "Neon Toes",
+      "desc": "Visit Neon Toes Nail Salon.",
+      "type": "visit",
+      "poi": "nail_salon_clermont",
+      "reward_gold": 16,
+      "hud": "Visit nail salon",
+      "requires": [
+        "quiet_hour"
+      ]
+    },
+    {
+      "id": "fetch_creamy",
+      "name": "Creamy Dream Run",
+      "desc": "Buy a Creamy Dream shake from Mira's bar.",
+      "type": "fetch",
+      "item": "creamy_dream",
+      "npc": "mira",
+      "reward_gold": 22,
+      "hud": "Buy Creamy Dream from Mira",
+      "requires": [
+        "cool_down"
+      ]
+    },
+    {
+      "id": "fetch_biscoff",
+      "name": "Biscoff Max",
+      "desc": "Fetch a Biscoff Max from the shake strip.",
+      "type": "fetch",
+      "item": "biscoff_max",
+      "npc": "mira",
+      "reward_gold": 24,
+      "hud": "Buy Biscoff Max",
+      "requires": [
+        "fetch_creamy"
+      ]
+    },
+    {
+      "id": "drive_to_walmart",
+      "name": "Drive East",
+      "desc": "Drive (or roll) out to the Walmart lot.",
+      "type": "drive_to",
+      "poi": "walmart",
+      "reward_gold": 30,
+      "hud": "Drive to Walmart",
+      "requires": [
+        "fill_er_up",
+        "rita_pumps"
+      ]
+    },
+    {
+      "id": "drive_to_tower",
+      "name": "Tower Cruise",
+      "desc": "Drive up toward Citrus Tower.",
+      "type": "drive_to",
+      "poi": "citrus_tower",
+      "reward_gold": 26,
+      "hud": "Drive to Citrus Tower",
+      "requires": [
+        "tower_view"
+      ]
+    },
+    {
+      "id": "drive_to_waterfront",
+      "name": "Lakeside Cruise",
+      "desc": "Drive down to Waterfront Park.",
+      "type": "drive_to",
+      "poi": "waterfront",
+      "reward_gold": 26,
+      "hud": "Drive to waterfront",
+      "requires": [
+        "waterfront_walk"
+      ]
+    },
+    {
+      "id": "showcase_stop",
+      "name": "Showcase Stop",
+      "desc": "Visit the citrus showcase roadside kitsch.",
+      "type": "visit",
+      "poi": "showcase_citrus",
+      "reward_gold": 12,
+      "hud": "Visit citrus showcase",
+      "requires": [
+        "tutorial_walk"
+      ]
+    },
+    {
+      "id": "presidents_hall_visit",
+      "name": "Presidents Hall",
+      "desc": "Visit Presidents Hall on the east strip.",
+      "type": "visit",
+      "poi": "presidents_hall",
+      "reward_gold": 14,
+      "hud": "Visit Presidents Hall",
+      "requires": [
+        "showcase_stop"
+      ]
+    },
+    {
+      "id": "michelle_dusk",
+      "name": "Dusk Check-In",
+      "desc": "Talk to Michelle around dusk energy \u2014 she's out on the strip sometimes.",
+      "type": "talk",
+      "npc": "michelle",
+      "reward_gold": 28,
+      "hud": "Talk to Michelle again",
+      "requires": [
+        "michelle_checkin",
+        "cool_down"
+      ]
+    },
+    {
+      "id": "shop_mira_night",
+      "name": "Last Call Shake",
+      "desc": "Buy another Cool Down before Mira winds down.",
+      "type": "buy",
+      "item": "cool_down",
+      "npc": "mira",
+      "reward_gold": 18,
+      "hud": "Buy another Cool Down",
+      "requires": [
+        "mira_chat_2",
+        "fetch_creamy"
+      ]
+    },
+    {
+      "id": "talk_rita_evening",
+      "name": "Pump Gossip",
+      "desc": "Catch Rita at the pumps for evening gossip.",
+      "type": "talk",
+      "npc": "rita",
+      "reward_gold": 16,
+      "hud": "Talk to Rita again",
+      "requires": [
+        "rita_pumps"
+      ]
+    },
+    {
+      "id": "gage_ammo_run",
+      "name": "Ammo Window",
+      "desc": "Talk to Gage about staying stocked.",
+      "type": "talk",
+      "npc": "gage",
+      "reward_gold": 20,
+      "hud": "Talk to Gage (ammo)",
+      "requires": [
+        "gage_ammo",
+        "heat_check"
+      ]
+    },
+    {
+      "id": "spa_evening",
+      "name": "Spa After Hours",
+      "desc": "Visit Quiet Spa before it goes dim.",
+      "type": "visit",
+      "poi": "quiet_spa",
+      "reward_gold": 18,
+      "hud": "Visit Quiet Spa again",
+      "requires": [
+        "spa_visit",
+        "spa_booking"
+      ]
+    },
+    {
+      "id": "club_neon_drive",
+      "name": "Neon Approach",
+      "desc": "Drive over to Club 27's entrance glow.",
+      "type": "drive_to",
+      "poi": "club27",
+      "reward_gold": 24,
+      "hud": "Drive to Club 27",
+      "requires": [
+        "club_visit",
+        "fill_er_up"
       ]
     }
   ]
