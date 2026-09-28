@@ -1,3 +1,28 @@
+        Entity(model='cube', scale=(1.35, 1.9, 1.35), position=(hx - 2.1, 1.05, hz + 1.7), color=color.rgb32(180, 220, 215))
+
+        door_xz = (hx + 4.1, hz)
+        guest_xz = (hx + 1.8, hz + 1.5)
+        garage_xz = (hx + 0.2, hz - 5.4)
+        shower_xz = (hx - 2.1, hz + 1.7)
+        lawn_xz = (hx - 7.2, hz)
+        self.house_rooms = {
+            'door': door_xz,
+            'guest': guest_xz,
+            'garage': garage_xz,
+            'shower': shower_xz,
+            'lawn': lawn_xz,
+        }
+
+        def vol(xz, sx, sz, col, node):
+            e = Entity(model='cube', scale=(sx, 0.06, sz), position=(xz[0], 0.12, xz[1]), color=col)
+            e.room_node = node
+            self.house_vols.append(e)
+            return e
+
+        vol(guest_xz, 3.0, 2.4, color.rgb32(70, 180, 170), 'guest')
+        vol(garage_xz, 3.6, 3.2, color.rgb32(70, 70, 78), 'garage')
+        vol(shower_xz, 2.2, 2.2, color.rgb32(90, 200, 210), 'shower')
+        vol(lawn_xz, 4.2, 5.0, color.rgb32(22, 58, 32), 'lawn')
         vol(door_xz, 2.2, 2.2, color.rgb32(90, 70, 55), 'door')
 
         Entity(model='cube', scale=(0.14, 2.8, 0.14), position=(hx + 7.4, 1.4, hz + 3.4), color=color.rgb32(70, 60, 50))
@@ -290,29 +315,3 @@
     def _build_npcs(self):
         Entity = self.Entity
         color = self.color
-        portrait = None
-        mp = self.mira_portrait_path
-        mp_ok = False
-        try:
-            mp_ok = Path(mp).exists() if mp else False
-        except Exception:
-            mp_ok = False
-        if mp_ok:
-            try:
-                from ursina import load_texture
-                _rel = portrait_asset_path('mira') or (str(mp) if mp else None)
-                portrait = load_texture(_rel) if _rel else None
-                self.mira_texture = portrait
-            except Exception:
-                portrait = None
-                self.mira_texture = None
-
-        shake = next((s for s in self.stalls if s['id'] == 'shake_bar'), None)
-        mx, mz = (0.0, -2.6)
-        if shake:
-            mx, mz = shake['pos'][0], shake['pos'][2] - 2.4
-
-        mira = self._humanoid(mx, mz, shirt=color.rgb32(255, 70, 180), pants=color.rgb32(40, 12, 40), skin=color.rgb32(255, 206, 166), detail='named', style='anime_f')
-        mira.npc_id = 'mira'
-        mira.npc_name = 'Mama Mira'
-        mira.kind = 'mira'
