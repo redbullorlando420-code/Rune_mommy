@@ -30,7 +30,7 @@ def quality() -> str:
     q = (os.environ.get('RUNE_MOMMY_QUALITY') or 'med').strip().lower()
     if q in ('low', 'med', 'medium', 'high', 'ultra'):
         return 'med' if q == 'medium' else q
-    return 'high'
+    return 'med'
 
 
 def target_fps() -> int:
@@ -44,26 +44,39 @@ def target_fps() -> int:
 
 
 def apply_lighting(color, Vec3, Sky=None, DirectionalLight=None, AmbientLight=None, PointLight=None):
-    """Install neon-dusk light kit. Shadows only on ultra (high stays lit, no shadow maps)."""
+    """Install neon-dusk light kit. Shadows only on ultra (high stays lit, no shadow maps).
+
+    Look polish: punchier sun/ambient on med/high; capped point lights (FPS-safe).
+    Default quality is med. Shadows remain ultra-only.
+    """
     q = quality()
     if Sky is not None:
         try:
-            Sky(color=color.rgb32(16, 5, 30) if q in ('high', 'ultra') else color.rgb32(18, 6, 32))
+            # Slightly richer dusk sky on med+ for punch without extra lights
+            if q == 'ultra':
+                Sky(color=color.rgb32(14, 4, 28))
+            elif q == 'high':
+                Sky(color=color.rgb32(15, 5, 30))
+            elif q == 'med':
+                Sky(color=color.rgb32(17, 6, 32))
+            else:
+                Sky(color=color.rgb32(20, 8, 34))
         except Exception:
             pass
 
     shadows = (q == 'ultra')
     try:
         sun = DirectionalLight(shadows=shadows)
-        sun.look_at(Vec3(1, -1.35, 0.35))
+        # Slightly steeper key for clearer silhouette on faces/meshes
+        sun.look_at(Vec3(1.05, -1.45, 0.40))
         if q == 'ultra':
-            sun.color = color.rgb32(255, 205, 185)
+            sun.color = color.rgb32(255, 215, 195)
         elif q == 'high':
-            sun.color = color.rgb32(255, 190, 170)
+            sun.color = color.rgb32(255, 205, 185)
         elif q == 'low':
             sun.color = color.rgb32(200, 150, 170)
-        else:
-            sun.color = color.rgb32(240, 180, 165)
+        else:  # med — punchier warm key
+            sun.color = color.rgb32(255, 198, 178)
         if shadows:
             try:
                 res = (2048, 2048) if q == 'ultra' else (1024, 1024)
@@ -75,26 +88,32 @@ def apply_lighting(color, Vec3, Sky=None, DirectionalLight=None, AmbientLight=No
 
     try:
         if q == 'ultra':
-            AmbientLight(color=color.rgb32(110, 82, 140))
+            AmbientLight(color=color.rgb32(118, 88, 148))
+        elif q == 'high':
+            AmbientLight(color=color.rgb32(108, 80, 135))
         elif q == 'low':
             AmbientLight(color=color.rgb32(70, 48, 95))
-        else:
-            AmbientLight(color=color.rgb32(95, 70, 120))
+        else:  # med
+            AmbientLight(color=color.rgb32(102, 76, 128))
     except Exception:
         pass
 
+    # Point-light budget: each is expensive with multipart meshes.
+    # med: 3 (was 2). high: 4 (was 2). ultra: full POI set. Shadows ultra-only.
     if q == 'low':
-        accents = [((0, 6, -16), (255, 100, 210))]
+        accents = [((0, 6, -16), (255, 110, 215))]
     elif q == 'med':
         accents = [
-            ((0, 6, -16), (255, 90, 210)),
-            ((-28, 5, 10), (90, 220, 255)),
+            ((0, 6, -16), (255, 105, 220)),     # plaza neon
+            ((-28, 5, 10), (100, 230, 255)),    # NW cyan
+            ((18, 5.5, -10), (255, 180, 90)),   # gas/Hwy warm fill
         ]
     elif q == 'high':
-        # Cap point lights — each one is expensive with many meshes
         accents = [
-            ((0, 6, -16), (255, 90, 210)),
-            ((-28, 5, 10), (90, 220, 255)),
+            ((0, 6, -16), (255, 110, 225)),
+            ((-28, 5, 10), (105, 235, 255)),
+            ((18, 5.5, -10), (255, 185, 95)),
+            ((40, 6, -18), (255, 95, 200)),     # Club 27
         ]
     else:  # ultra
         accents = [
@@ -174,9 +193,9 @@ def apply_perf(window=None, camera=None, color=None):
             elif q == 'high':
                 scene.fog_color = color.rgb32(20, 8, 34)
                 scene.fog_density = 0.008
-            else:
-                scene.fog_color = color.rgb32(20, 8, 34)
-                scene.fog_density = 0.012
+            else:  # med — clearer mid so meshes/neon read
+                scene.fog_color = color.rgb32(18, 7, 32)
+                scene.fog_density = 0.010
         except Exception:
             try:
                 camera.fog = True
