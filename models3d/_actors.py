@@ -114,48 +114,75 @@ def _tag_jiggle(ent, kind, amp, parent_list):
         pass
     return ent
 
+def _mark_lod_high(ent):
+    """Face/hair extras — near LOD only (protect mid-distance FPS)."""
+    try:
+        ent.lod_detail = 'high'
+    except Exception:
+        pass
+    return ent
+
+
 def _face(Entity, color, parent, head_y, head_s, head_col, *, fancy, michelle, anime_f, feminine, player):
-    """Higher-fidelity face cues (still primitives)."""
+    """Higher-fidelity adult anime face cues (still primitives). Never underage."""
     # Ears
     if fancy:
         ear = _tint(head_col, -0.04)
         _entity(Entity, parent=parent, model='sphere', color=ear, scale=0.08, x=-head_s * 0.48, y=head_y)
         _entity(Entity, parent=parent, model='sphere', color=ear, scale=0.08, x=head_s * 0.48, y=head_y)
 
-    # Brows
+    # Brows — arched anime for michelle/anime_f
     if fancy:
         brow = _rgb(color, 60, 42, 36) if not michelle else _rgb(color, 180, 140, 70)
-        for ex in (-0.09, 0.09):
-            Entity(parent=parent, model='cube', color=brow,
-                   scale=(0.10, 0.02, 0.03), x=ex, y=head_y + 0.10, z=head_s * 0.38)
+        if michelle or anime_f:
+            for ex, tilt in ((-0.10, 8), (0.10, -8)):
+                e = Entity(parent=parent, model='cube', color=brow,
+                           scale=(0.11 if michelle else 0.09, 0.018, 0.03),
+                           x=ex, y=head_y + 0.11, z=head_s * 0.40)
+                try:
+                    e.rotation_z = tilt
+                except Exception:
+                    pass
+                _mark_lod_high(e)
+        else:
+            for ex in (-0.09, 0.09):
+                Entity(parent=parent, model='cube', color=brow,
+                       scale=(0.10, 0.02, 0.03), x=ex, y=head_y + 0.10, z=head_s * 0.38)
 
-    # Eyes
+    # Eyes — larger adult anime read for Michelle / anime_f
     if michelle or anime_f or (feminine and not player):
         eye_w = _rgb(color, 250, 250, 255)
-        iris = _rgb(color, 55, 140, 120) if michelle else _rgb(color, 60, 90, 140)
-        eye_scale = (0.13, 0.14, 0.07) if michelle else (0.10, 0.11, 0.06)
-        iris_scale = (0.065, 0.075, 0.045) if michelle else (0.05, 0.06, 0.04)
-        spread = 0.09 if michelle else 0.08
+        iris = _rgb(color, 45, 155, 135) if michelle else _rgb(color, 70, 100, 160)
+        eye_scale = (0.145, 0.155, 0.075) if michelle else (0.115, 0.125, 0.065)
+        iris_scale = (0.07, 0.08, 0.05) if michelle else (0.055, 0.065, 0.042)
+        spread = 0.095 if michelle else 0.085
         for ex in (-spread, spread):
             Entity(parent=parent, model='sphere', color=eye_w,
-                   scale=eye_scale, x=ex, y=head_y + 0.03, z=head_s * 0.40)
+                   scale=eye_scale, x=ex, y=head_y + 0.035, z=head_s * 0.40)
             Entity(parent=parent, model='sphere', color=iris,
-                   scale=iris_scale, x=ex, y=head_y + 0.03, z=head_s * 0.48)
+                   scale=iris_scale, x=ex, y=head_y + 0.035, z=head_s * 0.48)
             Entity(parent=parent, model='sphere', color=_rgb(color, 20, 24, 30),
-                   scale=(0.03, 0.035, 0.02) if michelle else (0.022, 0.025, 0.015),
-                   x=ex, y=head_y + 0.03, z=head_s * 0.52)
-            Entity(parent=parent, model='sphere', color=_rgb(color, 255, 255, 255),
-                   scale=(0.025, 0.025, 0.015) if michelle else (0.018, 0.018, 0.01),
-                   x=ex - 0.02, y=head_y + 0.05, z=head_s * 0.53)
+                   scale=(0.032, 0.038, 0.022) if michelle else (0.024, 0.028, 0.016),
+                   x=ex, y=head_y + 0.035, z=head_s * 0.52)
+            _mark_lod_high(Entity(parent=parent, model='sphere', color=_rgb(color, 255, 255, 255),
+                   scale=(0.028, 0.028, 0.016) if michelle else (0.02, 0.02, 0.012),
+                   x=ex - 0.02, y=head_y + 0.055, z=head_s * 0.54))
         if michelle or anime_f:
+            lash = _rgb(color, 35, 25, 40)
             for ex in (-spread, spread):
-                Entity(parent=parent, model='cube', color=_rgb(color, 40, 30, 45),
-                       scale=(0.12 if michelle else 0.09, 0.02, 0.03),
-                       x=ex, y=head_y + 0.09, z=head_s * 0.42)
-            Entity(parent=parent, model='sphere', color=_rgb(color, 255, 160, 170),
-                   scale=(0.08, 0.04, 0.03), x=-0.14, y=head_y - 0.02, z=head_s * 0.36)
-            Entity(parent=parent, model='sphere', color=_rgb(color, 255, 160, 170),
-                   scale=(0.08, 0.04, 0.03), x=0.14, y=head_y - 0.02, z=head_s * 0.36)
+                # upper lash line
+                _mark_lod_high(Entity(parent=parent, model='cube', color=lash,
+                       scale=(0.13 if michelle else 0.10, 0.018, 0.028),
+                       x=ex, y=head_y + 0.10, z=head_s * 0.44))
+                # lower soft line
+                _mark_lod_high(Entity(parent=parent, model='cube', color=_tint(lash, 0.25),
+                       scale=(0.10 if michelle else 0.08, 0.012, 0.02),
+                       x=ex, y=head_y - 0.01, z=head_s * 0.42))
+            # blush
+            Entity(parent=parent, model='sphere', color=_rgb(color, 255, 155, 170),
+                   scale=(0.09, 0.045, 0.032), x=-0.15, y=head_y - 0.02, z=head_s * 0.36)
+            Entity(parent=parent, model='sphere', color=_rgb(color, 255, 155, 170),
+                   scale=(0.09, 0.045, 0.032), x=0.15, y=head_y - 0.02, z=head_s * 0.36)
     elif fancy:
         # named / player — smaller realistic eyes
         eye_w = _rgb(color, 245, 245, 250)
@@ -169,59 +196,80 @@ def _face(Entity, color, parent, head_y, head_s, head_col, *, fancy, michelle, a
     # Nose
     if fancy or michelle:
         Entity(parent=parent, model='cube', color=_tint(head_col, -0.06),
-               scale=(0.05, 0.06, 0.07), y=head_y - 0.02, z=head_s * 0.42)
+               scale=(0.045, 0.055, 0.065), y=head_y - 0.015, z=head_s * 0.44)
 
-    # Lips
+    # Lips — fuller adult anime
     if michelle:
-        Entity(parent=parent, model='cube', color=_rgb(color, 220, 80, 110),
-               scale=(0.12, 0.035, 0.045), y=head_y - 0.08, z=head_s * 0.44)
+        Entity(parent=parent, model='cube', color=_rgb(color, 230, 75, 115),
+               scale=(0.13, 0.038, 0.048), y=head_y - 0.085, z=head_s * 0.45)
+        _mark_lod_high(Entity(parent=parent, model='cube', color=_rgb(color, 255, 140, 160),
+               scale=(0.08, 0.012, 0.02), y=head_y - 0.075, z=head_s * 0.48))
     elif anime_f or (feminine and not player):
-        Entity(parent=parent, model='cube', color=_rgb(color, 210, 90, 120),
-               scale=(0.10, 0.03, 0.04), y=head_y - 0.08, z=head_s * 0.42)
+        Entity(parent=parent, model='cube', color=_rgb(color, 215, 85, 125),
+               scale=(0.11, 0.032, 0.042), y=head_y - 0.085, z=head_s * 0.43)
     elif fancy:
         Entity(parent=parent, model='cube', color=_tint(head_col, -0.12),
                scale=(0.08, 0.025, 0.03), y=head_y - 0.08, z=head_s * 0.40)
 
 
 def _hair_michelle(Entity, parent, hair, head_y):
-    # Long wavy blonde cascade — anime twin-volume
+    # Adult anime blonde — volume crown, side curtains, long cascade (LOD extras tagged)
     Entity(parent=parent, model='sphere', color=hair,
-           scale=(0.48, 0.40, 0.46), y=head_y + 0.10, z=-0.02)
+           scale=(0.50, 0.42, 0.48), y=head_y + 0.12, z=-0.02)
     Entity(parent=parent, model='cube', color=_tint(hair, -0.04),
-           scale=(0.50, 0.12, 0.24), y=head_y + 0.18, z=0.10)
-    Entity(parent=parent, model='cube', color=_tint(hair, 0.02),
-           scale=(0.22, 0.08, 0.12), y=head_y + 0.14, z=0.16)
+           scale=(0.52, 0.14, 0.26), y=head_y + 0.20, z=0.10)
+    # bang fringe
+    Entity(parent=parent, model='cube', color=_tint(hair, 0.04),
+           scale=(0.28, 0.10, 0.14), y=head_y + 0.14, z=0.18)
+    _mark_lod_high(Entity(parent=parent, model='cube', color=_tint(hair, 0.02),
+           scale=(0.12, 0.14, 0.10), x=-0.12, y=head_y + 0.06, z=0.20))
+    _mark_lod_high(Entity(parent=parent, model='cube', color=_tint(hair, 0.02),
+           scale=(0.12, 0.14, 0.10), x=0.12, y=head_y + 0.06, z=0.20))
+    # side curtains
     Entity(parent=parent, model='cube', color=_tint(hair, -0.06),
-           scale=(0.20, 0.48, 0.16), x=-0.26, y=head_y - 0.10, z=-0.02)
+           scale=(0.22, 0.55, 0.16), x=-0.28, y=head_y - 0.12, z=-0.02)
     Entity(parent=parent, model='cube', color=_tint(hair, -0.06),
-           scale=(0.20, 0.48, 0.16), x=0.26, y=head_y - 0.10, z=-0.02)
+           scale=(0.22, 0.55, 0.16), x=0.28, y=head_y - 0.12, z=-0.02)
+    # back cascade
     Entity(parent=parent, model='sphere', color=_tint(hair, -0.08),
-           scale=(0.32, 0.44, 0.24), y=head_y - 0.14, z=-0.22)
+           scale=(0.34, 0.48, 0.26), y=head_y - 0.16, z=-0.24)
     Entity(parent=parent, model='cube', color=_tint(hair, -0.12),
-           scale=(0.26, 0.55, 0.14), y=head_y - 0.32, z=-0.24)
+           scale=(0.28, 0.62, 0.15), y=head_y - 0.36, z=-0.26)
     Entity(parent=parent, model='sphere', color=_tint(hair, -0.10),
-           scale=(0.22, 0.30, 0.16), y=head_y - 0.48, z=-0.20)
-    Entity(parent=parent, model='sphere', color=_tint(hair, -0.02),
-           scale=(0.16, 0.28, 0.16), x=-0.28, y=head_y - 0.28, z=0.04)
-    Entity(parent=parent, model='sphere', color=_tint(hair, -0.02),
-           scale=(0.16, 0.28, 0.16), x=0.28, y=head_y - 0.28, z=0.04)
-    Entity(parent=parent, model='sphere', color=_tint(hair, -0.05),
-           scale=(0.14, 0.22, 0.14), x=-0.30, y=head_y - 0.48, z=0.02)
-    Entity(parent=parent, model='sphere', color=_tint(hair, -0.05),
-           scale=(0.14, 0.22, 0.14), x=0.30, y=head_y - 0.48, z=0.02)
+           scale=(0.24, 0.34, 0.18), y=head_y - 0.55, z=-0.22)
+    # soft side tendrils (near LOD)
+    for sx in (-0.30, 0.30):
+        _mark_lod_high(Entity(parent=parent, model='sphere', color=_tint(hair, -0.02),
+               scale=(0.17, 0.32, 0.16), x=sx, y=head_y - 0.30, z=0.04))
+        _mark_lod_high(Entity(parent=parent, model='sphere', color=_tint(hair, -0.05),
+               scale=(0.14, 0.26, 0.14), x=sx * 1.05, y=head_y - 0.52, z=0.02))
+    # soft highlight streak
+    _mark_lod_high(Entity(parent=parent, model='cube', color=_tint(hair, 0.12),
+           scale=(0.08, 0.30, 0.10), x=-0.10, y=head_y + 0.02, z=0.14))
 
 
-def _hair_feminine(Entity, parent, hair, head_y):
+def _hair_feminine(Entity, parent, hair, head_y, *, heavy=False):
+    """Adult anime_f hair. heavy=True for named cast (extra volume); crowd stays lighter."""
     Entity(parent=parent, model='sphere', color=hair,
-           scale=(0.42, 0.30, 0.40), y=head_y + 0.10)
+           scale=(0.44, 0.32, 0.42), y=head_y + 0.11)
     Entity(parent=parent, model='cube', color=_tint(hair, -0.06),
-           scale=(0.42, 0.10, 0.16), y=head_y + 0.16, z=0.08)
+           scale=(0.44, 0.11, 0.18), y=head_y + 0.17, z=0.09)
+    # bang fringe
+    Entity(parent=parent, model='cube', color=_tint(hair, 0.02),
+           scale=(0.20, 0.08, 0.10), y=head_y + 0.10, z=0.16)
     Entity(parent=parent, model='cube', color=_tint(hair, -0.10),
-           scale=(0.24, 0.52, 0.14), y=head_y - 0.20, z=-0.16)
+           scale=(0.26, 0.58, 0.15), y=head_y - 0.22, z=-0.18)
     Entity(parent=parent, model='sphere', color=_tint(hair, -0.04),
-           scale=(0.16, 0.30, 0.14), x=-0.22, y=head_y - 0.16)
+           scale=(0.17, 0.34, 0.15), x=-0.24, y=head_y - 0.18)
     Entity(parent=parent, model='sphere', color=_tint(hair, -0.04),
-           scale=(0.16, 0.30, 0.14), x=0.22, y=head_y - 0.16)
+           scale=(0.17, 0.34, 0.15), x=0.24, y=head_y - 0.18)
+    if heavy:
+        # named: longer tips + side ribbon (LOD near)
+        _mark_lod_high(Entity(parent=parent, model='sphere', color=_tint(hair, -0.08),
+               scale=(0.20, 0.28, 0.14), y=head_y - 0.48, z=-0.16))
+        for sx in (-0.26, 0.26):
+            _mark_lod_high(Entity(parent=parent, model='cube', color=_tint(hair, -0.05),
+                   scale=(0.12, 0.40, 0.10), x=sx, y=head_y - 0.28, z=0.02))
 
 
 def _hair_player(Entity, parent, hair, head_y):
@@ -366,44 +414,50 @@ def _body_underwear_feminine(Entity, color, parent, skin, shirt, hip_w, torso_d,
 
 
 def _body_michelle_dress(Entity, color, parent, dress, skin, hip_w, torso_d, *, jiggle=None):
-    """Sexier teal anime-waifu dress — bust +Z / hip flare -Z (match face forward)."""
+    """Adult teal anime-girl dress — hourglass read, realistic bust +Z / hip -Z."""
     jiggle = jiggle if jiggle is not None else []
+    # cinched torso
     Entity(parent=parent, model='cube', color=dress,
-           scale=(0.36, 0.42, torso_d), y=1.14)
-    Entity(parent=parent, model='cube', color=_tint(dress, -0.12),
-           scale=(0.24, 0.12, torso_d * 0.88), y=0.92)
+           scale=(0.34, 0.40, torso_d), y=1.14)
+    Entity(parent=parent, model='cube', color=_tint(dress, -0.14),
+           scale=(0.22, 0.12, torso_d * 0.86), y=0.92)  # waist
     Entity(parent=parent, model='cube', color=_tint(dress, -0.04),
            scale=(hip_w * 1.00, 0.14, 0.36), y=0.80)
-    Entity(parent=parent, model='cube', color=_tint(dress, 0.05),
-           scale=(0.80, 0.32, 0.46), y=0.62)
+    # layered skirt flare
+    Entity(parent=parent, model='cube', color=_tint(dress, 0.04),
+           scale=(0.78, 0.30, 0.44), y=0.64)
     Entity(parent=parent, model='cube', color=_tint(dress, 0.10),
-           scale=(0.88, 0.16, 0.50), y=0.46)
+           scale=(0.90, 0.18, 0.50), y=0.48)
+    _mark_lod_high(Entity(parent=parent, model='cube', color=_tint(dress, 0.14),
+           scale=(0.96, 0.08, 0.52), y=0.40))
     # hip / butt under dress toward BACK (-Z)
     Entity(parent=parent, model='sphere', color=_tint(dress, -0.06),
-           scale=(0.62, 0.30, 0.40), y=0.74, z=-0.14)
+           scale=(0.64, 0.30, 0.40), y=0.74, z=-0.14)
     gap = hip_w * 0.28
     for sx in (-gap, gap):
         cheek = Entity(parent=parent, model='sphere', color=_tint(dress, -0.10),
                        scale=(0.26, 0.24, 0.22), x=sx, y=0.70, z=-0.20)
         _tag_jiggle(cheek, 'hip', 0.014, jiggle)
+    # realistic tonable bust (not cartoon-huge)
     parent.chest = Entity(
         parent=parent, model='sphere', color=dress,
-        scale=(0.54, 0.32, 0.36), y=1.24, z=0.10,
+        scale=(0.52, 0.30, 0.34), y=1.24, z=0.10,
     )
-    _tag_jiggle(parent.chest, 'bust', 0.018, jiggle)
-    for sx in (-0.14, 0.14):
+    _tag_jiggle(parent.chest, 'bust', 0.016, jiggle)
+    for sx in (-0.13, 0.13):
         cup = Entity(parent=parent, model='sphere', color=_tint(dress, 0.10),
-                     scale=(0.22, 0.20, 0.20), x=sx, y=1.27, z=0.14)
-        _tag_jiggle(cup, 'bust', 0.020, jiggle)
+                     scale=(0.20, 0.18, 0.18), x=sx, y=1.26, z=0.14)
+        _tag_jiggle(cup, 'bust', 0.018, jiggle)
     # deep neckline skin on FRONT
     Entity(parent=parent, model='cube', color=skin,
-           scale=(0.30, 0.14, 0.12), y=1.38, z=0.04)
+           scale=(0.28, 0.14, 0.12), y=1.38, z=0.04)
     Entity(parent=parent, model='sphere', color=_tint(skin, 0.04),
-           scale=(0.22, 0.12, 0.10), y=1.34, z=0.12)
+           scale=(0.20, 0.11, 0.10), y=1.34, z=0.12)
+    # straps + choker + earrings
     Entity(parent=parent, model='cube', color=_tint(dress, 0.08),
-           scale=(0.04, 0.26, 0.035), x=-0.18, y=1.42, z=0.02)
+           scale=(0.04, 0.26, 0.035), x=-0.17, y=1.42, z=0.02)
     Entity(parent=parent, model='cube', color=_tint(dress, 0.08),
-           scale=(0.04, 0.26, 0.035), x=0.18, y=1.42, z=0.02)
+           scale=(0.04, 0.26, 0.035), x=0.17, y=1.42, z=0.02)
     Entity(parent=parent, model='cube', color=_rgb(color, 20, 18, 22),
            scale=(0.30, 0.05, 0.06), y=1.54, z=0.12)
     Entity(parent=parent, model='sphere', color=_rgb(color, 255, 180, 200),
@@ -412,35 +466,47 @@ def _body_michelle_dress(Entity, color, parent, dress, skin, hip_w, torso_d, *, 
            scale=0.055, x=-0.22, y=1.50, z=0.02)
     Entity(parent=parent, model='sphere', color=_rgb(color, 255, 220, 120),
            scale=0.055, x=0.22, y=1.50, z=0.02)
+    # thigh-high stocking tops under short hem (silhouette read)
+    for sx in (-0.16, 0.16):
+        _mark_lod_high(Entity(parent=parent, model='cube', color=_rgb(color, 30, 28, 36),
+               scale=(0.16, 0.06, 0.14), x=sx, y=0.34, z=-0.01))
 
 
 def _body_anime_f_clothed(Entity, parent, shirt, skin, hip_w, torso_d, leg_gap, *, jiggle=None, heavy=True):
-    """Crowd/named anime_f clothed. Bust +Z, hip flare -Z."""
+    """Crowd/named anime_f clothed. Adult hourglass; realistic bust +Z, hip -Z."""
     jiggle = jiggle if jiggle is not None else []
     Entity(parent=parent, model='cube', color=shirt,
-           scale=(0.40, 0.38, torso_d), y=1.14)
-    Entity(parent=parent, model='cube', color=_tint(shirt, -0.12),
-           scale=(0.30, 0.10, torso_d * 0.9), y=0.96)
+           scale=(0.38, 0.36, torso_d), y=1.14)
+    Entity(parent=parent, model='cube', color=_tint(shirt, -0.14),
+           scale=(0.28, 0.10, torso_d * 0.88), y=0.96)  # waist cinch
+    # realistic (not cartoon-huge) bust
     parent.chest = Entity(
         parent=parent, model='sphere', color=_tint(shirt, 0.05),
-        scale=(0.46, 0.26, 0.30), y=1.22, z=0.06,
+        scale=(0.44, 0.24, 0.28) if heavy else (0.40, 0.22, 0.26),
+        y=1.22, z=0.06,
     )
-    _tag_jiggle(parent.chest, 'bust', 0.012 if heavy else 0.008, jiggle)
+    _tag_jiggle(parent.chest, 'bust', 0.010 if heavy else 0.006, jiggle)
     if heavy:
         for sx in (-0.10, 0.10):
             cup = Entity(parent=parent, model='sphere', color=_tint(shirt, 0.10),
-                         scale=(0.16, 0.15, 0.15), x=sx, y=1.24, z=0.10)
-            _tag_jiggle(cup, 'bust', 0.012, jiggle)
+                         scale=(0.15, 0.14, 0.14), x=sx, y=1.24, z=0.10)
+            _tag_jiggle(cup, 'bust', 0.010, jiggle)
+    # mini-skirt layers
     Entity(parent=parent, model='cube', color=_tint(shirt, 0.06),
-           scale=(0.70, 0.32, 0.42), y=0.68)
+           scale=(0.72, 0.28, 0.40), y=0.70)
+    Entity(parent=parent, model='cube', color=_tint(shirt, 0.12),
+           scale=(0.78, 0.10, 0.42), y=0.56)
     Entity(parent=parent, model='sphere', color=_tint(shirt, -0.05),
-           scale=(0.50, 0.24, 0.32), y=0.78, z=-0.10)
+           scale=(0.52, 0.24, 0.32), y=0.78, z=-0.10)
     if heavy:
         gap = hip_w * 0.24
         for sx in (-gap, gap):
             cheek = Entity(parent=parent, model='sphere', color=_tint(shirt, -0.08),
                            scale=(0.18, 0.16, 0.14), x=sx, y=0.72, z=-0.16)
             _tag_jiggle(cheek, 'hip', 0.010, jiggle)
+        # soft neckline skin peek
+        Entity(parent=parent, model='cube', color=skin,
+               scale=(0.18, 0.08, 0.08), y=1.36, z=0.04)
     Entity(parent=parent, model='cube', color=_tint(shirt, 0.12),
            scale=(0.24, 0.05, 0.16), y=1.34, z=0.02)
 
@@ -634,7 +700,7 @@ def attach_humanoid_parts(
         Entity(parent=parent, model='cube', color=_tint(skin, 0.06),
                scale=(0.18, 0.24, 0.14), x=0.16, y=0.38, z=-0.02)
     elif anime_f:
-        _body_anime_f_clothed(Entity, parent, shirt, skin, hip_w, torso_d, leg_gap, jiggle=jiggle, heavy=(detail=='named'))
+        _body_anime_f_clothed(Entity, parent, shirt, skin, hip_w, torso_d, leg_gap, jiggle=jiggle, heavy=(detail != 'crowd'))
         for sx in (-leg_gap, leg_gap):
             Entity(parent=parent, model='cube', color=skin,
                    scale=(0.14, 0.28, 0.13), x=sx, y=0.48)
@@ -665,7 +731,7 @@ def attach_humanoid_parts(
     elif player:
         _hair_player(Entity, parent, hair, head_y)
     elif anime_f or (feminine and not player and not michelle):
-        _hair_feminine(Entity, parent, hair, head_y)
+        _hair_feminine(Entity, parent, hair, head_y, heavy=(detail != 'crowd'))
     elif named:
         _hair_named(Entity, parent, hair, shirt, head_y)
     else:
