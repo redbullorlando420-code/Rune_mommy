@@ -48,23 +48,26 @@ def apply_lighting(color, Vec3, Sky=None, DirectionalLight=None, AmbientLight=No
 
     Look polish: punchier sun/ambient on med/high; capped point lights (FPS-safe).
     Default quality is med. Shadows remain ultra-only.
+    Returns light kit dict (sky/sun/ambient/point_lights) for day/night tick.
     """
     q = quality()
+    sky = None
     if Sky is not None:
         try:
             # Slightly richer dusk sky on med+ for punch without extra lights
             if q == 'ultra':
-                Sky(color=color.rgb32(14, 4, 28))
+                sky = Sky(color=color.rgb32(14, 4, 28))
             elif q == 'high':
-                Sky(color=color.rgb32(15, 5, 30))
+                sky = Sky(color=color.rgb32(15, 5, 30))
             elif q == 'med':
-                Sky(color=color.rgb32(17, 6, 32))
+                sky = Sky(color=color.rgb32(17, 6, 32))
             else:
-                Sky(color=color.rgb32(20, 8, 34))
+                sky = Sky(color=color.rgb32(20, 8, 34))
         except Exception:
-            pass
+            sky = None
 
     shadows = (q == 'ultra')
+    sun = None
     try:
         sun = DirectionalLight(shadows=shadows)
         # Slightly steeper key for clearer silhouette on faces/meshes
@@ -84,19 +87,20 @@ def apply_lighting(color, Vec3, Sky=None, DirectionalLight=None, AmbientLight=No
             except Exception:
                 pass
     except Exception:
-        pass
+        sun = None
 
+    ambient = None
     try:
         if q == 'ultra':
-            AmbientLight(color=color.rgb32(118, 88, 148))
+            ambient = AmbientLight(color=color.rgb32(118, 88, 148))
         elif q == 'high':
-            AmbientLight(color=color.rgb32(108, 80, 135))
+            ambient = AmbientLight(color=color.rgb32(108, 80, 135))
         elif q == 'low':
-            AmbientLight(color=color.rgb32(70, 48, 95))
+            ambient = AmbientLight(color=color.rgb32(70, 48, 95))
         else:  # med
-            AmbientLight(color=color.rgb32(102, 76, 128))
+            ambient = AmbientLight(color=color.rgb32(102, 76, 128))
     except Exception:
-        pass
+        ambient = None
 
     # Point-light budget: each is expensive with multipart meshes.
     # med: 3 (was 2). high: 4 (was 2). ultra: full POI set. Shadows ultra-only.
@@ -130,13 +134,25 @@ def apply_lighting(color, Vec3, Sky=None, DirectionalLight=None, AmbientLight=No
         ]
 
     lights = []
+    accent_base = []
     for pos, rgb in accents:
         try:
             pl = PointLight(position=pos, color=color.rgb32(*rgb))
             lights.append(pl)
+            accent_base.append((pos, rgb))
         except Exception:
             pass
-    return {'quality': q, 'shadows': shadows, 'point_lights': lights}
+    return {
+        'quality': q,
+        'shadows': shadows,
+        'point_lights': lights,
+        'accent_base': accent_base,
+        'sky': sky,
+        'sun': sun,
+        'ambient': ambient,
+        'color_mod': color,
+        'Vec3': Vec3,
+    }
 
 
 def apply_perf(window=None, camera=None, color=None):
@@ -389,3 +405,209 @@ def pre_boot_fps_prc():
     except Exception:
         pass
     return fps
+
+
+
+# ---------------------------------------------------------------------------
+# Day / night cycle (World pass) — hooks life_sim clock; quality-aware.
+# Toggle: RUNE_MOMMY_DAY_NIGHT=0 freezes. Debug: nudge_time / [ ] keys.
+# Start hour: RUNE_MOMMY_TIME=14 (optional 0-23).
+# ---------------------------------------------------------------------------
+
+# Keyframes: hour -> (sky_rgb, sun_rgb, amb_rgb, fog_rgb, fog_density, sun_dir, neon_mul)
+# neon_mul scales point-light brightness (night neon pops).
+_DN_KEYS = (
+    # midnight deep
+    (0.0,  ((8, 4, 22),   (90, 70, 120),  (48, 36, 78),  (10, 4, 22), 0.018, (0.55, -0.35, 0.55), 1.35)),
+    # predawn
+    (5.0,  ((18, 10, 36), (140, 100, 130),(62, 48, 95),  (16, 8, 30), 0.014, (0.85, -0.55, 0.35), 1.15)),
+    # dawn
+    (6.5,  ((255, 160, 110),(255, 190, 140),(110, 85, 120),(40, 22, 48), 0.010, (1.1, -0.85, 0.25), 0.85)),
+    # morning
+    (9.0,  ((135, 185, 255),(255, 240, 210),(125, 120, 140),(70, 95, 130), 0.007, (1.0, -1.2, 0.2), 0.55)),
+    # noon
+    (12.0, ((110, 170, 255),(255, 250, 235),(140, 135, 150),(90, 120, 160), 0.005, (0.35, -1.55, 0.15), 0.40)),
+    # afternoon
+    (15.5, ((150, 175, 240),(255, 230, 195),(128, 115, 140),(60, 80, 120), 0.007, (-0.55, -1.35, 0.25), 0.55)),
+    # golden hour / dusk
+    (18.0, ((255, 120, 70), (255, 170, 110),(115, 80, 110),(55, 25, 45), 0.011, (-1.0, -0.75, 0.35), 0.95)),
+    # nightfall
+    (20.0, ((28, 10, 48),  (160, 110, 150),(70, 50, 105), (18, 6, 34), 0.015, (-0.7, -0.4, 0.5), 1.25)),
+    # late
+    (22.5, ((12, 5, 28),   (100, 75, 130), (52, 38, 85),  (12, 4, 24), 0.017, (0.2, -0.3, 0.6), 1.35)),
+    # wrap toward midnight
+    (24.0, ((8, 4, 22),    (90, 70, 120),  (48, 36, 78),  (10, 4, 22), 0.018, (0.55, -0.35, 0.55), 1.35)),
+)
+
+
+def _lerp(a: float, b: float, t: float) -> float:
+    return a + (b - a) * t
+
+
+def _lerp_rgb(a, b, t):
+    return tuple(int(_lerp(float(a[i]), float(b[i]), t) + 0.5) for i in range(3))
+
+
+def _sample_day_night(hour: float):
+    h = hour % 24.0
+    keys = _DN_KEYS
+    for i in range(len(keys) - 1):
+        h0, v0 = keys[i][0], keys[i][1]
+        h1, v1 = keys[i + 1][0], keys[i + 1][1]
+        if h0 <= h <= h1:
+            span = max(1e-6, h1 - h0)
+            t = (h - h0) / span
+            sky = _lerp_rgb(v0[0], v1[0], t)
+            sun = _lerp_rgb(v0[1], v1[1], t)
+            amb = _lerp_rgb(v0[2], v1[2], t)
+            fog = _lerp_rgb(v0[3], v1[3], t)
+            dens = _lerp(v0[4], v1[4], t)
+            direction = tuple(_lerp(v0[5][j], v1[5][j], t) for j in range(3))
+            neon = _lerp(v0[6], v1[6], t)
+            return sky, sun, amb, fog, dens, direction, neon
+    return keys[0][1]
+
+
+def day_night_enabled() -> bool:
+    raw = (os.environ.get('RUNE_MOMMY_DAY_NIGHT') or '1').strip().lower()
+    return raw not in ('0', 'off', 'false', 'no')
+
+
+def phase_name(hour: float) -> str:
+    h = hour % 24.0
+    if 5.0 <= h < 7.0:
+        return 'dawn'
+    if 7.0 <= h < 17.0:
+        return 'day'
+    if 17.0 <= h < 19.5:
+        return 'dusk'
+    if 19.5 <= h < 24.0 or h < 5.0:
+        return 'night'
+    return 'day'
+
+
+def _set_rgb(ent, color_mod, rgb):
+    if ent is None or color_mod is None:
+        return
+    try:
+        ent.color = color_mod.rgb32(int(rgb[0]), int(rgb[1]), int(rgb[2]))
+    except Exception:
+        pass
+
+
+def boot_day_night(game, kit=None):
+    """Attach day/night kit to game. Safe on slim boot (kit may be partial)."""
+    if kit is None:
+        kit = getattr(game, 'light_kit', None) or {}
+    game.light_kit = kit
+    game.day_night_on = day_night_enabled()
+    # Optional start hour override
+    raw = (os.environ.get('RUNE_MOMMY_TIME') or '').strip()
+    if raw:
+        try:
+            hh = float(raw) % 24.0
+            game.life_sim_minutes = hh * 60.0
+        except Exception:
+            pass
+    game._dn_accum = 0.0
+    game._dn_last_bucket = -1
+    game._dn_force = True
+    # Apply once so menu/safe yard already matches clock
+    try:
+        tick_day_night(game, 0.0, force=True)
+    except Exception as exc:
+        print('  day_night boot skip:', exc)
+    print('  day_night: %s (phase=%s) — [ ] skip 2h, RUNE_MOMMY_DAY_NIGHT=0 freezes' % (
+        'ON' if game.day_night_on else 'OFF',
+        phase_name(_hour_from_game(game)),
+    ))
+
+
+def _hour_from_game(game) -> float:
+    mins = float(getattr(game, 'life_sim_minutes', 10 * 60.0))
+    return (mins / 60.0) % 24.0
+
+
+def nudge_time(game, hours: float = 2.0):
+    """Debug: jump in-game clock by `hours` (wrap 24h)."""
+    game.life_sim_minutes = float(getattr(game, 'life_sim_minutes', 10 * 60.0)) + float(hours) * 60.0
+    if game.life_sim_minutes < 0:
+        game.life_sim_minutes %= (24 * 60)
+    if game.life_sim_minutes >= 24 * 60:
+        game.life_sim_minutes %= (24 * 60)
+    game._dn_force = True
+    try:
+        tick_day_night(game, 0.0, force=True)
+    except Exception:
+        pass
+    h = _hour_from_game(game)
+    return h, phase_name(h)
+
+
+def tick_day_night(game, dt: float = 0.0, force: bool = False):
+    """Shift sky/sun/ambient/fog/neon with in-game hour. Throttled for FPS."""
+    if not getattr(game, 'day_night_on', True):
+        return
+    kit = getattr(game, 'light_kit', None)
+    if not kit:
+        return
+    force = force or bool(getattr(game, '_dn_force', False))
+    game._dn_force = False
+    game._dn_accum = float(getattr(game, '_dn_accum', 0.0)) + float(dt or 0.0)
+    hour = _hour_from_game(game)
+    # Bucket ~6 min in-game (~8 real sec at CLOCK_SCALE 45) — cheap updates
+    bucket = int(hour * 10)  # 0.1h steps
+    if not force and bucket == getattr(game, '_dn_last_bucket', -1) and game._dn_accum < 0.35:
+        return
+    if not force and game._dn_accum < 0.20 and bucket == getattr(game, '_dn_last_bucket', -1):
+        return
+    game._dn_accum = 0.0
+    game._dn_last_bucket = bucket
+
+    sky_rgb, sun_rgb, amb_rgb, fog_rgb, dens, direction, neon = _sample_day_night(hour)
+    color = kit.get('color_mod')
+    q = kit.get('quality') or quality()
+
+    # Quality: low skips fog + neon scale; med+ full
+    _set_rgb(kit.get('sky'), color, sky_rgb)
+    _set_rgb(kit.get('sun'), color, sun_rgb)
+    _set_rgb(kit.get('ambient'), color, amb_rgb)
+
+    sun = kit.get('sun')
+    Vec3 = kit.get('Vec3')
+    if sun is not None and Vec3 is not None:
+        try:
+            sun.look_at(Vec3(float(direction[0]), float(direction[1]), float(direction[2])))
+        except Exception:
+            pass
+
+    if q != 'low' and color is not None:
+        try:
+            from ursina import scene
+            scene.fog_color = color.rgb32(*fog_rgb)
+            # med stays readable; night denser
+            base = 0.010 if q == 'med' else (0.008 if q == 'high' else 0.006)
+            scene.fog_density = max(base * 0.6, dens * (0.85 if q == 'ultra' else 1.0))
+        except Exception:
+            cam = getattr(game, 'camera', None)
+            if cam is not None:
+                try:
+                    cam.fog = True
+                    cam.fog_color = color.rgb32(*fog_rgb)
+                    cam.fog_density = dens
+                except Exception:
+                    pass
+
+    # Neon accents — brighter at night, dimmer midday (no extra lights)
+    if q != 'low' and color is not None:
+        lights = kit.get('point_lights') or []
+        bases = kit.get('accent_base') or []
+        for i, pl in enumerate(lights):
+            if i >= len(bases):
+                break
+            _pos, rgb = bases[i]
+            scaled = tuple(max(20, min(255, int(c * neon))) for c in rgb)
+            _set_rgb(pl, color, scaled)
+
+    game.day_phase = phase_name(hour)
+    game.day_hour = hour
