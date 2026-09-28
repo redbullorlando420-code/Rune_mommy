@@ -78,6 +78,14 @@ import tokyo
 import radar
 import parking
 import adult_minigames
+try:
+    import sfx
+except Exception:
+    sfx = None
+try:
+    import crash
+except Exception:
+    crash = None
 
 _TEX_CACHE = {}
 
@@ -210,7 +218,17 @@ def data_report():
 def boot_ursina(window_type='onscreen'):
     from panda3d.core import loadPrcFileData
     from pathlib import Path as _Path
-    loadPrcFileData('', 'audio-library-name null')
+    # Feel: enable OpenAL unless RUNE_MOMMY_AUDIO=0 / headless test.
+    # Missing devices fall back to NullAudioManager; sfx stubs stay silent.
+    _want_audio = True
+    try:
+        import sfx as _sfx_boot
+        _want_audio = _sfx_boot.audio_wanted()
+    except Exception:
+        _want_audio = (os.environ.get('RUNE_MOMMY_AUDIO') or '1').strip().lower() not in (
+            '0', 'off', 'false', 'no', 'null')
+    if (not _want_audio) or window_type in ('offscreen', 'none'):
+        loadPrcFileData('', 'audio-library-name null')
     loadPrcFileData('', 'notify-level-audio fatal')
     loadPrcFileData('', 'notify-level-glgsg warning')
     if window_type in ('offscreen', 'none'):
@@ -356,6 +374,7 @@ class Game:
         self.visual = None
         self.gun_model = None
         self.cars = []
+        self.debris = []
         self.npcs = []
         self.peds = []
         self.heat_hunters = []
@@ -410,20 +429,3 @@ class Game:
         try:
             self.render_opts['target_fps'] = apply_fps_cap()
         except Exception:
-            self.render_opts['target_fps'] = target_fps()
-        print('  render: quality=%s fps_target=%s' % (
-            self.render_opts.get('quality'), self.render_opts.get('target_fps')))
-        try:
-            footprints.boot(self)
-        except Exception as exc:
-            print('  footprints skip:', exc)
-        try:
-            if world_chunks is not None:
-                world_chunks.boot(self)
-        except Exception as exc:
-            print('  chunks skip:', exc)
-        try:
-            apply_lighting(
-                color, self.Vec3,
-                Sky=self.Sky,
-                DirectionalLight=DirectionalLight,
