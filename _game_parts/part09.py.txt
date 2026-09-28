@@ -112,6 +112,13 @@
             self.hud_pack.text = f'Pack  {len(self.pack)}'
         if getattr(self, 'hud_quest', None):
             self.hud_quest.text = self._quest_hud_line()
+        if getattr(self, 'hud_clock', None):
+            try:
+                label = life_sim.clock_label(self)
+                phase = getattr(self, 'day_phase', None) or ''
+                self.hud_clock.text = ('%s  %s' % (label, phase)).strip()
+            except Exception:
+                pass
         if getattr(self, 'hud_mode', None):
             if self.in_car:
                 fuel = int(getattr(self.in_car, 'fuel', 0) or 0)
