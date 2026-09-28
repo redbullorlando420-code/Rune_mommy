@@ -1,3 +1,30 @@
+            self.render_opts['target_fps'] = target_fps()
+        print('  render: quality=%s fps_target=%s' % (
+            self.render_opts.get('quality'), self.render_opts.get('target_fps')))
+        try:
+            footprints.boot(self)
+        except Exception as exc:
+            print('  footprints skip:', exc)
+        try:
+            if sfx is not None:
+                sfx.boot()
+        except Exception as exc:
+            print('  sfx skip:', exc)
+        try:
+            if crash is not None:
+                crash.ensure_pools(self)
+        except Exception as exc:
+            print('  crash pools skip:', exc)
+        try:
+            if world_chunks is not None:
+                world_chunks.boot(self)
+        except Exception as exc:
+            print('  chunks skip:', exc)
+        try:
+            apply_lighting(
+                color, self.Vec3,
+                Sky=self.Sky,
+                DirectionalLight=DirectionalLight,
                 AmbientLight=AmbientLight,
                 PointLight=PointLight,
             )
@@ -326,28 +353,3 @@
                 except Exception:
                     pass
         elif vis:
-            for b in getattr(self, 'menu_buttons', []) or []:
-                try:
-                    b.enabled = True
-                    lab = getattr(b, '_label', None)
-                    if lab is not None:
-                        lab.enabled = True
-                except Exception:
-                    pass
-            if getattr(self, 'menu_hint', None):
-                try:
-                    self.menu_hint.enabled = True
-                except Exception:
-                    pass
-            # spare menu_lines are settings-only; hide on main menu
-            for line in getattr(self, 'menu_lines', []) or []:
-                try:
-                    line.enabled = False
-                except Exception:
-                    pass
-        else:
-            for b in getattr(self, 'menu_buttons', []) or []:
-                try:
-                    b.enabled = False
-                    lab = getattr(b, '_label', None)
-                    if lab is not None:
