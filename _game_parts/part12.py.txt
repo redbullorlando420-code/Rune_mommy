@@ -245,6 +245,21 @@
                     self._quest_complete(qid)
             elif etype == 'refuel' and qtype == 'refuel':
                 self._quest_complete(qid)
+            elif etype == 'buy' and qtype == 'fetch':
+                if kw.get('item_id') == q.get('item'):
+                    self._quest_complete(qid)
+            elif etype == 'fetch' and qtype == 'fetch':
+                if kw.get('item_id') == q.get('item'):
+                    self._quest_complete(qid)
+            elif etype == 'visit' and qtype == 'drive_to':
+                poi = q.get('poi') or q.get('place')
+                if poi and kw.get('poi_id') == poi:
+                    # Prefer car, but allow on-foot so quests never soft-lock
+                    self._quest_complete(qid)
+            elif etype == 'drive_to' and qtype == 'drive_to':
+                poi = q.get('poi') or q.get('place')
+                if poi and kw.get('poi_id') == poi:
+                    self._quest_complete(qid)
 
     def _flags_path(self):
         return ROOT / 'data' / 'local_flags.json'
@@ -274,7 +289,7 @@
             print('  flags save failed:', exc)
 
     def _tick_visit_quests(self):
-        """Complete visit-type quests when player is near matching POI interact pos."""
+        """Complete visit/drive_to quests near POI; fetch when item already in pack."""
         if not self.quest_active:
             return
         pos = self._actor_pos()
@@ -285,6 +300,22 @@
                 continue
             if dist_xz(pos, ppos) <= 4.5:
                 self._quest_event('visit', poi_id=pid)
+                self._quest_event('drive_to', poi_id=pid)
+        # Fetch: complete if required item already in pack (buy path also fires)
+        pack = list(getattr(self, 'pack', None) or [])
+        pack_ids = set()
+        for it in pack:
+            if isinstance(it, dict):
+                pack_ids.add(it.get('id') or it.get('item') or it.get('item_id'))
+            else:
+                pack_ids.add(getattr(it, 'id', None) or str(it))
+        for qid in list(self.quest_active):
+            q = self._quest_def(qid)
+            if not q or q.get('type') != 'fetch':
+                continue
+            item = q.get('item')
+            if item and item in pack_ids:
+                self._quest_event('fetch', item_id=item)
 
     def _init_tutorial(self):
         flags = self._load_flags()
