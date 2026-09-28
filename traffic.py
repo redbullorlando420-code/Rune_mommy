@@ -2,6 +2,7 @@
 
 Empty / idle cars go to parking stalls (see parking.py).
 Does not touch vendor.vehicle / _bicycle_step_safe.
+Feel: light damage/smoke tick + optional car-vs-car nudge for driven traffic.
 """
 from __future__ import annotations
 
@@ -10,6 +11,10 @@ import random
 
 from lighting import should_sim, set_visible, set_lod, CULL_TRAFFIC
 import parking
+try:
+    import crash as _crash
+except Exception:
+    _crash = None
 
 TRAFFIC_COUNT = 9
 LOT_WPS = (
@@ -96,6 +101,11 @@ def _tag_traffic(car, route, cruise, lane_z):
     car.wp = 0
     car.drive_t = random.uniform(25.0, 55.0)  # then seek parking
     car.seeking_park = False
+    if not hasattr(car, 'damage'):
+        car.damage = 0.0
+    if not hasattr(car, 'disabled'):
+        car.disabled = False
+    car.impact_cd = 0.0
 
 
 def _has_live_driver(car) -> bool:
@@ -186,6 +196,16 @@ def tick_traffic(game, dt):
         if not do_ai:
             continue
 
+        # Totaled traffic — smoke only, no drive
+        if getattr(car, 'disabled', False) or float(getattr(car, 'damage', 0) or 0) >= 100.0:
+            car.speed = 0.0
+            if _crash is not None:
+                try:
+                    _crash.update_damage_visual(game, car, dt)
+                except Exception:
+                    pass
+            continue
+
         # No driver → seek lot / stay still
         if not _has_live_driver(car):
             car.has_driver = False
@@ -248,6 +268,41 @@ def tick_traffic(game, dt):
             car.y = 0
             car.x = max(-46, min(50, car.x))
             car.z = max(-40, min(10, car.z))
+
+        # Feel: smoke / paint on damaged cars near player (cheap)
+        if _crash is not None and float(getattr(car, 'damage', 0) or 0) >= 1.0:
+            try:
+                _crash.update_damage_visual(game, car, dt)
+            except Exception:
+                pass
+
+        # Feel: soft car-vs-car separation for two driven traffic cars (no heavy physics)
+        if dist <= 22.0 and _has_live_driver(car) and not getattr(car, 'seeking_park', False):
+            for other in list(getattr(game, 'cars', None) or []):
+                if not other or other is car:
+                    continue
+                if not getattr(other, 'traffic', False):
+                    continue
+                if not _has_live_driver(other):
+                    continue
+                dx = float(car.x) - float(other.x)
+                dz = float(car.z) - float(other.z)
+                d2 = dx * dx + dz * dz
+                if d2 < 2.4 * 2.4 and d2 > 1e-4:
+                    d = d2 ** 0.5
+                    ux, uz = dx / d, dz / d
+                    push = (2.4 - d) * 0.5
+                    car.x += ux * push
+                    car.z += uz * push
+                    # One-sided damage only at meaningful closing speed
+                    rel = abs(float(getattr(car, 'speed', 0) or 0) - float(getattr(other, 'speed', 0) or 0))
+                    if rel > 6.0 and _crash is not None:
+                        try:
+                            _crash.take_damage(game, car, rel * 0.5, source='car')
+                            _crash.take_damage(game, other, rel * 0.5, source='car')
+                        except Exception:
+                            pass
+                    break
 
 
 def _move_to_park(game, car, dt):
