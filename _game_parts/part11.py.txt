@@ -1,3 +1,57 @@
+            choices.append(('Tank is full.', self.close_panel))
+        if dmg >= 5:
+            choices.append(('Repair (50g)', lambda c=car: self._gas_repair(c)))
+        choices.append(('Leave.', self.close_panel))
+        self.open_panel(f'{name}   ·   pump', body, choices)
+
+    def _gas_fill(self, car, cost):
+        if not car:
+            self.close_panel()
+            return
+        cost = int(cost)
+        if self.gold < cost:
+            self.toast('Not enough gold.')
+            self.close_panel()
+            return
+        self.gold -= cost
+        car.fuel = 100.0
+        car.out_of_gas_toasted = False
+        self.toast(f'Tank filled. -{cost}g')
+        self._quest_event('refuel')
+        self.close_panel()
+
+    def _gas_repair(self, car):
+        if not car:
+            self.close_panel()
+            return
+        if self.gold < 50:
+            self.toast('Not enough gold.')
+            self.close_panel()
+            return
+        self.gold -= 50
+        before = float(getattr(car, 'damage', 0) or 0)
+        car.damage = max(0.0, before - 60.0)
+        if car.damage < 100.0:
+            car.disabled = False
+        self._update_car_damage_visual(car, 0.016)
+        self.toast(f'Repaired. DMG {int(before)}→{int(car.damage)}  -50g')
+        self.close_panel()
+
+    # ----- UI panels ------------------------------------------------------
+
+    def _set_talk_target(self, ent):
+        """Freeze this NPC while dialogue is open; face player; hold position."""
+        self._clear_talk_target()
+        self.talk_target = ent
+        if ent is None:
+            return
+        try:
+            ent.talk_frozen = True
+            ent._talk_hold_pos = (
+                float(ent.x),
+                float(getattr(ent, 'y', 0) or 0),
+                float(ent.z),
+            )
         except Exception:
             pass
 
@@ -11,6 +65,11 @@
         self.talk_target = None
 
     def open_panel(self, title, body, choices, portrait=False, portrait_tex=None):
+        try:
+            if sfx is not None:
+                sfx.ui_beep()
+        except Exception:
+            pass
         from ursina import mouse
         self.ui_open = True
         self.ui_choices = choices
@@ -316,56 +375,3 @@
             return
         entry = stock[0]
         item_id = entry.get('itemId')
-        price = int(entry.get('price', 0))
-        item = self.items.get(item_id, {})
-        name = item.get('name', item_id or 'item')
-        if self.gold < price:
-            self.toast(f'Need {price}g for {name}.')
-            return
-        self.gold -= price
-        self.pack.append(name)
-        self.toast(name)
-        self._quest_event('buy', item_id=item_id)
-
-    def _tex_for(self, who, expr='default'):
-        # Ursina load_texture needs a path relative to cwd/ROOT, not an absolute Windows path.
-        rel = portrait_asset_path(who, expr)
-        if not rel:
-            for fb in ('smile', 'default', 'sassy', 'tease', 'wink', 'lean'):
-                rel = portrait_asset_path(who, fb)
-                if rel:
-                    break
-        if not rel:
-            return None
-        try:
-            from ursina import load_texture
-            return load_texture(rel)
-        except Exception:
-            return None
-
-
-    def _nearest_house_vol(self, pos, radius):
-        best, best_d = None, radius
-        for ent in self.house_vols:
-            if not ent:
-                continue
-            d = dist_xz(pos, (ent.x, 0, ent.z))
-            if d < best_d:
-                best, best_d = getattr(ent, 'room_node', None), d
-        if best:
-            return best, best_d
-        return None
-
-    def _maybe_auto_michelle(self):
-        # Never auto-open on spawn — it sets ui_open and freezes WASD.
-        # Player must press E at Michelle / the door.
-        return
-
-    def open_michelle(self, node_id='door'):
-        if getattr(self, 'talk_target', None) is None and getattr(self, 'michelle', None) is not None:
-            self._set_talk_target(self.michelle)
-        nodes = (self.michelle_dlg or {}).get('nodes') or {}
-        start = (self.michelle_dlg or {}).get('start') or 'door'
-        node = nodes.get(node_id) or nodes.get(start)
-        self.michelle_seen = True
-        self.michelle_auto_opened = True
