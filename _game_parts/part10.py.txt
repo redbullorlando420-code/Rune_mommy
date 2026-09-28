@@ -9,6 +9,14 @@
                 self.debug_hud.enabled = self.debug_on
             print('[Rune Mommy] debug', 'ON' if self.debug_on else 'OFF')
             return
+        # Day/night debug: [ rewind 2h, ] advance 2h (DEVNOTES)
+        if key in ('[', ']'):
+            try:
+                h, phase = nudge_time(self, -2.0 if key == '[' else 2.0)
+                self.toast('Time %02d:%02d  %s' % (int(h), int((h % 1) * 60), phase))
+            except Exception as exc:
+                print('  nudge_time skip:', exc)
+            return
 
         # Safe yard: Esc always returns to title (never soft-lock).
         if mode == 'safe' and key == 'escape':
