@@ -21,15 +21,20 @@
         except Exception as exc:
             print('  chunks skip:', exc)
         try:
-            apply_lighting(
+            self.light_kit = apply_lighting(
                 color, self.Vec3,
                 Sky=self.Sky,
                 DirectionalLight=DirectionalLight,
                 AmbientLight=AmbientLight,
                 PointLight=PointLight,
-            )
+            ) or {}
         except Exception:
+            self.light_kit = {}
             self.Sky(color=color.rgb32(20, 8, 34))
+        try:
+            boot_day_night(self, getattr(self, 'light_kit', None))
+        except Exception as _dn_exc:
+            print('  day_night skip:', _dn_exc)
 
         self._lock_mouse(False)  # boot unlocked; menu owns cursor
 
