@@ -32,7 +32,7 @@ from loaders import (
 )
 from crowd import spawn_crowd, tick_crowd, spawn_heat_hunter
 from traffic import spawn_traffic, tick_traffic
-from lighting import apply_lighting, apply_perf, apply_fps_cap, pre_boot_fps_prc, set_visible, target_fps
+from lighting import apply_lighting, apply_perf, apply_fps_cap, pre_boot_fps_prc, set_visible, target_fps, boot_day_night, tick_day_night, nudge_time
 import footprints
 try:
     import chunks as world_chunks
@@ -452,15 +452,20 @@ class Game:
         except Exception as exc:
             print('  chunks skip:', exc)
         try:
-            apply_lighting(
+            self.light_kit = apply_lighting(
                 color, self.Vec3,
                 Sky=self.Sky,
                 DirectionalLight=DirectionalLight,
                 AmbientLight=AmbientLight,
                 PointLight=PointLight,
-            )
+            ) or {}
         except Exception:
+            self.light_kit = {}
             self.Sky(color=color.rgb32(20, 8, 34))
+        try:
+            boot_day_night(self, getattr(self, 'light_kit', None))
+        except Exception as _dn_exc:
+            print('  day_night skip:', _dn_exc)
 
         self._lock_mouse(False)  # boot unlocked; menu owns cursor
 
@@ -856,6 +861,7 @@ class Game:
         bits = [
             self.hud_gold, self.hud_hp, self.hud_heat, self.hud_ammo,
             self.hud_pack, self.hud_breed, self.hud_quest, self.hud_mode,
+            getattr(self, 'hud_clock', None),
             self.hud_prompt, self.crosshair,
         ]
         for b in bits:
@@ -1706,6 +1712,11 @@ class Game:
             }
             self.food_trucks.append(rec)
             self.stalls.append(rec)
+            self.pois.append({
+                'id': sid, 'name': shop.get('name', sid),
+                'pos': (interact[0], 0, interact[2]),
+                'npc_id': None, 'line': None, 'is_gas': False, 'pump_r': 3.0,
+            })
             self.building_count += 1
         # interiors + wildlife + life-sim
         try:
@@ -2086,6 +2097,7 @@ class Game:
         self.hud_pack = Text(text='Pack  0', position=(-0.86, 0.280), origin=(-0.5, 0.5), color=color.rgb32(180, 230, 200), scale=0.85)
         self.hud_breed = Text(text='BREED  0%', position=(-0.86, 0.250), origin=(-0.5, 0.5), color=color.rgb32(46, 196, 182), scale=0.85)
         self.hud_quest = Text(text='QUEST  —', position=(-0.86, 0.220), origin=(-0.5, 0.5), color=color.rgb32(180, 255, 200), scale=0.8)
+        self.hud_clock = Text(text='10:00  day', position=(-0.86, 0.175), origin=(-0.5, 0.5), color=color.rgb32(200, 210, 255), scale=0.7)
         self.hud_mode = Text(text='WALK', position=(-0.86, 0.190), origin=(-0.5, 0.5), color=color.rgb32(200, 220, 255), scale=0.8)
         self.hud_prompt = Text(text='', position=(0, -0.42), origin=(0, 0), color=color.rgb32(255, 240, 180), scale=0.9)
         self.hud_toast = Text(text='', position=(0, 0.32), origin=(0, 0), color=color.rgb32(255, 180, 220), scale=0.85)
@@ -2179,6 +2191,10 @@ class Game:
             tick_crowd(self, dt)
             try:
                 life_sim.tick(self, dt)
+            except Exception:
+                pass
+            try:
+                tick_day_night(self, dt)
             except Exception:
                 pass
             try:
@@ -2843,6 +2859,13 @@ class Game:
             self.hud_pack.text = f'Pack  {len(self.pack)}'
         if getattr(self, 'hud_quest', None):
             self.hud_quest.text = self._quest_hud_line()
+        if getattr(self, 'hud_clock', None):
+            try:
+                label = life_sim.clock_label(self)
+                phase = getattr(self, 'day_phase', None) or ''
+                self.hud_clock.text = ('%s  %s' % (label, phase)).strip()
+            except Exception:
+                pass
         if getattr(self, 'hud_mode', None):
             if self.in_car:
                 fuel = int(getattr(self.in_car, 'fuel', 0) or 0)
@@ -3068,6 +3091,14 @@ class Game:
             if self.debug_hud:
                 self.debug_hud.enabled = self.debug_on
             print('[Rune Mommy] debug', 'ON' if self.debug_on else 'OFF')
+            return
+        # Day/night debug: [ rewind 2h, ] advance 2h (DEVNOTES)
+        if key in ('[', ']'):
+            try:
+                h, phase = nudge_time(self, -2.0 if key == '[' else 2.0)
+                self.toast('Time %02d:%02d  %s' % (int(h), int((h % 1) * 60), phase))
+            except Exception as exc:
+                print('  nudge_time skip:', exc)
             return
 
         # Safe yard: Esc always returns to title (never soft-lock).
@@ -4021,6 +4052,21 @@ class Game:
                     self._quest_complete(qid)
             elif etype == 'refuel' and qtype == 'refuel':
                 self._quest_complete(qid)
+            elif etype == 'buy' and qtype == 'fetch':
+                if kw.get('item_id') == q.get('item'):
+                    self._quest_complete(qid)
+            elif etype == 'fetch' and qtype == 'fetch':
+                if kw.get('item_id') == q.get('item'):
+                    self._quest_complete(qid)
+            elif etype == 'visit' and qtype == 'drive_to':
+                poi = q.get('poi') or q.get('place')
+                if poi and kw.get('poi_id') == poi:
+                    # Prefer car, but allow on-foot so quests never soft-lock
+                    self._quest_complete(qid)
+            elif etype == 'drive_to' and qtype == 'drive_to':
+                poi = q.get('poi') or q.get('place')
+                if poi and kw.get('poi_id') == poi:
+                    self._quest_complete(qid)
 
     def _flags_path(self):
         return ROOT / 'data' / 'local_flags.json'
@@ -4050,7 +4096,7 @@ class Game:
             print('  flags save failed:', exc)
 
     def _tick_visit_quests(self):
-        """Complete visit-type quests when player is near matching POI interact pos."""
+        """Complete visit/drive_to quests near POI; fetch when item already in pack."""
         if not self.quest_active:
             return
         pos = self._actor_pos()
@@ -4061,6 +4107,22 @@ class Game:
                 continue
             if dist_xz(pos, ppos) <= 4.5:
                 self._quest_event('visit', poi_id=pid)
+                self._quest_event('drive_to', poi_id=pid)
+        # Fetch: complete if required item already in pack (buy path also fires)
+        pack = list(getattr(self, 'pack', None) or [])
+        pack_ids = set()
+        for it in pack:
+            if isinstance(it, dict):
+                pack_ids.add(it.get('id') or it.get('item') or it.get('item_id'))
+            else:
+                pack_ids.add(getattr(it, 'id', None) or str(it))
+        for qid in list(self.quest_active):
+            q = self._quest_def(qid)
+            if not q or q.get('type') != 'fetch':
+                continue
+            item = q.get('item')
+            if item and item in pack_ids:
+                self._quest_event('fetch', item_id=item)
 
     def _init_tutorial(self):
         flags = self._load_flags()
@@ -4260,7 +4322,7 @@ def run():
     print('  WASD walk   mouse look   Space jump')
     print('  If a pink talk panel is open: press Esc, then WASD')
     print('  E enter/exit car, talk, buy')
-    print('  1 draw pistol   LMB shoot   H shake   F horn (in car)   V/C camera   U outfit   ESC quit')
+    print('  1 draw pistol   LMB shoot   H shake   F horn (in car)   V/C camera   U outfit   [ ] time±2h   ESC quit')
     rep = data_report()
     print('  shops:', ', '.join(rep['shake_names']))
     print('  mira portrait:', 'yes' if rep['mira_portrait'] else 'missing')
