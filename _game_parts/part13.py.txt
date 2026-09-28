@@ -1,3 +1,51 @@
+    def _finish_tutorial(self):
+        if not self.tutorial_active and not getattr(self, 'tutorial_overlay', None):
+            flags = self._load_flags()
+            if not flags.get('tutorial_done'):
+                flags['tutorial_done'] = True
+                self._save_flags(flags)
+            return
+        self.tutorial_active = False
+        try:
+            if self.tutorial_overlay:
+                self.tutorial_overlay.enabled = False
+            if self.tutorial_text:
+                self.tutorial_text.enabled = False
+                self.tutorial_text.text = ''
+        except Exception:
+            pass
+        flags = self._load_flags()
+        flags['tutorial_done'] = True
+        self._save_flags(flags)
+        self.toast('Tutorial done. Explore Hwy 50.')
+
+
+    def _debug_tick(self, dt):
+        """Console + HUD breadcrumbs when lagging or input-stuck."""
+        from ursina import held_keys, mouse, time as u_time
+        self._dbg_t += dt
+        wish = any(held_keys[k] for k in ('w', 'a', 's', 'd', 'up arrow', 'down arrow'))
+        self._dbg_wish = wish
+        if wish and getattr(self, 'mode', '') in ('safe', 'play') and not self.in_car:
+            # approximate movement by checking position change
+            pos = (round(float(self.player.x), 2), round(float(self.player.z), 2))
+            last = getattr(self, '_dbg_pos', None)
+            moved = last is not None and pos != last
+            self._dbg_pos = pos
+            if wish and not moved and not self.ui_open:
+                self._dbg_stuck_t += dt
+            else:
+                self._dbg_stuck_t = 0.0
+        else:
+            self._dbg_stuck_t = 0.0
+
+        # Real frame pacing (unscaled); sim `dt` may be clamped to 0.05
+        try:
+            raw_dt = float(getattr(u_time, 'dt_unscaled', None) or u_time.dt or dt)
+        except Exception:
+            raw_dt = float(dt)
+        fps = 1.0 / raw_dt if raw_dt > 1e-6 else 0.0
+        lag = raw_dt > 0.08
         stuck = self._dbg_stuck_t > 0.7
         # Periodically re-assert FPS cap (Ursina may flip clock back to MNormal)
         if int(self._dbg_t * 2) % 10 == 0:
@@ -73,7 +121,7 @@ def run():
     print('  WASD walk   mouse look   Space jump')
     print('  If a pink talk panel is open: press Esc, then WASD')
     print('  E enter/exit car, talk, buy')
-    print('  1 draw pistol   LMB shoot   H shake   V/C or wheel camera   U outfit   ESC quit')
+    print('  1 draw pistol   LMB shoot   H shake   F horn (in car)   V/C camera   U outfit   ESC quit')
     rep = data_report()
     print('  shops:', ', '.join(rep['shake_names']))
     print('  mira portrait:', 'yes' if rep['mira_portrait'] else 'missing')
