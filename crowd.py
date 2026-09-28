@@ -211,10 +211,11 @@ def spawn_crowd(game):
             walk = rng.uniform(2.0, 2.8)
 
         shirt = color.rgb32(*rgb)
-        # Adult feminine anime for civilian / lot_rat; male thug/walker stay utilitarian
+        # Adult feminine anime for civilian / lot_rat; male thug/walker stay utilitarian.
+        # detail stays 'crowd' so named cast (detail=anime_f|named) can take heavier hair/outfit.
         fem = role in ('civilian', 'lot_rat')
         style = 'anime_f' if fem else None
-        detail = 'anime_f' if fem else 'crowd'
+        detail = 'crowd'
         ped = game._humanoid(x, z, shirt=shirt, pants=pants, skin=skin, hitbox=True, detail=detail, style=style)
         ped.npc_id = f'ped_{i}'
         ped.npc_name = name
