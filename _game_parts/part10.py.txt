@@ -1,3 +1,34 @@
+            if key == '3':
+                self._show_menu()
+                return
+            return
+
+        if key == 'f3':
+            self.debug_on = not bool(getattr(self, 'debug_on', True))
+            if self.debug_hud:
+                self.debug_hud.enabled = self.debug_on
+            print('[Rune Mommy] debug', 'ON' if self.debug_on else 'OFF')
+            return
+
+        # Safe yard: Esc always returns to title (never soft-lock).
+        if mode == 'safe' and key == 'escape':
+            self._show_menu()
+            self.toast('Title menu.')
+            return
+
+        if key in ('enter', 'return') and getattr(self, 'tutorial_active', False) and mode == 'play':
+            self._finish_tutorial()
+            return
+        if key == 'escape':
+            if self.ui_open:
+                self.close_panel()
+                return
+            if mode == 'safe':
+                self._show_menu()
+                return
+            # Play: first Esc frees cursor (WASD still works); second Esc quits.
+            if not getattr(self, 'mouse_free', False) and getattr(self.mouse, 'locked', False):
+                self.mouse_free = True
                 self._lock_mouse(False)
                 self.toast('Cursor free — click window to look again. Esc again quits.')
                 return
@@ -46,6 +77,17 @@
             return
         if key == '1':
             self._toggle_pistol()
+            return
+        if key in ('f', 'F'):
+            if self.in_car:
+                try:
+                    if sfx is not None:
+                        sfx.horn()
+                except Exception:
+                    pass
+                self.toast('Beep beep.')
+            else:
+                self.toast('Horn works in a car (F).')
             return
         if key in ('h', 'H'):
             self._eat_food()
@@ -255,7 +297,12 @@
             self.gun_model.enabled = False
         self.player.position = car.position
         self._set_camera_follow(True)
-        self.toast('W accel  S brake/rev  Space handbrake  E exit/pump')
+        self.toast('W accel  S brake/rev  Space handbrake  F horn  E exit/pump')
+        try:
+            if sfx is not None:
+                sfx.engine_update(car, 0.016)
+        except Exception:
+            pass
 
     def _exit_car(self):
         from ursina import camera, Vec3
@@ -270,6 +317,11 @@
         self.in_car = None
         self.visual.enabled = True
         self._set_camera_follow(False)
+        try:
+            if sfx is not None:
+                sfx.engine_stop()
+        except Exception:
+            pass
         self.toast('On foot.')
 
     # ----- Gas stations ---------------------------------------------------
@@ -285,57 +337,3 @@
         if fill_cost > 0:
             choices.append((f'Fill tank ({fill_cost}g)', lambda c=car, cost=fill_cost: self._gas_fill(c, cost)))
         else:
-            choices.append(('Tank is full.', self.close_panel))
-        if dmg >= 5:
-            choices.append(('Repair (50g)', lambda c=car: self._gas_repair(c)))
-        choices.append(('Leave.', self.close_panel))
-        self.open_panel(f'{name}   ·   pump', body, choices)
-
-    def _gas_fill(self, car, cost):
-        if not car:
-            self.close_panel()
-            return
-        cost = int(cost)
-        if self.gold < cost:
-            self.toast('Not enough gold.')
-            self.close_panel()
-            return
-        self.gold -= cost
-        car.fuel = 100.0
-        car.out_of_gas_toasted = False
-        self.toast(f'Tank filled. -{cost}g')
-        self._quest_event('refuel')
-        self.close_panel()
-
-    def _gas_repair(self, car):
-        if not car:
-            self.close_panel()
-            return
-        if self.gold < 50:
-            self.toast('Not enough gold.')
-            self.close_panel()
-            return
-        self.gold -= 50
-        before = float(getattr(car, 'damage', 0) or 0)
-        car.damage = max(0.0, before - 60.0)
-        if car.damage < 100.0:
-            car.disabled = False
-        self._update_car_damage_visual(car, 0.016)
-        self.toast(f'Repaired. DMG {int(before)}→{int(car.damage)}  -50g')
-        self.close_panel()
-
-    # ----- UI panels ------------------------------------------------------
-
-    def _set_talk_target(self, ent):
-        """Freeze this NPC while dialogue is open; face player; hold position."""
-        self._clear_talk_target()
-        self.talk_target = ent
-        if ent is None:
-            return
-        try:
-            ent.talk_frozen = True
-            ent._talk_hold_pos = (
-                float(ent.x),
-                float(getattr(ent, 'y', 0) or 0),
-                float(ent.z),
-            )
