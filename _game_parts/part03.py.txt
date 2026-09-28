@@ -1,3 +1,28 @@
+            for b in getattr(self, 'menu_buttons', []) or []:
+                try:
+                    b.enabled = True
+                    lab = getattr(b, '_label', None)
+                    if lab is not None:
+                        lab.enabled = True
+                except Exception:
+                    pass
+            if getattr(self, 'menu_hint', None):
+                try:
+                    self.menu_hint.enabled = True
+                except Exception:
+                    pass
+            # spare menu_lines are settings-only; hide on main menu
+            for line in getattr(self, 'menu_lines', []) or []:
+                try:
+                    line.enabled = False
+                except Exception:
+                    pass
+        else:
+            for b in getattr(self, 'menu_buttons', []) or []:
+                try:
+                    b.enabled = False
+                    lab = getattr(b, '_label', None)
+                    if lab is not None:
                         lab.enabled = False
                 except Exception:
                     pass
@@ -346,31 +371,3 @@
             texture=grass or 'white_cube',
             texture_scale=(70, 55),
             collider=None,
-            y=0,
-        )
-        # Lot asphalt split N/S of Hwy 50 — unique Y, no stack under highway footprint.
-        lot_col = color.rgb32(36, 34, 38) if asphalt else color.rgb32(24, 18, 28)
-        lot_tex = asphalt or 'white_cube'
-        # North lot (stalls side): z center -5.5, depth ~9 → avoids hwy ~-20.75..-11.25
-        Entity(
-            model='cube',
-            scale=(78, 0.04, 10),
-            position=(2, 0.02, -5.5),
-            color=lot_col,
-            texture=lot_tex,
-            texture_scale=(8, 2),
-        )
-        # South lot (town side)
-        Entity(
-            model='cube',
-            scale=(78, 0.04, 22),
-            position=(2, 0.02, -32),
-            color=lot_col,
-            texture=lot_tex,
-            texture_scale=(8, 2),
-        )
-
-    def _build_highway(self):
-        Entity = self.Entity
-        color = self.color
-        # Hwy 50 east-west between the two stall rows — Y unique vs lot/paint/sidewalk
