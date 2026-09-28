@@ -167,3 +167,11 @@ Three trucks from `data/shops.json` (`kind: food_truck`) — Cuban, Gator bites,
 - Shops.json untouched (**28**). Feel systems (crash/sfx/handbrake/traffic) preserved. No git push.
 - Test: spawn → Michelle close-up (face/hair/dress) → walk female crowd → enter Walmart/BestBuy/shake (shelves + plaque) → toggle `RUNE_MOMMY_QUALITY=med|high|ultra` and watch FPS / shadows-only-on-ultra.
 
+
+## World pass — day/night + living town + quests (2026-09-28)
+- **Day/night** (`lighting.py`): sky / sun / ambient / fog / neon scale shift with in-game clock (`life_sim_minutes`). Quality-aware (med default; low skips fog/neon scale; shadows still ultra-only). Throttled updates (~0.1h buckets) so slim boot FPS stays intact.
+- **Toggle / debug**: `RUNE_MOMMY_DAY_NIGHT=0` freezes cycle. `RUNE_MOMMY_TIME=14` sets start hour. In-game **`[` / `]`** nudge ±2 hours (toast shows HH:MM + phase). HUD clock shows `HH:MM  phase`.
+- **Quests**: `data/quests.json` **43 → 61** (append-only). New types wired: **fetch** (buy/pack item), **drive_to** (POI proximity; car preferred, on-foot OK). Visit/talk/shop variety (Best Buy, GameStop, pet, tire, nails, showcase, Presidents Hall, Michelle dusk, Rita/Gage follow-ups). Radar/waypoints resolve via existing npc/poi fields.
+- **Living town** (`life_sim.py`): deeper schedules (plaza lunch linger, named smoke/errand beats). Michelle dusk plaza → Club 27 glow → porch (first name only). Explore beacons (cheap poles) at landmarks; dim when closed. `POI_HOURS` open/close vibes; radar POI dots tint cooler when closed. **PED_COUNT stays 40**; traffic untouched. Prefer behavior depth over entity count.
+- Shops.json **untouched (28)**. Feel (crash/sfx/handbrake/traffic) + Look (actors/lighting/interiors/crowd anime_f) preserved. Slim boot / deferred populate / footprints / talk_frozen / orientation keep. No git push.
+- Test: pink gate → watch sky/HUD clock; press `]` a few times for dusk→night (neon punch + fog); radar yellow quest + cyan POIs; grab fetch/drive-to quests; walk plazas at noon (crowd linger). FPS vs Look tip on med.
