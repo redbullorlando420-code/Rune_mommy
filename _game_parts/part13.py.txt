@@ -121,7 +121,7 @@ def run():
     print('  WASD walk   mouse look   Space jump')
     print('  If a pink talk panel is open: press Esc, then WASD')
     print('  E enter/exit car, talk, buy')
-    print('  1 draw pistol   LMB shoot   H shake   F horn (in car)   V/C camera   U outfit   ESC quit')
+    print('  1 draw pistol   LMB shoot   H shake   F horn (in car)   V/C camera   U outfit   [ ] time±2h   ESC quit')
     rep = data_report()
     print('  shops:', ', '.join(rep['shake_names']))
     print('  mira portrait:', 'yes' if rep['mira_portrait'] else 'missing')
