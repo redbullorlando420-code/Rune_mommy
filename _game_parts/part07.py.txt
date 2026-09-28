@@ -20,6 +20,7 @@
         self.hud_pack = Text(text='Pack  0', position=(-0.86, 0.280), origin=(-0.5, 0.5), color=color.rgb32(180, 230, 200), scale=0.85)
         self.hud_breed = Text(text='BREED  0%', position=(-0.86, 0.250), origin=(-0.5, 0.5), color=color.rgb32(46, 196, 182), scale=0.85)
         self.hud_quest = Text(text='QUEST  —', position=(-0.86, 0.220), origin=(-0.5, 0.5), color=color.rgb32(180, 255, 200), scale=0.8)
+        self.hud_clock = Text(text='10:00  day', position=(-0.86, 0.175), origin=(-0.5, 0.5), color=color.rgb32(200, 210, 255), scale=0.7)
         self.hud_mode = Text(text='WALK', position=(-0.86, 0.190), origin=(-0.5, 0.5), color=color.rgb32(200, 220, 255), scale=0.8)
         self.hud_prompt = Text(text='', position=(0, -0.42), origin=(0, 0), color=color.rgb32(255, 240, 180), scale=0.9)
         self.hud_toast = Text(text='', position=(0, 0.32), origin=(0, 0), color=color.rgb32(255, 180, 220), scale=0.85)
@@ -113,6 +114,10 @@
             tick_crowd(self, dt)
             try:
                 life_sim.tick(self, dt)
+            except Exception:
+                pass
+            try:
+                tick_day_night(self, dt)
             except Exception:
                 pass
             try:
