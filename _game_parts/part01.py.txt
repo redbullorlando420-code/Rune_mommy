@@ -32,7 +32,7 @@ from loaders import (
 )
 from crowd import spawn_crowd, tick_crowd, spawn_heat_hunter
 from traffic import spawn_traffic, tick_traffic
-from lighting import apply_lighting, apply_perf, apply_fps_cap, pre_boot_fps_prc, set_visible, target_fps
+from lighting import apply_lighting, apply_perf, apply_fps_cap, pre_boot_fps_prc, set_visible, target_fps, boot_day_night, tick_day_night, nudge_time
 import footprints
 try:
     import chunks as world_chunks
