@@ -70,6 +70,7 @@
         bits = [
             self.hud_gold, self.hud_hp, self.hud_heat, self.hud_ammo,
             self.hud_pack, self.hud_breed, self.hud_quest, self.hud_mode,
+            getattr(self, 'hud_clock', None),
             self.hud_prompt, self.crosshair,
         ]
         for b in bits:
