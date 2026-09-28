@@ -118,7 +118,7 @@ def boot(game) -> None:
     )
     # POI dots pool
     poi_dots = []
-    for _ in range(14):
+    for _ in range(18):
         d = Entity(
             parent=root, model='quad',
             color=color.rgb32(80, 220, 255),
@@ -229,17 +229,23 @@ def tick(game, dt: float = 0.0) -> None:
             continue
         dot.enabled = True
         dot.x, dot.y = rx, ry
-        # gas tint
-        if pois[i].get('is_gas'):
-            try:
+        # gas / open-close tint (living town)
+        try:
+            if pois[i].get('is_gas'):
                 dot.color = game.color.rgb32(255, 180, 60)
-            except Exception:
-                pass
-        else:
-            try:
-                dot.color = game.color.rgb32(80, 220, 255)
-            except Exception:
-                pass
+            else:
+                closed = False
+                try:
+                    import life_sim as _ls
+                    closed = not _ls.is_open(pois[i].get('id') or '', game=game)
+                except Exception:
+                    closed = False
+                if closed:
+                    dot.color = game.color.rgb32(70, 90, 110)
+                else:
+                    dot.color = game.color.rgb32(80, 220, 255)
+        except Exception:
+            pass
 
     target = resolve_quest_target(game)
     compass = r['compass']
