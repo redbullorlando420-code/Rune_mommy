@@ -159,3 +159,11 @@ Three trucks from `data/shops.json` (`kind: food_truck`) — Cuban, Gator bites,
 - **Audio** (`sfx.py` + `assets/sfx/*.wav` procedural stubs): engine loop, impact, horn (**F** in car), UI beeps. `RUNE_MOMMY_AUDIO=0` keeps null backend. Missing device → silent stubs.
 - Perf: slim title boot / deferred populate / PED 40 / quality **med** / talk-freeze / footprints / orientation keep. Shops untouched. No git push.
 - Test: enter car on Hwy 50 → W accel, Space handbrake slide, ram traffic or wall (DMG/smoke/debris), F horn, gas repair. Watch FPS (med, debris capped).
+
+## Look pass — meshes / lighting / walk-in polish (2026-09-28)
+- **Meshes** (`models3d/_actors.py`): Michelle + `anime_f` / named feminine + female crowd — clearer adult anime silhouette (face/lashes/blush, bang hair, waist cinch, skirt flare). Realistic tonable busts kept (not cartoon-huge). Bust **+Z** / butt **-Z**. Hair/face extras `lod_detail=high`. Named (`detail!=crowd`) get heavier hair/cups; female crowd uses `style=anime_f` + `detail=crowd` (lighter). First name only (never Lewis). Adult-only.
+- **Lighting** (`lighting.py`): punchier sun/ambient on **med/high**; med fog slightly clearer; med 3 / high 4 neon accents (capped). Shadows **ultra-only**. Default quality **med** (invalid env → med).
+- **Walk-in interiors** (`interiors.py`): `_safe_tex` floor/shelf fallbacks, shelf stock cubes, counter tops, wall sign plaques. Still true door walk-ins — **no teleport**.
+- Shops.json untouched (**28**). Feel systems (crash/sfx/handbrake/traffic) preserved. No git push.
+- Test: spawn → Michelle close-up (face/hair/dress) → walk female crowd → enter Walmart/BestBuy/shake (shelves + plaque) → toggle `RUNE_MOMMY_QUALITY=med|high|ultra` and watch FPS / shadows-only-on-ultra.
+
