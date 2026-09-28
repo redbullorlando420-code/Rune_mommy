@@ -1,3 +1,29 @@
+        portrait = None
+        mp = self.mira_portrait_path
+        mp_ok = False
+        try:
+            mp_ok = Path(mp).exists() if mp else False
+        except Exception:
+            mp_ok = False
+        if mp_ok:
+            try:
+                from ursina import load_texture
+                _rel = portrait_asset_path('mira') or (str(mp) if mp else None)
+                portrait = load_texture(_rel) if _rel else None
+                self.mira_texture = portrait
+            except Exception:
+                portrait = None
+                self.mira_texture = None
+
+        shake = next((s for s in self.stalls if s['id'] == 'shake_bar'), None)
+        mx, mz = (0.0, -2.6)
+        if shake:
+            mx, mz = shake['pos'][0], shake['pos'][2] - 2.4
+
+        mira = self._humanoid(mx, mz, shirt=color.rgb32(255, 70, 180), pants=color.rgb32(40, 12, 40), skin=color.rgb32(255, 206, 166), detail='named', style='anime_f')
+        mira.npc_id = 'mira'
+        mira.npc_name = 'Mama Mira'
+        mira.kind = 'mira'
         mira.hittable = False
         self.talk_npcs.append({'ent': mira, 'name': 'Mama Mira', 'talk': 'Neons loud tonight.', 'killable': False})
         if portrait:
@@ -173,6 +199,11 @@
         car = make_car(self.Entity, self.color, pos, yaw, paint)
         if not hasattr(car, 'tire_wear'):
             car.tire_wear = 0.0
+        if not hasattr(car, 'damage'):
+            car.damage = 0.0
+        if not hasattr(car, 'disabled'):
+            car.disabled = False
+        car.impact_cd = 0.0
         # Traffic cars ignore fuel; parked/enterable get a tank below in _build_cars.
         if not getattr(car, 'traffic', False):
             if not hasattr(car, 'fuel') or car.fuel is None:
@@ -294,23 +325,3 @@
             cm = str(flags.get('cam_mode') or getattr(self, 'cam_mode', 'follow') or 'follow').strip().lower()
             if cm in ('follow', 'near', 'far', 'hood'):
                 self.cam_mode = cm
-        except Exception:
-            pass
-        try:
-            self._apply_camera_mode()
-        except Exception:
-            pass
-
-    def _build_hud(self):
-        Entity = self.Entity
-        Text = self.Text
-        color = self.color
-        camera = self.camera
-
-        Text(text='RUNE MOMMY', position=(-0.86, 0.48), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 210))
-        Text(text='Clermont / Hwy 50', position=(-0.86, 0.445), origin=(-0.5, 0.5), color=color.rgb32(140, 230, 255), scale=0.75)
-        self.hud_gold = Text(text='Gold  200', position=(-0.86, 0.40), origin=(-0.5, 0.5), color=color.rgb32(255, 220, 90))
-        self.hud_hp = Text(text='HP  100', position=(-0.86, 0.370), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 170), scale=0.85)
-        self.hud_heat = Text(text='HEAT  0.0', position=(-0.86, 0.340), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 90), scale=0.85)
-        self.hud_ammo = Text(text='Pistol  --', position=(-0.86, 0.310), origin=(-0.5, 0.5), color=color.rgb32(200, 200, 210), scale=0.85)
-        self.hud_pack = Text(text='Pack  0', position=(-0.86, 0.280), origin=(-0.5, 0.5), color=color.rgb32(180, 230, 200), scale=0.85)
