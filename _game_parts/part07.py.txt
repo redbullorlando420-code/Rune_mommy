@@ -1,3 +1,23 @@
+        except Exception:
+            pass
+        try:
+            self._apply_camera_mode()
+        except Exception:
+            pass
+
+    def _build_hud(self):
+        Entity = self.Entity
+        Text = self.Text
+        color = self.color
+        camera = self.camera
+
+        Text(text='RUNE MOMMY', position=(-0.86, 0.48), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 210))
+        Text(text='Clermont / Hwy 50', position=(-0.86, 0.445), origin=(-0.5, 0.5), color=color.rgb32(140, 230, 255), scale=0.75)
+        self.hud_gold = Text(text='Gold  200', position=(-0.86, 0.40), origin=(-0.5, 0.5), color=color.rgb32(255, 220, 90))
+        self.hud_hp = Text(text='HP  100', position=(-0.86, 0.370), origin=(-0.5, 0.5), color=color.rgb32(255, 120, 170), scale=0.85)
+        self.hud_heat = Text(text='HEAT  0.0', position=(-0.86, 0.340), origin=(-0.5, 0.5), color=color.rgb32(255, 90, 90), scale=0.85)
+        self.hud_ammo = Text(text='Pistol  --', position=(-0.86, 0.310), origin=(-0.5, 0.5), color=color.rgb32(200, 200, 210), scale=0.85)
+        self.hud_pack = Text(text='Pack  0', position=(-0.86, 0.280), origin=(-0.5, 0.5), color=color.rgb32(180, 230, 200), scale=0.85)
         self.hud_breed = Text(text='BREED  0%', position=(-0.86, 0.250), origin=(-0.5, 0.5), color=color.rgb32(46, 196, 182), scale=0.85)
         self.hud_quest = Text(text='QUEST  —', position=(-0.86, 0.220), origin=(-0.5, 0.5), color=color.rgb32(180, 255, 200), scale=0.8)
         self.hud_mode = Text(text='WALK', position=(-0.86, 0.190), origin=(-0.5, 0.5), color=color.rgb32(200, 220, 255), scale=0.8)
@@ -109,6 +129,11 @@
             except Exception:
                 pass
             tick_traffic(self, dt)
+            try:
+                if crash is not None:
+                    crash.tick_fx(self, dt)
+            except Exception:
+                pass
             try:
                 if world_chunks is not None:
                     world_chunks.tick(self, dt)
@@ -276,8 +301,7 @@
 
 
     def _drive(self, dt):
-        from ursina import held_keys, mouse, raycast, Vec3, Entity, destroy, color
-        from vendor.vehicle import bicycle_step
+        from ursina import held_keys, mouse, raycast, Vec3
         car = self.in_car
         if getattr(mouse, 'locked', False):
             # Clamp mouse look while driving (pitch only on cam_pivot)
@@ -285,55 +309,22 @@
             car.cam_pivot.rotation_x = max(-20, min(25, car.cam_pivot.rotation_x))
 
         dmg = float(getattr(car, 'damage', 0.0) or 0.0)
-        dmg_mul = max(0.15, 1.0 - 0.5 * (dmg / 100.0))
+        dmg_mul = max(0.18, 1.0 - 0.55 * (dmg / 100.0))
         wear = float(getattr(car, 'tire_wear', 0.0) or 0.0)
         wear_n = max(0.0, min(1.0, wear / 100.0))
-        steer_gain = 1.05 * (1.0 - 0.55 * wear_n)
-        coast_drag = 3.2 + 2.8 * wear_n
-        accel_drag = 0.55 + 0.9 * wear_n
-        base_vmax, base_accel = 24.0, 16.0
+        steer_gain = 1.18 * (1.0 - 0.55 * wear_n)
+        coast_drag = 2.8 + 2.6 * wear_n
+        accel_drag = 0.42 + 0.85 * wear_n
+        # Feel: snappier accel / higher top end; damage & tires still bite
+        base_vmax, base_accel = 26.0, 20.0
         vmax = base_vmax * dmg_mul * (1.0 - 0.18 * wear_n)
         accel_force = base_accel * dmg_mul * (1.0 - 0.12 * wear_n)
         brake_force = 0.0
         accel = 0.0
+        handbrake = 0.0
 
         fuel = float(getattr(car, 'fuel', 100.0) or 0.0)
         out_of_gas = fuel <= 0.0 or getattr(car, 'disabled', False)
 
         if out_of_gas:
-            brake_force = 14.0
-            if not getattr(car, 'out_of_gas_toasted', False) and fuel <= 0.0 and not getattr(car, 'disabled', False):
-                car.out_of_gas_toasted = True
-                self.toast('Out of gas. Find a pump.')
-        else:
-            if held_keys['w']:
-                accel = accel_force
-            elif held_keys['s']:
-                if car.speed > 0.55:
-                    brake_force = 32.0
-                else:
-                    accel = -accel_force * 0.55
-            if held_keys['space']:
-                brake_force = max(brake_force, 52.0)
-
-        steer = float(held_keys['a'] - held_keys['d'])
-        nx, nz, nyaw, nspd = _bicycle_step_safe(
-            car.x, car.z, car.rotation_y, car.speed,
-            steer, accel, dt,
-            vmax=vmax, wheelbase=2.6, drag=2.4 + 1.5 * wear_n,
-            steer_gain=steer_gain, brake_force=brake_force,
-            coast_drag=coast_drag, accel_drag=accel_drag,
-        )
-        # Tire wear: speed / hard turns / off-road (lots & grass harsher than hwy asphalt)
-        try:
-            from crowd import is_on_road
-            on_hwy = is_on_road(nx, nz)
-        except Exception:
-            on_hwy = True
-        spd = abs(float(nspd))
-        hard = abs(steer) > 0.55 and spd > 6.0
-        rate = 0.35 * (spd / 24.0) ** 1.4
-        if hard:
-            rate += 1.1 * abs(steer) * (spd / 18.0)
-        if not on_hwy:
-            rate += 1.6 * (spd / 16.0)
+            brake_force = 16.0
