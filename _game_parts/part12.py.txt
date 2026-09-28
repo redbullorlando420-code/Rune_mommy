@@ -1,3 +1,56 @@
+        price = int(entry.get('price', 0))
+        item = self.items.get(item_id, {})
+        name = item.get('name', item_id or 'item')
+        if self.gold < price:
+            self.toast(f'Need {price}g for {name}.')
+            return
+        self.gold -= price
+        self.pack.append(name)
+        self.toast(name)
+        self._quest_event('buy', item_id=item_id)
+
+    def _tex_for(self, who, expr='default'):
+        # Ursina load_texture needs a path relative to cwd/ROOT, not an absolute Windows path.
+        rel = portrait_asset_path(who, expr)
+        if not rel:
+            for fb in ('smile', 'default', 'sassy', 'tease', 'wink', 'lean'):
+                rel = portrait_asset_path(who, fb)
+                if rel:
+                    break
+        if not rel:
+            return None
+        try:
+            from ursina import load_texture
+            return load_texture(rel)
+        except Exception:
+            return None
+
+
+    def _nearest_house_vol(self, pos, radius):
+        best, best_d = None, radius
+        for ent in self.house_vols:
+            if not ent:
+                continue
+            d = dist_xz(pos, (ent.x, 0, ent.z))
+            if d < best_d:
+                best, best_d = getattr(ent, 'room_node', None), d
+        if best:
+            return best, best_d
+        return None
+
+    def _maybe_auto_michelle(self):
+        # Never auto-open on spawn — it sets ui_open and freezes WASD.
+        # Player must press E at Michelle / the door.
+        return
+
+    def open_michelle(self, node_id='door'):
+        if getattr(self, 'talk_target', None) is None and getattr(self, 'michelle', None) is not None:
+            self._set_talk_target(self.michelle)
+        nodes = (self.michelle_dlg or {}).get('nodes') or {}
+        start = (self.michelle_dlg or {}).get('start') or 'door'
+        node = nodes.get(node_id) or nodes.get(start)
+        self.michelle_seen = True
+        self.michelle_auto_opened = True
         if not node:
             greet = "Alec, I just got off the plane, can you not stare at my tits for five seconds?"
             self.open_talk('Michelle', greet, self._tex_for('michelle'))
@@ -308,51 +361,3 @@
             self.tutorial_step = 4
             self._refresh_tutorial_text()
 
-    def _finish_tutorial(self):
-        if not self.tutorial_active and not getattr(self, 'tutorial_overlay', None):
-            flags = self._load_flags()
-            if not flags.get('tutorial_done'):
-                flags['tutorial_done'] = True
-                self._save_flags(flags)
-            return
-        self.tutorial_active = False
-        try:
-            if self.tutorial_overlay:
-                self.tutorial_overlay.enabled = False
-            if self.tutorial_text:
-                self.tutorial_text.enabled = False
-                self.tutorial_text.text = ''
-        except Exception:
-            pass
-        flags = self._load_flags()
-        flags['tutorial_done'] = True
-        self._save_flags(flags)
-        self.toast('Tutorial done. Explore Hwy 50.')
-
-
-    def _debug_tick(self, dt):
-        """Console + HUD breadcrumbs when lagging or input-stuck."""
-        from ursina import held_keys, mouse, time as u_time
-        self._dbg_t += dt
-        wish = any(held_keys[k] for k in ('w', 'a', 's', 'd', 'up arrow', 'down arrow'))
-        self._dbg_wish = wish
-        if wish and getattr(self, 'mode', '') in ('safe', 'play') and not self.in_car:
-            # approximate movement by checking position change
-            pos = (round(float(self.player.x), 2), round(float(self.player.z), 2))
-            last = getattr(self, '_dbg_pos', None)
-            moved = last is not None and pos != last
-            self._dbg_pos = pos
-            if wish and not moved and not self.ui_open:
-                self._dbg_stuck_t += dt
-            else:
-                self._dbg_stuck_t = 0.0
-        else:
-            self._dbg_stuck_t = 0.0
-
-        # Real frame pacing (unscaled); sim `dt` may be clamped to 0.05
-        try:
-            raw_dt = float(getattr(u_time, 'dt_unscaled', None) or u_time.dt or dt)
-        except Exception:
-            raw_dt = float(dt)
-        fps = 1.0 / raw_dt if raw_dt > 1e-6 else 0.0
-        lag = raw_dt > 0.08
