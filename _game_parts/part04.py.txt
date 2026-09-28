@@ -1,3 +1,31 @@
+            y=0,
+        )
+        # Lot asphalt split N/S of Hwy 50 — unique Y, no stack under highway footprint.
+        lot_col = color.rgb32(36, 34, 38) if asphalt else color.rgb32(24, 18, 28)
+        lot_tex = asphalt or 'white_cube'
+        # North lot (stalls side): z center -5.5, depth ~9 → avoids hwy ~-20.75..-11.25
+        Entity(
+            model='cube',
+            scale=(78, 0.04, 10),
+            position=(2, 0.02, -5.5),
+            color=lot_col,
+            texture=lot_tex,
+            texture_scale=(8, 2),
+        )
+        # South lot (town side)
+        Entity(
+            model='cube',
+            scale=(78, 0.04, 22),
+            position=(2, 0.02, -32),
+            color=lot_col,
+            texture=lot_tex,
+            texture_scale=(8, 2),
+        )
+
+    def _build_highway(self):
+        Entity = self.Entity
+        color = self.color
+        # Hwy 50 east-west between the two stall rows — Y unique vs lot/paint/sidewalk
         asphalt = load_tex('asphalt')
         concrete = load_tex('concrete')
         Entity(
@@ -233,28 +261,3 @@
 
         # guest bed + shower markers inside
         Entity(model='cube', scale=(2.2, 0.42, 1.5), position=(hx + 1.8, 0.45, hz + 1.5), color=color.rgb32(220, 210, 200))
-        Entity(model='cube', scale=(1.35, 1.9, 1.35), position=(hx - 2.1, 1.05, hz + 1.7), color=color.rgb32(180, 220, 215))
-
-        door_xz = (hx + 4.1, hz)
-        guest_xz = (hx + 1.8, hz + 1.5)
-        garage_xz = (hx + 0.2, hz - 5.4)
-        shower_xz = (hx - 2.1, hz + 1.7)
-        lawn_xz = (hx - 7.2, hz)
-        self.house_rooms = {
-            'door': door_xz,
-            'guest': guest_xz,
-            'garage': garage_xz,
-            'shower': shower_xz,
-            'lawn': lawn_xz,
-        }
-
-        def vol(xz, sx, sz, col, node):
-            e = Entity(model='cube', scale=(sx, 0.06, sz), position=(xz[0], 0.12, xz[1]), color=col)
-            e.room_node = node
-            self.house_vols.append(e)
-            return e
-
-        vol(guest_xz, 3.0, 2.4, color.rgb32(70, 180, 170), 'guest')
-        vol(garage_xz, 3.6, 3.2, color.rgb32(70, 70, 78), 'garage')
-        vol(shower_xz, 2.2, 2.2, color.rgb32(90, 200, 210), 'shower')
-        vol(lawn_xz, 4.2, 5.0, color.rgb32(22, 58, 32), 'lawn')
