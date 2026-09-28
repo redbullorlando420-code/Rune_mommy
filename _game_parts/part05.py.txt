@@ -284,6 +284,11 @@
             }
             self.food_trucks.append(rec)
             self.stalls.append(rec)
+            self.pois.append({
+                'id': sid, 'name': shop.get('name', sid),
+                'pos': (interact[0], 0, interact[2]),
+                'npc_id': None, 'line': None, 'is_gas': False, 'pump_r': 3.0,
+            })
             self.building_count += 1
         # interiors + wildlife + life-sim
         try:
